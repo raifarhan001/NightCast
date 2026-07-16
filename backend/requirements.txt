@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+sqlalchemy>=2.0
+pydantic[email]
+pydantic-settings
+psycopg2-binary
+redis
+pyjwt
+passlib[bcrypt]
+bcrypt
+python-multipart
+httpx
+numpy
+scikit-learn
+pgvector
+python-dotenv

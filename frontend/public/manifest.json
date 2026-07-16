@@ -1,0 +1,23 @@
+{
+  "name": "NEXUS PLAY - Stream Movies & TV Shows",
+  "short_name": "NEXUS PLAY",
+  "description": "An editorial, minimal, and premium movie and TV streaming experience.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#050505",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/apple-touch-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

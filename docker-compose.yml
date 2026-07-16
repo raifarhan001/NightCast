@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  db:
+    image: pgvector/pgvector:15-pgvector
+    container_name: vidking_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: vidking
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d vidking"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vidking_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: vidking_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - vidking_network
+
+  backend:
+    build: ./backend
+    container_name: vidking_backend
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgrespassword@db:5432/vidking
+      - REDIS_URL=redis://redis:6379/0
+      - TMDB_API_KEY=${TMDB_API_KEY:-""}
+      - JWT_SECRET=${JWT_SECRET:-supersecretjwtkey123!}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-""}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - vidking_network
+
+  frontend:
+    build: ./frontend
+    container_name: vidking_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    networks:
+      - vidking_network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  vidking_network:
+    driver: bridge
