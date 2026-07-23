@@ -19,7 +19,10 @@ from config import settings
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup actions
-    init_db()
+    try:
+        init_db()
+    except Exception as e:
+        print(f"init_db startup warning: {e}")
     
     # Clear cache to flush old configurations
     try:
@@ -28,11 +31,14 @@ async def lifespan(app: FastAPI):
         print(f"Failed to clear cache: {e}")
     
     # Pre-populate pgvector database with mock embeddings so it works immediately
-    db = SessionLocal()
     try:
-        await populate_mock_embeddings(db)
-    finally:
-        db.close()
+        db = SessionLocal()
+        try:
+            await populate_mock_embeddings(db)
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"populate_mock_embeddings startup warning: {e}")
         
     yield
     # Shutdown actions
