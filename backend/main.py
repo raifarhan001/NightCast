@@ -50,6 +50,14 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print(f"Handled Error on {request.url}: {exc}")
+    return JSONResponse(
+        status_code=200,
+        content={"status": "error", "results": [], "message": str(exc)}
+    )
+
 # Custom Rate Limiting Middleware
 class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, limit_seconds: int = 60, max_requests: int = 20):
