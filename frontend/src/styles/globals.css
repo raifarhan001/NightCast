@@ -57,11 +57,11 @@ html, body {
 @layer components {
   /* Google TV Capsule Navigation Pill */
   .gtv-tab-pill {
-    @apply px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all duration-300 ease-out select-none cursor-pointer text-white/70 hover:text-white hover:bg-white/10;
+    @apply px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all duration-300 ease-out select-none cursor-pointer text-white/70 hover:text-white hover:bg-white/10 whitespace-nowrap shrink-0;
   }
 
   .gtv-tab-pill-active {
-    @apply px-4 py-1.5 rounded-full text-xs font-bold tracking-wide transition-all duration-300 ease-out select-none cursor-pointer bg-white text-black shadow-lg scale-105;
+    @apply px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-bold tracking-wide transition-all duration-300 ease-out select-none cursor-pointer bg-white text-black shadow-lg scale-105 whitespace-nowrap shrink-0;
   }
 
   /* Google TV Primary Action Pill */
@@ -74,21 +74,27 @@ html, body {
     @apply relative aspect-video w-full rounded-2xl overflow-hidden bg-[#12141F] border border-white/10 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105 group-hover:border-white/30 group-hover:shadow-[0_10px_35px_-5px_rgba(99,102,241,0.35),0_0_25px_rgba(249,115,22,0.2),0_20px_45px_rgba(0,0,0,0.85)];
   }
 
-  .no-scrollbar::-webkit-scrollbar {
+  .no-scrollbar::-webkit-scrollbar,
+  .scrollbar-hide::-webkit-scrollbar,
+  .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
-  .no-scrollbar {
+  .no-scrollbar,
+  .scrollbar-hide,
+  .scrollbar-none {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
 }
 
 @layer utilities {
-  .scrollbar-hide {
+  .scrollbar-hide,
+  .scrollbar-none {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  .scrollbar-hide::-webkit-scrollbar {
+  .scrollbar-hide::-webkit-scrollbar,
+  .scrollbar-none::-webkit-scrollbar {
     display: none;
   }
 }

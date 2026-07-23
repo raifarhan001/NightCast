@@ -177,12 +177,12 @@ function HeaderContent() {
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-b from-[#090A0F]/95 via-[#090A0F]/70 to-transparent backdrop-blur-md transition-all duration-300 border-b border-white/5 select-none">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 h-16 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 h-16 flex items-center justify-between gap-2 sm:gap-4 min-w-0">
           {/* Brand Logo & Integrated Search Input */}
-          <div className="flex items-center gap-4 sm:gap-6">
+          <div className="flex items-center gap-3 sm:gap-6 shrink-0">
             <Link
               href="/"
-              className="text-white font-extrabold text-xl tracking-tight font-display uppercase hover:opacity-90 transition-opacity"
+              className="text-white font-extrabold text-xl tracking-tight font-display uppercase hover:opacity-90 transition-opacity shrink-0"
             >
               Nightcast
             </Link>
@@ -225,28 +225,28 @@ function HeaderContent() {
           </div>
 
           {/* Center Navigation Capsule Tabs */}
-          <nav className="flex items-center gap-1.5 bg-white/5 border border-white/10 p-1 rounded-full shadow-inner">
+          <nav className="flex items-center gap-1 sm:gap-1.5 bg-white/5 border border-white/10 p-1 rounded-full shadow-inner overflow-x-auto scrollbar-none no-scrollbar scrollbar-hide flex-nowrap shrink min-w-0 max-w-full touch-pan-x">
             <Link
               href="/"
-              className={activeTab === "foryou" ? "gtv-tab-pill-active" : "gtv-tab-pill"}
+              className={`${activeTab === "foryou" ? "gtv-tab-pill-active" : "gtv-tab-pill"} shrink-0 whitespace-nowrap`}
             >
               For you
             </Link>
             <Link
               href="/movies"
-              className={activeTab === "movies" ? "gtv-tab-pill-active" : "gtv-tab-pill"}
+              className={`${activeTab === "movies" ? "gtv-tab-pill-active" : "gtv-tab-pill"} shrink-0 whitespace-nowrap`}
             >
               Movies
             </Link>
             <Link
               href="/shows"
-              className={activeTab === "shows" ? "gtv-tab-pill-active" : "gtv-tab-pill"}
+              className={`${activeTab === "shows" ? "gtv-tab-pill-active" : "gtv-tab-pill"} shrink-0 whitespace-nowrap`}
             >
               Shows
             </Link>
             <Link
               href="/f1"
-              className={activeTab === "f1" ? "gtv-tab-pill-active flex items-center gap-1.5" : "gtv-tab-pill flex items-center gap-1.5"}
+              className={`${activeTab === "f1" ? "gtv-tab-pill-active flex items-center gap-1.5" : "gtv-tab-pill flex items-center gap-1.5"} shrink-0 whitespace-nowrap`}
             >
               <span className="w-2 h-2 rounded-full bg-[#E10600] animate-ping shrink-0" />
               <span>F1 Live</span>
@@ -254,11 +254,11 @@ function HeaderContent() {
           </nav>
 
           {/* Right Action Icons */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Mobile Search Toggle */}
             <button
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="sm:hidden p-2 rounded-full hover:bg-white/10 text-white/80 hover:text-white transition-colors"
+              className="sm:hidden p-2 rounded-full hover:bg-white/10 text-white/80 hover:text-white transition-colors shrink-0"
               aria-label="Search"
             >
               <Search className="w-4 h-4" />
@@ -267,7 +267,7 @@ function HeaderContent() {
             {/* Profile Avatar Button */}
             <button
               onClick={() => setIsProfileModalOpen(true)}
-              className="w-9 h-9 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:border-white hover:bg-white/20 transition-all shadow-md"
+              className="w-9 h-9 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:border-white hover:bg-white/20 transition-all shadow-md shrink-0"
               aria-label="User Profile"
             >
               <User className="w-4 h-4" />
