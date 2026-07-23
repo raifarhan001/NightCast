@@ -32,11 +32,7 @@ class StreamExtractor:
     """Extracts raw .m3u8 HLS stream URLs from multiple free providers."""
 
     def __init__(self):
-        self.client = httpx.AsyncClient(
-            timeout=12.0,
-            follow_redirects=True,
-            headers=BROWSER_HEADERS,
-        )
+        pass
 
     async def extract_streams(
         self,
@@ -122,33 +118,34 @@ class StreamExtractor:
             else:
                 url = f"https://player.autoembed.cc/embed/tv/{tmdb_id}/{season}/{episode}"
 
-            response = await self.client.get(url)
-            if response.status_code != 200:
-                logger.warning(f"autoembed.cc returned {response.status_code}")
-                return []
+            async with httpx.AsyncClient(timeout=12.0, follow_redirects=True, headers=BROWSER_HEADERS) as client:
+                response = await client.get(url)
+                if response.status_code != 200:
+                    logger.warning(f"autoembed.cc returned {response.status_code}")
+                    return []
 
-            html = response.text
-            m3u8_urls = self._extract_m3u8_from_html(html)
+                html = response.text
+                m3u8_urls = self._extract_m3u8_from_html(html)
 
-            if not m3u8_urls:
-                source_urls = self._extract_source_urls(html)
-                for src_url in source_urls[:3]:
-                    try:
-                        sub_response = await self.client.get(
-                            src_url,
-                            headers={**BROWSER_HEADERS, "Referer": url}
-                        )
-                        if sub_response.status_code == 200:
-                            sub_m3u8 = self._extract_m3u8_from_html(sub_response.text)
-                            m3u8_urls.extend(sub_m3u8)
-                            try:
-                                json_data = sub_response.json()
-                                json_urls = self._extract_m3u8_from_json(json_data)
-                                m3u8_urls.extend(json_urls)
-                            except Exception:
-                                pass
-                    except Exception:
-                        pass
+                if not m3u8_urls:
+                    source_urls = self._extract_source_urls(html)
+                    for src_url in source_urls[:3]:
+                        try:
+                            sub_response = await client.get(
+                                src_url,
+                                headers={**BROWSER_HEADERS, "Referer": url}
+                            )
+                            if sub_response.status_code == 200:
+                                sub_m3u8 = self._extract_m3u8_from_html(sub_response.text)
+                                m3u8_urls.extend(sub_m3u8)
+                                try:
+                                    json_data = sub_response.json()
+                                    json_urls = self._extract_m3u8_from_json(json_data)
+                                    m3u8_urls.extend(json_urls)
+                                except Exception:
+                                    pass
+                        except Exception:
+                            pass
 
             seen = set()
             unique_urls = []

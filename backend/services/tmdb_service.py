@@ -171,7 +171,6 @@ MOCK_TV = {
 class TMDBClient:
     def __init__(self):
         self.api_key = settings.TMDB_API_KEY
-        self.client = httpx.AsyncClient(timeout=10.0)
 
     def is_configured(self) -> bool:
         return bool(self.api_key and self.api_key.strip())
@@ -189,29 +188,36 @@ class TMDBClient:
         
         # Redis caching layer
         cache_key = f"tmdb:{endpoint}:{sorted(params.items())}"
-        cached_result = redis_cache.get(cache_key)
-        if cached_result:
-            return cached_result
+        try:
+            cached_result = redis_cache.get(cache_key)
+            if cached_result:
+                return cached_result
+        except Exception:
+            pass
 
         import asyncio
         import logging
         logger = logging.getLogger("tmdb")
         
         backoffs = [1.0, 2.0, 5.0]
-        for attempt, delay in enumerate(backoffs + [0], start=1):
-            try:
-                response = await self.client.get(url, params=params)
-                response.raise_for_status()
-                data = response.json()
-                redis_cache.set(cache_key, data, expire_seconds=21600)
-                return data
-            except httpx.HTTPError as e:
-                if attempt <= len(backoffs):
-                    logger.warning(f"TMDB request failed (attempt {attempt}/4). Retrying in {delay}s... Error: {str(e)}")
-                    await asyncio.sleep(delay)
-                else:
-                    logger.error(f"TMDB request failed after max retries. Error: {str(e)}")
-                    raise e
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            for attempt, delay in enumerate(backoffs + [0], start=1):
+                try:
+                    response = await client.get(url, params=params)
+                    response.raise_for_status()
+                    data = response.json()
+                    try:
+                        redis_cache.set(cache_key, data, expire_seconds=21600)
+                    except Exception:
+                        pass
+                    return data
+                except httpx.HTTPError as e:
+                    if attempt <= len(backoffs):
+                        logger.warning(f"TMDB request failed (attempt {attempt}/4). Retrying in {delay}s... Error: {str(e)}")
+                        await asyncio.sleep(delay)
+                    else:
+                        logger.error(f"TMDB request failed after max retries. Error: {str(e)}")
+                        raise e
         return {}
 
     async def get_trending(self, media_type: str = "all", time_window: str = "day") -> List[Dict[str, Any]]:
