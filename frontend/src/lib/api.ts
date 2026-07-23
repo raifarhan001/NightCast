@@ -2,12 +2,12 @@ import { ZodMovieDetailSchema, ZodTvDetailSchema, ZodMediaListSchema } from './v
 const IS_SERVER = typeof window === 'undefined';
 
 // On SSR, query the container service directly; otherwise query localhost
-export const API_BASE_URL = IS_SERVER
-  ? (process.env.NEXT_PUBLIC_SERVER_API_URL || process.env.NEXT_PUBLIC_API_URL || '')
-  : (process.env.NEXT_PUBLIC_API_URL || '');
+export const API_BASE_URL = typeof window !== 'undefined'
+  ? ''
+  : (process.env.NEXT_PUBLIC_SERVER_API_URL || process.env.NEXT_PUBLIC_API_URL || '');
 
 if (typeof window !== 'undefined') {
-  console.log("Current API Base URL:", process.env.NEXT_PUBLIC_API_URL || "RELATIVE PATH");
+  console.log("Current API Base URL:", API_BASE_URL || "RELATIVE PATH");
 }
 
 export interface MediaItem {
