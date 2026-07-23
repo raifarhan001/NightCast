@@ -38,10 +38,11 @@ const MOCK_MOVIES = [
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { path: string[] } }
+  context: { params: Promise<{ path?: string[] }> }
 ) {
   try {
-    const rawPath = params.path ? params.path : [];
+    const resolvedParams = await context.params;
+    const rawPath = resolvedParams?.path ? resolvedParams.path : [];
     const searchParams = req.nextUrl.searchParams;
 
     let targetEndpoint = '';
@@ -65,9 +66,8 @@ export async function GET(
     }
 
     const queryParams = new URLSearchParams(searchParams);
-    queryParams.set('api_key', TMDB_API_KEY);
-
     if (TMDB_API_KEY) {
+      queryParams.set('api_key', TMDB_API_KEY);
       const tmdbUrl = `${TMDB_BASE_URL}/${targetEndpoint}?${queryParams.toString()}`;
       const res = await fetch(tmdbUrl, {
         headers: { 'Content-Type': 'application/json' },

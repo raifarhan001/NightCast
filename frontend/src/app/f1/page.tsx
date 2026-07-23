@@ -25,6 +25,7 @@ import {
   ExternalLink
 } from "lucide-react";
 import { PlayerSkeleton } from "../../components/shared/Skeletons";
+import { API_BASE_URL } from "../../lib/api";
 
 interface F1Race {
   round: number;
@@ -467,7 +468,7 @@ function F1HubContent() {
     async function fetchAllF1Data() {
       setIsLoadingApi(true);
       try {
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || "";
+        const backendUrl = API_BASE_URL;
         const res = await fetch(`${backendUrl}/api/f1/2026-data`);
         if (res.ok) {
           const data = await res.json();
