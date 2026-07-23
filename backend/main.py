@@ -1,14 +1,14 @@
 import sys
 import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import time
 from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy import text
-
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from database import init_db, SessionLocal, is_sqlite
 from routers import auth, tmdb, progress, user, ai, admin, discover, f1
