@@ -202,12 +202,12 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
   const rawData = await response.json();
   
   // Apply Zod validation schemas to protect the UI components from undefined keys
-  if (cleanEndpoint.includes('/api/v1/tmdb/')) {
+  if (cleanEndpoint.includes('/tmdb/')) {
     // 1. Movie Detail endpoint
     if (cleanEndpoint.includes('/tmdb/movie/') && !cleanEndpoint.includes('/recommendations') && !cleanEndpoint.includes('/streams')) {
-      const result = ZodMovieDetailSchema.safeParse(rawData);
+      const itemData = (rawData && typeof rawData === 'object' && 'data' in rawData && rawData.data) ? rawData.data : rawData;
+      const result = ZodMovieDetailSchema.safeParse(itemData);
       if (result.success) return result.data;
-      console.warn("Zod schema validation failed on Movie Detail, using defaults. Error: ", result.error);
       const pathSegments = cleanEndpoint.split('/').filter(Boolean);
       const idIndex = pathSegments.findIndex(s => s === 'movie');
       const idString = idIndex !== -1 ? pathSegments[idIndex + 1] : '0';
@@ -217,9 +217,9 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
     
     // 2. TV Detail endpoint
     if (cleanEndpoint.includes('/tmdb/tv/') && !cleanEndpoint.includes('/recommendations') && !cleanEndpoint.includes('/streams')) {
-      const result = ZodTvDetailSchema.safeParse(rawData);
+      const itemData = (rawData && typeof rawData === 'object' && 'data' in rawData && rawData.data) ? rawData.data : rawData;
+      const result = ZodTvDetailSchema.safeParse(itemData);
       if (result.success) return result.data;
-      console.warn("Zod schema validation failed on TV Detail, using defaults. Error: ", result.error);
       const pathSegments = cleanEndpoint.split('/').filter(Boolean);
       const idIndex = pathSegments.findIndex(s => s === 'tv');
       const idString = idIndex !== -1 ? pathSegments[idIndex + 1] : '0';
