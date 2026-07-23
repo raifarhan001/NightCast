@@ -29,7 +29,11 @@ __pycache__/
 
 # Local env files
 .env
+.env.local
+.env.production
+.env.development
 .env*.local
+.env*
 
 # SQLite Database
 *.db
