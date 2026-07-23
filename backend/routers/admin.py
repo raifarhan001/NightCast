@@ -4,8 +4,10 @@ from sqlalchemy import text
 from typing import List, Dict, Any
 from uuid import UUID
 
-from ..database import get_db
-from .. import models, auth, schemas
+from database import get_db
+import models
+import auth
+import schemas
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 

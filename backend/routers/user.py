@@ -3,8 +3,10 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from uuid import UUID
 
-from ..database import get_db
-from .. import models, schemas, auth
+from database import get_db
+import models
+import schemas
+import auth
 
 router = APIRouter(prefix="/user", tags=["user"])
 

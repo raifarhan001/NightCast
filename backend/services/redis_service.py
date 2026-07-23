@@ -2,7 +2,7 @@ import json
 import logging
 import redis
 from typing import Optional, Any
-from ..config import settings
+from config import settings
 
 logger = logging.getLogger("vidking_redis")
 

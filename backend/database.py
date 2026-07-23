@@ -1,7 +1,7 @@
 import logging
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
-from .config import settings
+from config import settings
 
 logger = logging.getLogger("vidking_database")
 

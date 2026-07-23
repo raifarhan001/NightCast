@@ -40,7 +40,7 @@ services:
       - JWT_SECRET=${JWT_SECRET:-supersecretjwtkey123!}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-""}
     ports:
-      - "8000:8000"
+      - "8000:8080"
     depends_on:
       db:
         condition: service_healthy

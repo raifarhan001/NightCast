@@ -5,10 +5,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import List, Dict, Any, Optional
 
-from ..config import settings
-from .. import models
-from .tmdb_service import MOCK_MOVIES, MOCK_TV
-from ..database import is_sqlite
+from config import settings
+import models
+from services.tmdb_service import MOCK_MOVIES, MOCK_TV
+from database import is_sqlite
 
 
 logger = logging.getLogger("vidking_ai")

@@ -1,7 +1,7 @@
 import httpx
 from typing import Dict, Any, List, Optional
-from ..config import settings
-from .redis_service import redis_cache
+from config import settings
+from services.redis_service import redis_cache
 
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 

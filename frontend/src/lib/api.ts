@@ -17,6 +17,7 @@ export interface MediaItem {
   vote_average?: number;
   release_date?: string;
   first_air_date?: string;
+  genre_ids?: number[];
   score?: number; // AI score
 }
 
@@ -146,6 +147,22 @@ export interface SystemLog {
   message: string;
 }
 
+// Token storage for cross-origin auth (SameSite=Lax blocks cookie on fetch)
+const TOKEN_KEY = 'vidking_access_token';
+
+export function getStoredToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+}
+
+export function setStoredToken(token: string | null): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (token) { localStorage.setItem(TOKEN_KEY, token); }
+    else { localStorage.removeItem(TOKEN_KEY); }
+  } catch {}
+}
+
 export async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<any> {
   // Gracefully rewrite old api endpoints to API v1 prefix
   const cleanEndpoint = endpoint.startsWith('/api/') && !endpoint.startsWith('/api/v1/')
@@ -155,10 +172,17 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
   const url = `${API_BASE_URL}${cleanEndpoint}`;
   
   options.credentials = 'include';
-  options.headers = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(options.headers || {}),
-  } as Record<string, string>;
+    ...(options.headers as Record<string, string> || {}),
+  };
+  
+  // Attach stored token as Authorization header (works cross-origin without SameSite issues)
+  const storedToken = getStoredToken();
+  if (storedToken && !headers['Authorization']) {
+    headers['Authorization'] = `Bearer ${storedToken}`;
+  }
+  options.headers = headers;
 
   const response = await fetch(url, options);
   
@@ -177,19 +201,27 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
   // Apply Zod validation schemas to protect the UI components from undefined keys
   if (cleanEndpoint.includes('/api/v1/tmdb/')) {
     // 1. Movie Detail endpoint
-    if (cleanEndpoint.includes('/tmdb/movie/') && !cleanEndpoint.includes('/recommendations')) {
+    if (cleanEndpoint.includes('/tmdb/movie/') && !cleanEndpoint.includes('/recommendations') && !cleanEndpoint.includes('/streams')) {
       const result = ZodMovieDetailSchema.safeParse(rawData);
       if (result.success) return result.data;
       console.warn("Zod schema validation failed on Movie Detail, using defaults. Error: ", result.error);
-      return ZodMovieDetailSchema.parse({ id: parseInt(cleanEndpoint.split('/').pop() || '0') });
+      const pathSegments = cleanEndpoint.split('/').filter(Boolean);
+      const idIndex = pathSegments.findIndex(s => s === 'movie');
+      const idString = idIndex !== -1 ? pathSegments[idIndex + 1] : '0';
+      const parsedId = parseInt(idString, 10);
+      return ZodMovieDetailSchema.parse({ id: isNaN(parsedId) ? 0 : parsedId });
     }
     
     // 2. TV Detail endpoint
-    if (cleanEndpoint.includes('/tmdb/tv/') && !cleanEndpoint.includes('/recommendations')) {
+    if (cleanEndpoint.includes('/tmdb/tv/') && !cleanEndpoint.includes('/recommendations') && !cleanEndpoint.includes('/streams')) {
       const result = ZodTvDetailSchema.safeParse(rawData);
       if (result.success) return result.data;
       console.warn("Zod schema validation failed on TV Detail, using defaults. Error: ", result.error);
-      return ZodTvDetailSchema.parse({ id: parseInt(cleanEndpoint.split('/').pop() || '0') });
+      const pathSegments = cleanEndpoint.split('/').filter(Boolean);
+      const idIndex = pathSegments.findIndex(s => s === 'tv');
+      const idString = idIndex !== -1 ? pathSegments[idIndex + 1] : '0';
+      const parsedId = parseInt(idString, 10);
+      return ZodTvDetailSchema.parse({ id: isNaN(parsedId) ? 0 : parsedId });
     }
     
     // 3. Lists endpoints

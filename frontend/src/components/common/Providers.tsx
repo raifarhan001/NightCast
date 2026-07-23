@@ -19,12 +19,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     initialize();
     
-    // Register PWA Service Worker
+    // Unregister any active service workers to clear cache cycle
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch((err) => {
-          console.warn('PWA service worker registration failed: ', err);
-        });
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (let registration of registrations) {
+          registration.unregister();
+        }
       });
     }
   }, [initialize]);

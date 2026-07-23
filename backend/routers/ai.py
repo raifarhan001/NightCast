@@ -2,10 +2,12 @@ from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
 
-from ..database import get_db
-from .. import models, auth, schemas
-from ..services.ai_service import search_semantic_media, get_ai_recommendations
-from ..services.tmdb_service import tmdb_client
+from database import get_db
+import models
+import auth
+import schemas
+from services.ai_service import search_semantic_media, get_ai_recommendations
+from services.tmdb_service import tmdb_client
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 

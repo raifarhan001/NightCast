@@ -1,32 +1,99 @@
 "use client";
-import React, { useEffect, useState, useRef } from 'react';
+
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { apiFetch } from '../../../../lib/api';
-import { Play, Activity, Cpu, Database, Network, ChevronRight, X } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
+import { apiFetch } from '../../../../lib/api';
+import { ImageService } from '../../../../lib/ImageService';
+import { Play, Star } from 'lucide-react';
 import { useUserStore } from '../../../../store/userStore';
+import HLSPlayer from '../../../../components/player/HLSPlayer';
+import MovieRow from '../../../../components/shared/MovieRow';
+import { PlayerSkeleton } from '../../../../components/shared/Skeletons';
 
 export default function WatchPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { activeProfile } = useUserStore();
-
   const type = Array.isArray(params.type) ? params.type[0] : params.type;
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
 
-  const [currentSeason, setCurrentSeason] = useState(() => parseInt(searchParams.get('season') || '1', 10));
-  const [currentEpisode, setCurrentEpisode] = useState(() => parseInt(searchParams.get('episode') || '1', 10));
+  const [currentSeason, setCurrentSeason] = useState(1);
+  const [currentEpisode, setCurrentEpisode] = useState(1);
+  const [isIframeLoaded, setIsIframeLoaded] = useState(false);
 
   const [meta, setMeta] = useState<any>(null);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [servers, setServers] = useState<any[]>(() => {
+    const defaultServers: any[] = [
+      {
+        id: 'vidsrc-main',
+        name: 'VIDSRC (MAIN)',
+        url: type === 'tv'
+          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
+          : `https://vidsrc.me/embed/movie?tmdb=${id}`,
+        type: 'iframe'
+      },
+      {
+        id: 'vidlink-secondary',
+        name: 'VIDLINK',
+        url: type === 'tv'
+          ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}`
+          : `https://vidlink.pro/movie/${id}`,
+        type: 'iframe'
+      },
+      {
+        id: 'english-dub',
+        name: 'ENGLISH DUB',
+        url: type === 'tv'
+          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
+          : `https://vidsrc.me/embed/movie?tmdb=${id}`,
+        type: 'iframe'
+      },
+      {
+        id: 'hindi-dub',
+        name: 'HINDI DUB',
+        url: type === 'tv'
+          ? `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${currentSeason}&e=${currentEpisode}&ds_lang=hi`
+          : `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&ds_lang=hi`,
+        type: 'iframe'
+      }
+    ];
+    return defaultServers;
+  });
+  const [activeServerId, setActiveServerId] = useState('vidsrc-main');
   const [playerUrl, setPlayerUrl] = useState("");
-  const [showHud, setShowHud] = useState(false);
-  const [telemetry, setTelemetry] = useState({ ping: 0, lastEvent: 'None', eventsCount: 0 });
   const [seasonEpisodes, setSeasonEpisodes] = useState<any[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(false);
-  const [selectedServer, setSelectedServer] = useState('server1');
+  const [resumeTime, setResumeTime] = useState(0);
+  const [hlsFailedServers, setHlsFailedServers] = useState<string[]>([]);
 
-  const eventTimeRef = useRef<number>(Date.now());
+  useEffect(() => {
+    setHlsFailedServers([]);
+  }, [id, currentSeason, currentEpisode]);
+
+  const rawActiveServer = servers.find(s => s.id === activeServerId) || servers[0];
+  const isHlsFailed = rawActiveServer && hlsFailedServers.includes(rawActiveServer.id);
+
+  const activeServer = useMemo(() => {
+    if (!rawActiveServer) return null;
+    if (isHlsFailed) {
+      let fallbackUrl = rawActiveServer.url;
+      if (rawActiveServer.id === 'vidsrc-main') {
+        fallbackUrl = type === 'tv'
+          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
+          : `https://vidsrc.me/embed/movie?tmdb=${id}`;
+      }
+      return {
+        ...rawActiveServer,
+        type: 'iframe',
+        url: fallbackUrl
+      };
+    }
+    return rawActiveServer;
+  }, [rawActiveServer, isHlsFailed, type, id, currentSeason, currentEpisode]);
 
   useEffect(() => {
     const s = parseInt(searchParams.get('season') || '1', 10);
@@ -41,6 +108,9 @@ export default function WatchPage() {
         if (!id || !type) return;
         const data = await apiFetch(`/api/tmdb/${type}/${id}`);
         setMeta(data);
+
+        const recs = await apiFetch(`/api/tmdb/${type}/${id}/recommendations`);
+        setRecommendations(recs || []);
       } catch (err) {
         console.error("Meta fetch error", err);
       }
@@ -66,95 +136,114 @@ export default function WatchPage() {
   }, [id, type, currentSeason]);
 
   useEffect(() => {
+    const fetchServers = async () => {
+      try {
+        if (!id || !type) return;
+        const data = await apiFetch(
+          `/api/tmdb/${type}/${id}/streams?season=${currentSeason}&episode=${currentEpisode}`
+        );
+        if (data?.servers) {
+          const filteredServers = data.servers.filter((s: any) => s.id !== 'vidsrc-pro');
+          if (filteredServers.length > 0) {
+            setServers(filteredServers);
+          }
+        }
+      } catch (err) {
+        console.error("Streams fetch error", err);
+      }
+    };
+    fetchServers();
+  }, [id, type, currentSeason, currentEpisode]);
+
+  useEffect(() => {
+    if (!activeServer?.url) return;
+
+    let finalUrl = activeServer.url;
+
+    if (finalUrl.includes('vidlink.pro')) {
+      let startAtParam = "";
+      try {
+        const savedProgress = localStorage.getItem('vidLinkProgress');
+        if (savedProgress) {
+          const progressObj = JSON.parse(savedProgress);
+          const key = type === 'tv' ? `${id}_s${currentSeason}e${currentEpisode}` : id;
+          const entry = id ? progressObj[key as string] : null;
+          const watched = entry?.watched ?? entry?.progress?.watched ?? 0;
+          const seconds = Math.floor(watched);
+          if (seconds > 10) {
+            startAtParam = `&startAt=${seconds}`;
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+      finalUrl = `${finalUrl}?primaryColor=FFFFFF&secondaryColor=090A0F&iconColor=FFFFFF&icons=default&nextbutton=true${startAtParam}`;
+    }
+
+    setPlayerUrl(finalUrl);
+    setIsIframeLoaded(false);
+  }, [activeServer, id, type, currentSeason, currentEpisode]);
+
+  useEffect(() => {
     if (!id) return;
-    let startAtParam = "";
     try {
       const savedProgress = localStorage.getItem('vidLinkProgress');
       if (savedProgress) {
         const progressObj = JSON.parse(savedProgress);
-        const entry = progressObj[id];
+        const key = type === 'tv' ? `${id}_s${currentSeason}e${currentEpisode}` : id;
+        const entry = progressObj[key as string];
         const watched = entry?.watched ?? entry?.progress?.watched ?? 0;
         const seconds = Math.floor(watched);
-        if (seconds > 10) startAtParam = `&startAt=${seconds}`;
+        if (seconds > 10) {
+          setResumeTime(seconds);
+        } else {
+          setResumeTime(0);
+        }
+      } else {
+        setResumeTime(0);
       }
-    } catch (e) { console.error(e); }
-
-    let base: string;
-    if (selectedServer === 'server2') {
-      base = type === 'movie'
-        ? `https://vidsrc.pro/embed/movie/${id}`
-        : `https://vidsrc.pro/embed/tv/${id}/${currentSeason}/${currentEpisode}`;
-    } else if (selectedServer === 'server3') {
-      base = type === 'movie'
-        ? `https://vidsrc.me/embed/movie/${id}`
-        : `https://vidsrc.me/embed/tv/${id}/${currentSeason}/${currentEpisode}`;
-    } else {
-      base = type === 'movie'
-        ? `https://vidlink.pro/movie/${id}`
-        : `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}`;
+    } catch (e) {
+      console.error(e);
+      setResumeTime(0);
     }
+  }, [id, activeServerId, currentSeason, currentEpisode, type]);
 
-    const customParams = selectedServer === 'server1'
-      ? `?primaryColor=00D2FF&secondaryColor=020202&iconColor=00D2FF&icons=default&nextbutton=true${startAtParam}`
-      : '';
-    setPlayerUrl(`${base}${customParams}`);
-  }, [id, type, currentSeason, currentEpisode, selectedServer]);
+  const handlePlayerProgress = useCallback((currentTime: number, duration: number) => {
+    if (!id) return;
+    try {
+      const raw = localStorage.getItem('vidLinkProgress');
+      const map = raw ? JSON.parse(raw) : {};
+      const key = type === 'tv' ? `${id}_s${currentSeason}e${currentEpisode}` : id;
+      const progressData = {
+        watched: currentTime,
+        duration: duration,
+        progress: duration > 0 ? (currentTime / duration) * 100 : 0
+      };
+      map[key as string] = progressData;
+      localStorage.setItem('vidLinkProgress', JSON.stringify(map));
 
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== 'https://vidlink.pro') return;
-      const now = Date.now();
-      setTelemetry(prev => ({
-        ping: now - eventTimeRef.current,
-        lastEvent: event.data?.type || 'UNKNOWN',
-        eventsCount: prev.eventsCount + 1
-      }));
-      eventTimeRef.current = now;
-
-      if (event.data?.type === 'MEDIA_DATA') {
-        try {
-          const raw = localStorage.getItem('vidLinkProgress');
-          const map = raw ? JSON.parse(raw) : {};
-          map[id as string] = event.data.data;
-          localStorage.setItem('vidLinkProgress', JSON.stringify(map));
-
-          if (activeProfile && meta) {
-            apiFetch('/api/progress/update', {
-              method: 'POST',
-              headers: { 'X-Profile-ID': activeProfile.id },
-              body: JSON.stringify({
-                mediaType: type, id: id,
-                currentTime: event.data.data.watched || 0,
-                duration: event.data.data.duration || 0,
-                progress: event.data.data.progress || 0,
-                season: type === 'tv' ? currentSeason : undefined,
-                episode: type === 'tv' ? currentEpisode : undefined,
-                event: 'progress',
-                title: meta.title || meta.name || 'Movie',
-                posterPath: meta.poster_path
-              })
-            }).catch(console.error);
-          }
-        } catch (e) { console.error(e); }
+      if (activeProfile && meta) {
+        apiFetch('/api/progress/update', {
+          method: 'POST',
+          headers: { 'X-Profile-ID': activeProfile.id },
+          body: JSON.stringify({
+            mediaType: type,
+            id: id,
+            currentTime: currentTime,
+            duration: duration,
+            progress: duration > 0 ? (currentTime / duration) * 100 : 0,
+            season: type === 'tv' ? currentSeason : undefined,
+            episode: type === 'tv' ? currentEpisode : undefined,
+            event: 'progress',
+            title: meta.title || meta.name || 'Movie',
+            posterPath: meta.poster_path
+          })
+        }).catch(console.error);
       }
-    };
-
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [id, activeProfile, meta, currentSeason, currentEpisode, type]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'd') {
-        e.preventDefault();
-        setShowHud(prev => !prev);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-
+    } catch (e) {
+      console.error("Failed to save progress", e);
+    }
+  }, [id, activeProfile, meta, type, currentSeason, currentEpisode]);
 
   const handleEpisodeChange = (s: number, ep: number) => {
     setCurrentSeason(s);
@@ -171,113 +260,87 @@ export default function WatchPage() {
   const episodesCount = selectedSeasonData?.episode_count || 8;
 
   return (
-    <div className="min-h-screen bg-black pt-20 pb-20 px-6 md:px-10 relative">
-      {showHud && (
-        <div className="fixed top-20 right-6 z-50 w-80 bg-black/95 backdrop-blur-2xl border border-cyan/20 rounded-2xl p-5 shadow-glow-cyan animate-fade-in text-xs font-mono space-y-4">
-          <div className="flex items-center justify-between border-b border-glass-stroke pb-2">
-            <span className="text-cyan font-black tracking-wider flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5 animate-pulse-soft" />
-              <span>DIAGNOSTICS</span>
-            </span>
-            <button onClick={() => setShowHud(false)} className="text-nexus-dim hover:text-white transition-colors">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between"><span className="text-nexus-dim">TMDB ID:</span><span className="text-white font-bold">{id}</span></div>
-            <div className="flex justify-between"><span className="text-nexus-dim">MEDIA TYPE:</span><span className="text-white font-bold uppercase">{type}</span></div>
-            {type === 'tv' && <div className="flex justify-between"><span className="text-nexus-dim">COORDINATES:</span><span className="text-cyan font-bold">S{currentSeason} E{currentEpisode}</span></div>}
-            <div className="flex justify-between"><span className="text-nexus-dim">SOURCE:</span><span className={`font-bold ${selectedServer === 'server3' ? 'text-orange-400' : 'text-cyan'}`}>{selectedServer === 'server3' ? 'VidSrc (Hindi)' : selectedServer === 'server2' ? 'VidSrc Pro (Backup)' : 'VidLink (Primary)'}</span></div>
-            <div className="flex justify-between"><span className="text-nexus-dim">RTT:</span><span className="text-emerald-400 font-bold">{telemetry.ping}ms</span></div>
-            <div className="flex justify-between"><span className="text-nexus-dim">LAST EVENT:</span><span className="text-amber-400 font-bold">{telemetry.lastEvent}</span></div>
-            <div className="flex justify-between"><span className="text-nexus-dim">LIFECYCLE:</span><span className="text-white font-bold">{telemetry.eventsCount} events</span></div>
-          </div>
-          <div className="border-t border-glass-stroke pt-3 space-y-1.5 text-[10px]">
-            <p className="text-nexus-dim uppercase tracking-wider font-black text-[8px] mb-1">Endpoint URL</p>
-            <textarea readOnly value={playerUrl} className="w-full h-12 bg-white/[0.03] border border-glass-stroke rounded-lg p-1.5 text-zinc-300 resize-none focus:outline-none text-[9px]" />
-          </div>
-          <div className="border-t border-glass-stroke pt-3 grid grid-cols-3 gap-2 text-[9px] text-center">
-            <div className="p-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg"><Database className="w-3 h-3 mx-auto mb-0.5" />DB</div>
-            <div className="p-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg"><Cpu className="w-3 h-3 mx-auto mb-0.5" />CACHE</div>
-            <div className="p-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg"><Network className="w-3 h-3 mx-auto mb-0.5" />TMDB</div>
-          </div>
-        </div>
-      )}
-
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="relative aspect-video w-full rounded-none sm:rounded-xl overflow-hidden border border-glass-stroke bg-black shadow-2xl shadow-cyan/5">
-          {playerUrl ? (
-            <iframe src={playerUrl} className="absolute top-0 left-0 w-full h-full" allowFullScreen frameBorder="0" referrerPolicy="no-referrer" />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-nexus-dim text-sm">
-              <div className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full border-2 border-cyan border-t-transparent animate-spin" />
-                <span>Preparing Secure Stream...</span>
-              </div>
+    <div className="min-h-screen max-w-7xl mx-auto pt-20 pb-28 px-6 md:px-12 relative select-none bg-[#090A0F] text-white">
+      <div className="space-y-6">
+        {/* Full Player Container */}
+        <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-white/10 bg-[#000000] shadow-2xl">
+          {!isIframeLoaded && (
+            <div className="absolute inset-0 z-20">
+              <PlayerSkeleton />
             </div>
+          )}
+          {playerUrl ? (
+            activeServer?.type === 'hls' ? (
+              <HLSPlayer
+                src={playerUrl}
+                headers={activeServer.headers}
+                startAt={resumeTime}
+                onProgress={handlePlayerProgress}
+                poster={meta?.backdrop_path ? `https://image.tmdb.org/t/p/original${meta.backdrop_path}` : undefined}
+                onError={() => {
+                  if (activeServer?.id) {
+                    setHlsFailedServers(prev => [...prev, activeServer.id]);
+                  }
+                }}
+              />
+            ) : (
+              <iframe
+                src={playerUrl}
+                onLoad={() => setIsIframeLoaded(true)}
+                className={`absolute top-0 left-0 w-full h-full transition-opacity duration-500 ${
+                  isIframeLoaded ? 'opacity-100' : 'opacity-0'
+                }`}
+                allowFullScreen
+                frameBorder="0"
+                referrerPolicy="origin"
+                allow="autoplay; encrypted-media; picture-in-picture"
+              />
+            )
+          ) : (
+            <PlayerSkeleton />
           )}
         </div>
 
-        <div className="p-6 bg-white/[0.02] backdrop-blur-md rounded-3xl border border-glass-stroke flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        {/* Server Selector Bar */}
+        <div className="p-5 bg-[#12141F] border border-white/10 rounded-2xl flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <div>
-            <div className="flex items-center gap-2.5 text-[10px] uppercase tracking-[0.15em] text-cyan font-black mb-1.5">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inset-0 rounded-full bg-cyan animate-ping opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan" />
-              </span>
-              <span>Secure Stream</span>
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/60 mb-1">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span>NIGHTCAST STREAM ENGINE</span>
             </div>
-            <h1 className="text-xl md:text-2xl font-black tracking-tight text-white">
-              {movieTitle} <span className="text-nexus-dim font-medium ml-1">({releaseYear})</span>
+            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight font-display text-white">
+              {movieTitle} <span className="text-white/50 font-normal text-base">({releaseYear})</span>
             </h1>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <button onClick={() => setShowHud(prev => !prev)}
-                className="p-3.5 rounded-xl bg-white/[0.03] border border-glass-stroke hover:bg-white/[0.06] hover:text-cyan transition-all duration-300 animate-pulse-soft shrink-0"
-                title="Toggle Diagnostics">
-                <Activity className="w-4 h-4" />
-              </button>
-              
-              <div className="flex items-center gap-2 flex-grow sm:flex-grow-0">
-                <label className="text-[10px] uppercase font-bold tracking-widest text-zinc-500 hidden md:inline select-none shrink-0">
-                  Select Source:
-                </label>
-                <select
-                  value={selectedServer}
-                  onChange={(e) => setSelectedServer(e.target.value)}
-                  className="bg-[#08080a]/80 backdrop-blur-md border border-white/10 text-zinc-200 hover:text-white rounded-xl px-4 py-2.5 text-xs font-bold tracking-wider uppercase cursor-pointer outline-none transition-all duration-300 focus:border-[#00D2FF] focus:shadow-[0_0_15px_rgba(0,210,255,0.2)] w-full sm:w-auto"
+          <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-full bg-white/5 border border-white/10">
+            {servers.map((srv) => {
+              const isActive = srv.id === activeServerId;
+              return (
+                <button
+                  key={srv.id}
+                  onClick={() => setActiveServerId(srv.id)}
+                  className={isActive ? "gtv-tab-pill-active text-[10px]" : "gtv-tab-pill text-[10px]"}
                 >
-                  <option value="server1" className="bg-[#020202] text-zinc-300">🌐 Server 1 (Main)</option>
-                  <option value="server2" className="bg-[#020202] text-zinc-300">🌐 Server 2 (Backup)</option>
-                  <option value="server3" className="bg-[#020202] text-white font-semibold border-t border-white/10">🎙️ Server 3 (Hindi Dubbed)</option>
-                </select>
-              </div>
-            </div>
-
-            <button onClick={() => window.open(playerUrl, '_blank')}
-              className="py-2.5 px-4 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black tracking-widest text-zinc-400 hover:text-white hover:bg-white/10 transition-all duration-300 uppercase w-full sm:w-auto text-center shrink-0">
-              Open External
-            </button>
+                  {srv.name}
+                </button>
+              );
+            })}
           </div>
         </div>
 
+        {/* TV Season & Episode Selector */}
         {type === 'tv' && (
-          <section className="space-y-6 pt-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-glass-stroke pb-4">
+          <section className="space-y-5 pt-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-white/10 pb-4">
               <div>
-                <h3 className="text-xl font-bold tracking-tight text-white">Episodes</h3>
-                <p className="text-[10px] text-nexus-muted font-bold tracking-widest uppercase">Chapter Guide</p>
+                <h3 className="text-lg font-extrabold font-display">Episodes</h3>
+                <p className="text-[10px] text-white/50 font-medium uppercase">Select Chapter</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {seasons.map((s: any) => (
                   <button key={s.season_number} onClick={() => handleEpisodeChange(s.season_number, 1)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 border ${
-                      currentSeason === s.season_number
-                        ? 'bg-cyan-muted border-cyan/30 text-cyan shadow-glow-cyan-sm'
-                        : 'border-glass-stroke text-nexus-muted hover:text-white hover:bg-white/[0.03]'
-                    }`}
+                    className={currentSeason === s.season_number ? "gtv-tab-pill-active" : "gtv-tab-pill"}
                   >
                     {s.name || `Season ${s.season_number}`}
                   </button>
@@ -285,41 +348,32 @@ export default function WatchPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
               {episodesLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="p-4 rounded-2xl border border-glass-stroke bg-white/[0.02] animate-pulse">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-white/5" />
-                      <div className="min-w-0 flex-1 space-y-2">
-                        <div className="h-3 w-20 bg-white/5 rounded" />
-                        <div className="h-3 w-32 bg-white/[0.03] rounded" />
-                      </div>
-                    </div>
-                  </div>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="p-3.5 rounded-2xl border border-white/10 bg-white/5 animate-pulse h-16" />
                 ))
               ) : seasonEpisodes.length > 0 ? (
                 seasonEpisodes.map((ep: any) => {
                   const isActive = ep.episode_number === currentEpisode;
                   return (
                     <button key={ep.episode_number} onClick={() => handleEpisodeChange(currentSeason, ep.episode_number)}
-                      className={`group text-left p-4 rounded-2xl border transition-all duration-300 flex items-start gap-3 ${
+                      className={`group text-left p-3.5 rounded-2xl border transition-all duration-200 flex items-start gap-3 ${
                         isActive
-                          ? 'bg-cyan-muted border-cyan/30 text-white shadow-glow-cyan-sm'
-                          : 'border-glass-stroke text-nexus-muted hover:text-white hover:bg-white/[0.02] hover:border-white/10'
+                          ? 'bg-white text-black font-extrabold border-white shadow-lg'
+                          : 'border-white/10 bg-[#12141F] text-white/80 hover:text-white hover:border-white/20'
                       }`}
                     >
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300 ${
-                        isActive ? 'bg-cyan text-black' : 'bg-white/5 group-hover:bg-white/10 text-white'
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                        isActive ? 'bg-black text-white' : 'bg-white/10 group-hover:bg-white group-hover:text-black text-white'
                       }`}>
-                        <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                        <Play className="w-3 h-3 fill-current ml-0.5" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className={`text-[10px] font-black uppercase tracking-widest mb-0.5 ${isActive ? 'text-cyan' : 'text-nexus-dim'}`}>
-                          Episode {ep.episode_number}
+                        <p className={`text-[9px] font-bold uppercase ${isActive ? 'text-black' : 'text-white/50'}`}>
+                          EPISODE {ep.episode_number}
                         </p>
                         <h4 className="text-xs font-bold truncate">{ep.name || `Episode ${ep.episode_number}`}</h4>
-                        {ep.overview && <p className="text-[10px] text-nexus-dim mt-1 line-clamp-2">{ep.overview}</p>}
                       </div>
                     </button>
                   );
@@ -330,20 +384,20 @@ export default function WatchPage() {
                   const isActive = epNum === currentEpisode;
                   return (
                     <button key={epNum} onClick={() => handleEpisodeChange(currentSeason, epNum)}
-                      className={`group text-left p-4 rounded-2xl border transition-all duration-300 flex items-start gap-3 ${
+                      className={`group text-left p-3.5 rounded-2xl border transition-all duration-200 flex items-start gap-3 ${
                         isActive
-                          ? 'bg-cyan-muted border-cyan/30 text-white shadow-glow-cyan-sm'
-                          : 'border-glass-stroke text-nexus-muted hover:text-white hover:bg-white/[0.02] hover:border-white/10'
+                          ? 'bg-white text-black font-extrabold border-white shadow-lg'
+                          : 'border-white/10 bg-[#12141F] text-white/80 hover:text-white hover:border-white/20'
                       }`}
                     >
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300 ${
-                        isActive ? 'bg-cyan text-black' : 'bg-white/5 group-hover:bg-white/10 text-white'
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                        isActive ? 'bg-black text-white' : 'bg-white/10 group-hover:bg-white group-hover:text-black text-white'
                       }`}>
-                        <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                        <Play className="w-3 h-3 fill-current ml-0.5" />
                       </div>
                       <div className="min-w-0">
-                        <p className={`text-[10px] font-black uppercase tracking-widest mb-0.5 ${isActive ? 'text-cyan' : 'text-nexus-dim'}`}>
-                          Episode {epNum}
+                        <p className={`text-[9px] font-bold uppercase ${isActive ? 'text-black' : 'text-white/50'}`}>
+                          EPISODE {epNum}
                         </p>
                         <h4 className="text-xs font-bold truncate">Chapter {epNum}</h4>
                       </div>
@@ -353,6 +407,39 @@ export default function WatchPage() {
               )}
             </div>
           </section>
+        )}
+
+        {/* Real Cast Member Showcase */}
+        {meta?.cast && meta.cast.length > 0 && (
+          <section className="space-y-4 pt-6 border-t border-white/10">
+            <h3 className="font-display text-lg font-extrabold text-white">Cast Showcase</h3>
+            <div className="flex gap-5 overflow-x-auto no-scrollbar pb-2">
+              {meta.cast.map((c: any, idx: number) => {
+                const avatar = ImageService.getProfile(c.profile_path, c.name);
+                return (
+                  <div key={idx} className="flex flex-col items-center shrink-0 w-24 gap-2 text-center">
+                    <div className="relative w-14 h-14 rounded-full overflow-hidden border border-white/15">
+                      <Image src={avatar} alt={c.name} fill sizes="56px" className="object-cover" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold text-white truncate max-w-[85px]">{c.name}</p>
+                      <p className="text-[10px] text-white/50 truncate max-w-[85px]">{c.character}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Live TMDB Recommendations Row */}
+        {recommendations.length > 0 && (
+          <div className="pt-6 border-t border-white/10">
+            <MovieRow
+              title="More Like This"
+              items={recommendations.map(m => ({ ...m, media_type: type }))}
+            />
+          </div>
         )}
       </div>
     </div>

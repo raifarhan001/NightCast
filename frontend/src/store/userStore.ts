@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { apiFetch, Profile, Settings } from '../lib/api';
+import { apiFetch, Profile, Settings, setStoredToken } from '../lib/api';
 
 interface UserState {
   user: any | null;
@@ -109,6 +109,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     try {
       await apiFetch('/api/auth/logout', { method: 'POST' });
     } catch (_) {}
+    setStoredToken(null);
     get().setActiveProfile(null);
     set({ user: null, profiles: [], settings: null });
   }

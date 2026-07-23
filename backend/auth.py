@@ -7,9 +7,9 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from uuid import UUID
 
-from .config import settings
-from .database import get_db
-from . import models
+from config import settings
+from database import get_db
+import models
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)

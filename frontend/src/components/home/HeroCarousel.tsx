@@ -1,11 +1,12 @@
 "use client";
-import React, { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Info, Star } from 'lucide-react';
-import { MediaItem } from '../../lib/api';
-import { ImageService } from '../../lib/ImageService';
+
+import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { Play } from "lucide-react";
+import { MediaItem } from "../../lib/api";
+import { ImageService } from "../../lib/ImageService";
 
 interface HeroCarouselProps {
   items: MediaItem[];
@@ -15,129 +16,134 @@ export default function HeroCarousel({ items }: HeroCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [items]);
+
   const nextSlide = useCallback(() => {
+    if (!items || items.length === 0) return;
     setCurrentIndex((prev) => (prev + 1) % items.length);
-  }, [items.length]);
+  }, [items]);
 
   useEffect(() => {
-    if (isPaused || items.length <= 1) return;
-    const interval = setInterval(nextSlide, 6000);
+    if (isPaused || !items || items.length <= 1) return;
+    const interval = setInterval(nextSlide, 7000);
     return () => clearInterval(interval);
-  }, [isPaused, items.length, nextSlide]);
+  }, [isPaused, items, nextSlide]);
 
   if (!items || items.length === 0) return null;
 
-  const item = items[currentIndex];
-  const title = item.title || item.name || 'Untitled';
-  const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
-  const matchPercent = item.vote_average ? Math.round(item.vote_average * 10) : 0;
-  const releaseYear = (item.release_date || item.first_air_date || '').split('-')[0] || 'N/A';
-  const type = item.media_type || 'movie';
-  const backdropUrl = ImageService.getBackdrop(item.backdrop_path, 'w1280', title);
+  const item = items[currentIndex] || items[0];
+  const title = item.title || item.name || "OPPENHEIMER";
+  const releaseYear = (item.release_date || item.first_air_date || "").split("-")[0] || "2023";
+  const type = item.media_type || (item.first_air_date ? "tv" : "movie");
+  const backdropUrl = ImageService.getBackdrop(item.backdrop_path, "original", title);
+
+  const calloutText = type === "movie" ? "FEATURED CINEMA RELEASE" : "EXCLUSIVE NIGHTCAST SHOW";
+  const genreSubmeta = `${type === "tv" ? "TV Series" : "Movie"} • ${releaseYear} • 4K Ultra HD`;
 
   return (
     <div
-      className="relative w-full h-[80vh] md:h-[90vh] flex items-end overflow-hidden bg-black border-b border-glass-stroke"
+      className="relative w-full h-[85vh] overflow-hidden bg-transparent select-none"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
+      {/* Dynamic Ambient Backlight Glow Effect (Blurred, Scaled Underlay) */}
       <AnimatePresence mode="wait">
         <motion.div
-          key={currentIndex}
-          initial={{ opacity: 0, scale: 1.05 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute inset-0 z-0 select-none"
+          key={`ambient-${currentIndex}-${item.id}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.65 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1.2 }}
+          className="absolute inset-0 pointer-events-none z-0 overflow-hidden"
+        >
+          <Image
+            src={backdropUrl}
+            alt="ambient-blur"
+            fill
+            className="object-cover scale-150 filter blur-[100px] brightness-125 saturate-200"
+            priority
+          />
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Main Full-Screen Backdrop Artwork */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`backdrop-${currentIndex}-${item.id}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.8 }}
+          className="absolute inset-0 z-10"
         >
           <Image
             src={backdropUrl}
             alt={title}
             fill
+            className="object-cover object-top opacity-90"
             priority
             placeholder="blur"
             blurDataURL={ImageService.getBlurHash()}
-            sizes="100vw"
-            className="object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-hero z-10" />
-          <div className="absolute inset-0 bg-gradient-radial-cyan z-10" />
-          <div className="absolute inset-0 bg-gradient-fade-right z-10" />
+
+          {/* Top Navbar Seamless Gradient Fade */}
+          <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-[#050508] via-[#050508]/60 to-transparent z-15 pointer-events-none" />
+
+          {/* Fiery & Dark Bottom & Side Gradients */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/70 to-transparent z-15" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#050508] via-[#050508]/80 to-transparent z-15" />
         </motion.div>
       </AnimatePresence>
 
-      <div className="relative z-20 max-w-7xl mx-auto px-6 md:px-10 pb-20 md:pb-28 w-full">
-        <motion.div
-          key={currentIndex}
-          initial={{ y: 40, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-          className="max-w-2xl space-y-5"
-        >
-          <div className="flex items-center gap-3 text-[11px] tracking-[0.15em] font-semibold uppercase">
-            <span className="px-3 py-1 rounded-full bg-cyan-muted border border-cyan/20 text-cyan text-[10px]">
-              {type === 'movie' ? 'Film' : 'Series'}
-            </span>
-            <span className="text-white/20">|</span>
-            <div className="flex items-center gap-1.5 text-emerald-400">
-              <span className="text-sm font-bold">{matchPercent}%</span>
-              <span className="text-[9px] tracking-wider">Match</span>
-            </div>
-            <span className="text-white/20">|</span>
-            <div className="flex items-center gap-1">
-              <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" />
-              <span className="text-white font-semibold">{rating}</span>
-            </div>
-            <span className="text-white/20">|</span>
-            <span className="text-zinc-500">{releaseYear}</span>
-          </div>
+      {/* Hero Content Suite */}
+      <div className="absolute bottom-20 left-6 md:left-12 z-20 max-w-2xl space-y-3.5 pointer-events-none">
+        <div className="space-y-3 pointer-events-auto">
+          {/* Director / Category Callout Tagline */}
+          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-400 drop-shadow-md">
+            {calloutText}
+          </p>
 
-          <h1 className="font-display text-5xl sm:text-6xl md:text-8xl font-black tracking-tight text-white leading-[0.95] text-glow">
+          {/* Massive Bold Title */}
+          <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-[0.95] font-display uppercase drop-shadow-2xl">
             {title}
           </h1>
 
-          {item.overview && (
-            <p className="text-sm md:text-base text-zinc-400 font-light leading-relaxed line-clamp-3 max-w-xl">
-              {item.overview}
-            </p>
-          )}
+          {/* Sub-meta Line */}
+          <p className="text-xs font-semibold text-white/70 tracking-wide font-mono">
+            {genreSubmeta}
+          </p>
 
-          <div className="flex flex-wrap gap-4 pt-3">
+          {/* Synopsis Overview */}
+          <p className="text-xs sm:text-sm text-white/85 font-normal line-clamp-3 leading-relaxed max-w-xl drop-shadow-md">
+            {item.overview || "Stream high-definition cinema and exclusive television series directly on Nightcast."}
+          </p>
+
+          {/* High-Contrast Watch Now Pill Button */}
+          <div className="pt-2">
             <Link
               href={`/watch/${type}/${item.id}`}
-              className="group relative flex items-center gap-3 px-8 py-4 rounded-full bg-white text-black font-bold text-sm tracking-wide transition-all duration-300 hover:shadow-glow-cyan-lg active:scale-[0.97] overflow-hidden"
+              className="gtv-btn-primary"
             >
-              <span className="absolute inset-0 bg-gradient-to-r from-cyan to-cyan-dark opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <Play className="relative w-4 h-4 fill-black group-hover:fill-white transition-colors duration-300" />
-              <span className="relative">Watch Now</span>
-            </Link>
-
-            <Link
-              href={`/${type}/${item.id}`}
-              className="group flex items-center gap-2.5 px-7 py-4 rounded-full border border-glass-stroke bg-white/[0.03] hover:bg-white/[0.06] backdrop-blur-md text-white font-semibold text-sm tracking-wide transition-all duration-300 active:scale-[0.97] hover:border-cyan/30 hover:shadow-glow-cyan-sm"
-            >
-              <Info className="w-4 h-4 text-cyan group-hover:text-cyan transition-colors" />
-              <span>Details</span>
+              <Play className="w-4 h-4 fill-current ml-0.5" />
+              <span>Watch Now</span>
             </Link>
           </div>
-        </motion.div>
+        </div>
       </div>
 
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3">
-        {items.slice(0, 6).map((_, idx) => (
+      {/* Hero Carousel Indicator Dots */}
+      <div className="absolute bottom-12 right-6 md:right-12 z-20 flex items-center gap-2 pointer-events-auto">
+        {items.slice(0, 7).map((_, idx) => (
           <button
             key={idx}
             onClick={() => setCurrentIndex(idx)}
-            className="group relative"
-          >
-            <div
-              className={`rounded-full transition-all duration-500 ${
-                idx === currentIndex
-                  ? 'w-10 h-1.5 bg-cyan shadow-glow-cyan-sm'
-                  : 'w-1.5 h-1.5 bg-zinc-600 group-hover:bg-zinc-400'
-              }`}
-            />
-          </button>
+            className={`h-2.5 rounded-full transition-all duration-300 ${
+              idx === currentIndex ? "w-7 bg-white shadow-lg shadow-white/30" : "w-2.5 bg-white/40 hover:bg-white/70"
+            }`}
+            aria-label={`Slide ${idx + 1}`}
+          />
         ))}
       </div>
     </div>
