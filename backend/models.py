@@ -1,9 +1,26 @@
 import uuid
 from sqlalchemy import Column, String, Boolean, DateTime, Float, Integer, ForeignKey, Text, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from pgvector.sqlalchemy import Vector
+
+try:
+    from sqlalchemy.dialects.postgresql import UUID
+except (ImportError, ModuleNotFoundError):
+    class UUID:
+        def __init__(self, *args, **kwargs):
+            pass
+        def _compiler_dispatch(self, *args, **kwargs):
+            return "VARCHAR(36)"
+
+try:
+    from pgvector.sqlalchemy import Vector
+except (ImportError, ModuleNotFoundError):
+    class Vector:
+        def __init__(self, *args, **kwargs):
+            pass
+        def _compiler_dispatch(self, *args, **kwargs):
+            return "TEXT"
+
 from database import Base
 
 class User(Base):

@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy import text
 
-# Add the directory containing main.py to sys.path so absolute imports work regardless of working directory
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from database import init_db, SessionLocal, is_sqlite
@@ -186,6 +186,10 @@ app.include_router(f1.router, prefix="/api/v1")
 @app.get("/api/f1/2026-data")
 async def get_f1_2026_direct():
     return await f1.get_2026_f1_data()
+
+@app.get("/api/health")
+def api_health_simple():
+    return {"status": "ok"}
 
 @app.get("/api/v1/health")
 def health_check():
