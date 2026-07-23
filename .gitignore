@@ -12,10 +12,11 @@ pids
 
 # Dependency directories
 node_modules/
-jspm_packages/
+**/node_modules/
 
 # Next.js build output
 .next/
+**/.next/
 out/
 
 # Python Virtual Environment
