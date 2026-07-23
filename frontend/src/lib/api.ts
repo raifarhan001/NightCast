@@ -234,7 +234,10 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
       cleanEndpoint.includes('/top_rated') ||
       cleanEndpoint.includes('/search') ||
       cleanEndpoint.includes('/recommendations') ||
-      cleanEndpoint.includes('/discover')
+      cleanEndpoint.includes('/discover') ||
+      Array.isArray(rawData) ||
+      Array.isArray(rawData?.results) ||
+      Array.isArray(rawData?.data)
     ) {
       const listData = Array.isArray(rawData)
         ? rawData
@@ -245,16 +248,16 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
 
       if (Array.isArray(listData) && listData.length > 0) {
         return listData.map((item: any) => ({
-          id: item.id || Math.floor(Math.random() * 100000),
-          media_type: item.media_type === 'tv' ? 'tv' : 'movie',
-          title: item.title || item.name || 'Untitled',
-          name: item.name || item.title || 'Untitled',
-          overview: item.overview || '',
-          backdrop_path: item.backdrop_path || null,
-          poster_path: item.poster_path || null,
-          vote_average: item.vote_average || 0,
-          release_date: item.release_date || item.first_air_date || '',
-          first_air_date: item.first_air_date || item.release_date || '',
+          id: item?.id || Math.floor(Math.random() * 100000),
+          media_type: item?.media_type === 'tv' ? 'tv' : 'movie',
+          title: item?.title || item?.name || 'Untitled',
+          name: item?.name || item?.title || 'Untitled',
+          overview: item?.overview || '',
+          backdrop_path: item?.backdrop_path || null,
+          poster_path: item?.poster_path || null,
+          vote_average: item?.vote_average || 0,
+          release_date: item?.release_date || item?.first_air_date || '',
+          first_air_date: item?.first_air_date || item?.release_date || '',
         }));
       }
       return [];

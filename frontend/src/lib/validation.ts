@@ -73,13 +73,13 @@ export const ZodTvDetailSchema = z.object({
 // --- Generic Media List Item (Rows & Search cards) ---
 export const ZodMediaItemSchema = z.object({
   id: z.coerce.number(),
-  media_type: z.enum(['movie', 'tv']).default('movie'),
+  media_type: z.string().optional().transform((val) => (val === 'tv' ? 'tv' : 'movie')),
   title: z.string().optional(),
   name: z.string().optional(),
-  overview: z.string().default(''),
-  backdrop_path: z.string().nullable().default(null),
-  poster_path: z.string().nullable().default(null),
-  vote_average: z.coerce.number().default(0),
+  overview: z.string().nullable().optional().transform((val) => val || ''),
+  backdrop_path: z.string().nullable().optional().default(null),
+  poster_path: z.string().nullable().optional().default(null),
+  vote_average: z.coerce.number().nullable().optional().transform((val) => val ?? 0),
   release_date: z.string().optional(),
   first_air_date: z.string().optional(),
   score: z.coerce.number().optional()
