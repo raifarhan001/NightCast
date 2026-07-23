@@ -467,7 +467,7 @@ function F1HubContent() {
     async function fetchAllF1Data() {
       setIsLoadingApi(true);
       try {
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || "";
         const res = await fetch(`${backendUrl}/api/f1/2026-data`);
         if (res.ok) {
           const data = await res.json();

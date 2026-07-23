@@ -3,8 +3,8 @@ const IS_SERVER = typeof window === 'undefined';
 
 // On SSR, query the container service directly; otherwise query localhost
 export const API_BASE_URL = IS_SERVER
-  ? (process.env.NEXT_PUBLIC_SERVER_API_URL || 'http://backend:8080')
-  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080');
+  ? (process.env.NEXT_PUBLIC_SERVER_API_URL || process.env.NEXT_PUBLIC_API_URL || '')
+  : (process.env.NEXT_PUBLIC_API_URL || '');
 
 export interface MediaItem {
   id: string | number;
