@@ -4,9 +4,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: path.join(__dirname, "./"),
-  compiler: {
-    removeConsole: process.env.NODE_ENV === "production",
-  },
+  compiler: {},
   experimental: {
     optimizePackageImports: ["lucide-react"],
   },

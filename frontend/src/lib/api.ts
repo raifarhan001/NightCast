@@ -6,6 +6,10 @@ export const API_BASE_URL = IS_SERVER
   ? (process.env.NEXT_PUBLIC_SERVER_API_URL || process.env.NEXT_PUBLIC_API_URL || '')
   : (process.env.NEXT_PUBLIC_API_URL || '');
 
+if (typeof window !== 'undefined') {
+  console.log("Current API Base URL:", process.env.NEXT_PUBLIC_API_URL || "RELATIVE PATH");
+}
+
 export interface MediaItem {
   id: string | number;
   media_type: 'movie' | 'tv';
