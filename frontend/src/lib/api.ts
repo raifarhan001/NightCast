@@ -236,10 +236,28 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
       cleanEndpoint.includes('/recommendations') ||
       cleanEndpoint.includes('/discover')
     ) {
-      const result = ZodMediaListSchema.safeParse(rawData);
+      const listData = Array.isArray(rawData)
+        ? rawData
+        : (Array.isArray(rawData?.results) ? rawData.results : (Array.isArray(rawData?.data) ? rawData.data : []));
+
+      const result = ZodMediaListSchema.safeParse(listData);
       if (result.success) return result.data;
-      console.warn("Zod schema validation failed on media list, falling back to raw data. Error: ", result.error);
-      return Array.isArray(rawData) ? rawData : [];
+
+      if (Array.isArray(listData) && listData.length > 0) {
+        return listData.map((item: any) => ({
+          id: item.id || Math.floor(Math.random() * 100000),
+          media_type: item.media_type === 'tv' ? 'tv' : 'movie',
+          title: item.title || item.name || 'Untitled',
+          name: item.name || item.title || 'Untitled',
+          overview: item.overview || '',
+          backdrop_path: item.backdrop_path || null,
+          poster_path: item.poster_path || null,
+          vote_average: item.vote_average || 0,
+          release_date: item.release_date || item.first_air_date || '',
+          first_air_date: item.first_air_date || item.release_date || '',
+        }));
+      }
+      return [];
     }
   }
   
