@@ -1006,7 +1006,7 @@ function F1HubContent() {
             {/* Modal Action CTA */}
             <div className="flex gap-3 pt-2">
               <button
-                onClick={() => handleSelectRaceForPlayer(selectedModalRace)}
+                onClick={() => handleSelectRaceCard(selectedModalRace)}
                 className="flex-1 py-3 rounded-2xl bg-[#EE1240] text-[#FFCC00] font-extrabold text-xs uppercase tracking-wider hover:bg-[#EE1240]/90 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-[#EE1240]/40 border border-[#FFCC00]/40"
               >
                 <Play className="w-4 h-4 fill-current" />
