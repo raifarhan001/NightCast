@@ -438,11 +438,12 @@ export default function WatchPage() {
                     setStreamErrorMsg("Failed to load iframe stream.");
                   }
                 }}
-                className={`absolute top-0 left-0 w-full h-full transition-opacity duration-500 ${
+                className={`absolute top-0 left-0 w-full h-full border-0 transition-opacity duration-500 ${
                   isIframeLoaded && !streamErrorMsg ? 'opacity-100' : 'opacity-0'
                 }`}
                 allowFullScreen
-                frameBorder="0"
+                scrolling="no"
+                title="NightCast Media Player"
                 referrerPolicy="origin"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               />
