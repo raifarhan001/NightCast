@@ -293,28 +293,30 @@ export default function WatchPage() {
         setDownloadOptions(res.downloads);
       } else {
         const fallbackUrl = type === 'tv'
-          ? `https://vidsrc.xyz/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
-          : `https://vidsrc.xyz/embed/movie?tmdb=${id}`;
+          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
+          : `https://vidsrc.me/embed/movie?tmdb=${id}`;
         setDownloadOptions([{
-          label: "Primary Video Stream Link (1080p)",
+          label: "Primary Streaming Source",
           url: fallbackUrl,
           quality: "1080p",
-          format: "mp4",
+          format: "stream",
           type: "stream_fallback"
         }]);
+        setDownloadProgress("Direct download unavailable for this source, please use streaming or try another server.");
       }
     } catch (e) {
       console.error("Failed to fetch download links", e);
       const fallbackUrl = type === 'tv'
-        ? `https://vidsrc.xyz/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
-        : `https://vidsrc.xyz/embed/movie?tmdb=${id}`;
+        ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
+        : `https://vidsrc.me/embed/movie?tmdb=${id}`;
       setDownloadOptions([{
-        label: "Primary Video Stream Link (1080p)",
+        label: "Primary Streaming Source",
         url: fallbackUrl,
         quality: "1080p",
-        format: "mp4",
+        format: "stream",
         type: "stream_fallback"
       }]);
+      setDownloadProgress("Direct download unavailable for this source, please use streaming or try another server.");
     }
   };
 

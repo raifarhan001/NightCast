@@ -50,37 +50,37 @@ class StreamExtractor:
             logger.info(f"Cache hit for {cache_key}")
             return cached
 
-        # 1. VIDSRC (MAIN - XYZ)
+        # 1. VIDSRC (MAIN - ME)
         if media_type == "movie":
-            vidsrc_xyz_url = f"https://vidsrc.xyz/embed/movie?tmdb={tmdb_id}"
             vidsrc_me_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
+            vidlink_url = f"https://vidlink.pro/movie/{tmdb_id}"
         else:
-            vidsrc_xyz_url = f"https://vidsrc.xyz/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
             vidsrc_me_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+            vidlink_url = f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}"
             
         server1 = {
             "id": "vidsrc-main",
             "name": "VIDSRC (MAIN)",
-            "url": vidsrc_xyz_url,
+            "url": vidsrc_me_url,
             "type": "iframe",
             "language": "en",
             "language_name": "English / Multi"
         }
 
-        # 2. HINDI DUB (PRIMARY & FALLBACKS)
+        # 2. HINDI DUB (PRIMARY & ALT MIRRORS)
         if media_type == "movie":
-            hi_xyz_url = f"https://vidsrc.xyz/embed/movie?tmdb={tmdb_id}&ds_lang=hi"
             me_hi_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&ds_lang=hi"
-            hi_proxy_url = f"/api/v1/tmdb/proxy-embed?url={encode_param(hi_xyz_url)}"
+            vidsrc_hi_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}&ds_lang=hi"
+            hi_proxy_url = f"/api/v1/tmdb/proxy-embed?url={encode_param(me_hi_url)}"
         else:
-            hi_xyz_url = f"https://vidsrc.xyz/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}&ds_lang=hi"
             me_hi_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}&ds_lang=hi"
-            hi_proxy_url = f"/api/v1/tmdb/proxy-embed?url={encode_param(hi_xyz_url)}"
+            vidsrc_hi_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}&ds_lang=hi"
+            hi_proxy_url = f"/api/v1/tmdb/proxy-embed?url={encode_param(me_hi_url)}"
 
         server2 = {
             "id": "hindi-dub-primary",
             "name": "HINDI DUB (MAIN)",
-            "url": hi_xyz_url,
+            "url": me_hi_url,
             "type": "iframe",
             "language": "hi",
             "language_name": "Hindi Dubbed",
@@ -90,18 +90,18 @@ class StreamExtractor:
         server2_fallback = {
             "id": "hindi-dub-secondary",
             "name": "HINDI DUB (ALT)",
-            "url": me_hi_url,
+            "url": vidsrc_hi_url,
             "type": "iframe",
             "language": "hi",
             "language_name": "Hindi Dubbed",
             "is_dub": True
         }
 
-        # 3. VIDSRC ME SECONDARY
+        # 3. VIDLINK SECONDARY
         server3 = {
-            "id": "vidsrc-me",
-            "name": "VIDSRC (MIRROR)",
-            "url": vidsrc_me_url,
+            "id": "vidlink-secondary",
+            "name": "VIDLINK",
+            "url": vidlink_url,
             "type": "iframe",
             "language": "en",
             "language_name": "English / Original"
@@ -201,30 +201,30 @@ class StreamExtractor:
         # Instant fallbacks guaranteed so modal NEVER hangs
         if media_type == "movie":
             download_options.append({
-                "label": "VIDSRC Direct Stream (1080p)",
-                "url": f"https://vidsrc.xyz/embed/movie?tmdb={tmdb_id}",
+                "label": "VIDSRC Primary Stream (1080p)",
+                "url": f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}",
                 "quality": "1080p",
                 "format": "mp4",
                 "type": "stream_fallback"
             })
             download_options.append({
-                "label": "Hindi Dubbed Direct Stream (720p)",
-                "url": f"https://vidsrc.xyz/embed/movie?tmdb={tmdb_id}&ds_lang=hi",
+                "label": "Hindi Dubbed Primary Stream (720p)",
+                "url": f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&ds_lang=hi",
                 "quality": "720p",
                 "format": "mp4",
                 "type": "stream_fallback"
             })
         else:
             download_options.append({
-                "label": f"VIDSRC Direct Stream S{season}E{episode} (1080p)",
-                "url": f"https://vidsrc.xyz/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
+                "label": f"VIDSRC Primary Stream S{season}E{episode} (1080p)",
+                "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
                 "quality": "1080p",
                 "format": "mp4",
                 "type": "stream_fallback"
             })
             download_options.append({
-                "label": f"Hindi Dubbed Direct Stream S{season}E{episode} (720p)",
-                "url": f"https://vidsrc.xyz/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}&ds_lang=hi",
+                "label": f"Hindi Dubbed Primary Stream S{season}E{episode} (720p)",
+                "url": f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}&ds_lang=hi",
                 "quality": "720p",
                 "format": "mp4",
                 "type": "stream_fallback"

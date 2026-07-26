@@ -175,9 +175,9 @@ async def get_download_streams(
         )
     except asyncio.TimeoutError:
         if media_type == "movie":
-            fallback_url = f"https://vidsrc.xyz/embed/movie?tmdb={tmdb_id}"
+            fallback_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
         else:
-            fallback_url = f"https://vidsrc.xyz/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+            fallback_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
             
         return {
             "status": "fallback",
