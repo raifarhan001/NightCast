@@ -50,36 +50,29 @@ class StreamExtractor:
             logger.info(f"Cache hit for {cache_key}")
             return cached
 
-        # 1. VIDSRC (MAIN - ME)
+        # 1. VIDSRC MAIN (ENGLISH / ORIGINAL)
         if media_type == "movie":
-            vidsrc_me_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
-            vidlink_url = f"https://vidlink.pro/movie/{tmdb_id}"
+            vidsrc_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
+            me_hi_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&ds_lang=hi"
+            embed2_url = f"https://www.2embed.cc/embed/{tmdb_id}"
         else:
-            vidsrc_me_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
-            vidlink_url = f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}"
+            vidsrc_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+            me_hi_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}&ds_lang=hi"
+            embed2_url = f"https://www.2embed.cc/embedtv/{tmdb_id}&s={season}&e={episode}"
             
         server1 = {
             "id": "vidsrc-main",
-            "name": "VIDSRC (MAIN)",
-            "url": vidsrc_me_url,
+            "name": "VidSrc Main",
+            "url": vidsrc_url,
             "type": "iframe",
             "language": "en",
-            "language_name": "English / Multi"
+            "language_name": "English / Original"
         }
 
-        # 2. HINDI DUB (PRIMARY & ALT MIRRORS)
-        if media_type == "movie":
-            me_hi_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&ds_lang=hi"
-            vidsrc_hi_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}&ds_lang=hi"
-            hi_proxy_url = f"/api/v1/tmdb/proxy-embed?url={encode_param(me_hi_url)}"
-        else:
-            me_hi_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}&ds_lang=hi"
-            vidsrc_hi_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}&ds_lang=hi"
-            hi_proxy_url = f"/api/v1/tmdb/proxy-embed?url={encode_param(me_hi_url)}"
-
+        # 2. HINDI DUBBED
         server2 = {
-            "id": "hindi-dub-primary",
-            "name": "HINDI DUB (MAIN)",
+            "id": "hindi-dubbed",
+            "name": "Hindi Dubbed",
             "url": me_hi_url,
             "type": "iframe",
             "language": "hi",
@@ -87,80 +80,21 @@ class StreamExtractor:
             "is_dub": True
         }
 
-        server2_fallback = {
-            "id": "hindi-dub-secondary",
-            "name": "HINDI DUB (ALT)",
-            "url": vidsrc_hi_url,
-            "type": "iframe",
-            "language": "hi",
-            "language_name": "Hindi Dubbed",
-            "is_dub": True
-        }
-
-        # 3. VIDLINK SECONDARY
+        # 3. 2EMBED ALT (ENGLISH ALTERNATE)
         server3 = {
-            "id": "vidlink-secondary",
-            "name": "VIDLINK",
-            "url": vidlink_url,
-            "type": "iframe",
-            "language": "en",
-            "language_name": "English / Original"
-        }
-
-        # 4. TAMIL DUB / REGIONAL
-        if media_type == "movie":
-            ta_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&ds_lang=ta"
-        else:
-            ta_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}&ds_lang=ta"
-
-        server4 = {
-            "id": "tamil-dub",
-            "name": "TAMIL DUB",
-            "url": ta_url,
-            "type": "iframe",
-            "language": "ta",
-            "language_name": "Tamil Dubbed",
-            "is_dub": True
-        }
-
-        # 5. TELUGU DUB / REGIONAL
-        if media_type == "movie":
-            te_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&ds_lang=te"
-        else:
-            te_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}&ds_lang=te"
-
-        server5 = {
-            "id": "telugu-dub",
-            "name": "TELUGU DUB",
-            "url": te_url,
-            "type": "iframe",
-            "language": "te",
-            "language_name": "Telugu Dubbed",
-            "is_dub": True
-        }
-
-        # 6. 2EMBED / AUTOEMBED
-        if media_type == "movie":
-            embed2_url = f"https://www.2embed.cc/embed/{tmdb_id}"
-        else:
-            embed2_url = f"https://www.2embed.cc/embedtv/{tmdb_id}&s={season}&e={episode}"
-
-        server6 = {
-            "id": "2embed-server",
-            "name": "2EMBED",
+            "id": "2embed-alt",
+            "name": "2Embed Alt",
             "url": embed2_url,
             "type": "iframe",
             "language": "en",
-            "language_name": "English / Subbed"
+            "language_name": "English Alternate"
         }
 
-        all_servers = [server1, server2, server2_fallback, server3, server4, server5, server6]
+        all_servers = [server1, server2, server3]
 
         # Prioritize based on language_pref if provided
         if language_pref == "hi":
             all_servers.sort(key=lambda s: 0 if s.get("language") == "hi" else 1)
-        elif language_pref in ["ta", "te", "regional"]:
-            all_servers.sort(key=lambda s: 0 if s.get("is_dub") and s.get("language") != "en" else 1)
 
         result = {"servers": all_servers}
 

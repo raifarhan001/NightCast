@@ -33,7 +33,7 @@ export default function WatchPage() {
     const defaultServers: any[] = [
       {
         id: 'vidsrc-main',
-        name: 'VIDSRC (MAIN)',
+        name: 'VidSrc Main',
         url: type === 'tv'
           ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
           : `https://vidsrc.me/embed/movie?tmdb=${id}`,
@@ -41,8 +41,8 @@ export default function WatchPage() {
         language: 'en'
       },
       {
-        id: 'hindi-dub',
-        name: 'HINDI DUB',
+        id: 'hindi-dubbed',
+        name: 'Hindi Dubbed',
         url: type === 'tv'
           ? `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${currentSeason}&e=${currentEpisode}&ds_lang=hi`
           : `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&ds_lang=hi`,
@@ -51,30 +51,11 @@ export default function WatchPage() {
         is_dub: true
       },
       {
-        id: 'vidlink-secondary',
-        name: 'VIDLINK',
+        id: '2embed-alt',
+        name: '2Embed Alt',
         url: type === 'tv'
-          ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}`
-          : `https://vidlink.pro/movie/${id}`,
-        type: 'iframe',
-        language: 'en'
-      },
-      {
-        id: 'tamil-dub',
-        name: 'TAMIL DUB',
-        url: type === 'tv'
-          ? `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${currentSeason}&e=${currentEpisode}&ds_lang=ta`
-          : `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&ds_lang=ta`,
-        type: 'iframe',
-        language: 'ta',
-        is_dub: true
-      },
-      {
-        id: 'english-dub',
-        name: 'ENGLISH DUB',
-        url: type === 'tv'
-          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
-          : `https://vidsrc.me/embed/movie?tmdb=${id}`,
+          ? `https://www.2embed.cc/embedtv/${id}&s=${currentSeason}&e=${currentEpisode}`
+          : `https://www.2embed.cc/embed/${id}`,
         type: 'iframe',
         language: 'en'
       }
@@ -215,17 +196,13 @@ export default function WatchPage() {
     setIsIframeLoaded(false);
     setStreamErrorMsg(null);
 
-    // Timeout check for iframe sources
+    // Strict 5-second timeout check for iframe sources
     if (activeServer.type !== 'hls') {
       const timer = setTimeout(() => {
         if (!isIframeLoaded) {
-          if (activeServer.language === 'hi') {
-            setStreamErrorMsg("Hindi stream unavailable on this server, please try another server.");
-          } else {
-            setStreamErrorMsg("Stream load timeout. Please try another server.");
-          }
+          setStreamErrorMsg("Server unavailable, please retry");
         }
-      }, 7000);
+      }, 5000);
       return () => clearTimeout(timer);
     }
   }, [activeServer, id, type, currentSeason, currentEpisode]);
