@@ -50,46 +50,59 @@ class StreamExtractor:
             logger.info(f"Cache hit for {cache_key}")
             return cached
 
-        # 1. SERVER 1 (MULTI-AUDIO / VIDSRC.TO)
+        # 1. SERVER 1 (ORIGINAL / VIDSRC.TO)
         if media_type == "movie":
             vidsrc_to_url = f"https://vidsrc.to/embed/movie/{tmdb_id}"
             vidsrc_me_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
+            embed_su_url = f"https://embed.su/embed/movie/{tmdb_id}"
             multiembed_url = f"https://multiembed.mov/?video_id={tmdb_id}&tmdb=1"
         else:
             vidsrc_to_url = f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}"
             vidsrc_me_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+            embed_su_url = f"https://embed.su/embed/tv/{tmdb_id}/{season}/{episode}"
             multiembed_url = f"https://multiembed.mov/?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}"
             
         server1 = {
-            "id": "vidsrc_to",
-            "name": "Server 1 (Multi-Audio / Vidsrc.to)",
+            "id": "original",
+            "name": "Server 1 (Original / Vidsrc.to)",
             "url": vidsrc_to_url,
             "type": "iframe",
-            "language": "multi",
-            "language_name": "Multi-Audio / Vidsrc.to"
+            "language": "en",
+            "language_name": "Original / Vidsrc.to"
         }
 
-        # 2. SERVER 2 (BACKUP / VIDSRC.ME)
+        # 2. SERVER 2 (ENGLISH / VIDSRC.ME)
         server2 = {
-            "id": "vidsrc_me",
-            "name": "Server 2 (Backup / Vidsrc.me)",
+            "id": "english",
+            "name": "Server 2 (English / Vidsrc.me)",
             "url": vidsrc_me_url,
             "type": "iframe",
             "language": "en",
-            "language_name": "Backup / Vidsrc.me"
+            "language_name": "English / Vidsrc.me"
         }
 
-        # 3. SERVER 3 (MULTIEMBED)
+        # 3. SERVER 3 (HINDI / EMBED.SU)
         server3 = {
-            "id": "multiembed",
-            "name": "Server 3 (MultiEmbed)",
+            "id": "hindi",
+            "name": "Server 3 (Hindi / Embed.su)",
+            "url": embed_su_url,
+            "type": "iframe",
+            "language": "hi",
+            "language_name": "Hindi / Embed.su",
+            "is_dub": True
+        }
+
+        # 4. SERVER 4 (BACKUP / MULTIEMBED)
+        server4 = {
+            "id": "backup",
+            "name": "Server 4 (Backup / MultiEmbed)",
             "url": multiembed_url,
             "type": "iframe",
             "language": "multi",
-            "language_name": "MultiEmbed"
+            "language_name": "Backup / MultiEmbed"
         }
 
-        all_servers = [server1, server2, server3]
+        all_servers = [server1, server2, server3, server4]
 
         # Prioritize based on language_pref if provided
         if language_pref == "hi":

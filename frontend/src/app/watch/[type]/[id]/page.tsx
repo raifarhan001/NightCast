@@ -32,17 +32,17 @@ export default function WatchPage() {
   const [servers, setServers] = useState<any[]>(() => {
     const defaultServers: any[] = [
       {
-        id: 'vidsrc_to',
-        name: 'Server 1 (Multi-Audio / Vidsrc.to)',
+        id: 'original',
+        name: 'Server 1 (Original / Vidsrc.to)',
         url: type === 'tv'
           ? `https://vidsrc.to/embed/tv/${id}/${currentSeason}/${currentEpisode}`
           : `https://vidsrc.to/embed/movie/${id}`,
         type: 'iframe',
-        language: 'multi'
+        language: 'en'
       },
       {
-        id: 'vidsrc_me',
-        name: 'Server 2 (Backup / Vidsrc.me)',
+        id: 'english',
+        name: 'Server 2 (English / Vidsrc.me)',
         url: type === 'tv'
           ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
           : `https://vidsrc.me/embed/movie?tmdb=${id}`,
@@ -50,8 +50,18 @@ export default function WatchPage() {
         language: 'en'
       },
       {
-        id: 'multiembed',
-        name: 'Server 3 (MultiEmbed)',
+        id: 'hindi',
+        name: 'Server 3 (Hindi / Embed.su)',
+        url: type === 'tv'
+          ? `https://embed.su/embed/tv/${id}/${currentSeason}/${currentEpisode}`
+          : `https://embed.su/embed/movie/${id}`,
+        type: 'iframe',
+        language: 'hi',
+        is_dub: true
+      },
+      {
+        id: 'backup',
+        name: 'Server 4 (Backup / MultiEmbed)',
         url: type === 'tv'
           ? `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${currentSeason}&e=${currentEpisode}`
           : `https://multiembed.mov/?video_id=${id}&tmdb=1`,
@@ -61,7 +71,7 @@ export default function WatchPage() {
     ];
     return defaultServers;
   });
-  const [activeServerId, setActiveServerId] = useState('vidsrc_to');
+  const [activeServerId, setActiveServerId] = useState('original');
   const [playerUrl, setPlayerUrl] = useState("");
   const [seasonEpisodes, setSeasonEpisodes] = useState<any[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(false);
@@ -372,7 +382,7 @@ export default function WatchPage() {
                       if (altHi) {
                         setActiveServerId(altHi.id);
                       } else {
-                        const main = servers.find(s => s.id === 'vidsrc-main') || servers[0];
+                        const main = servers.find(s => s.id === 'original') || servers[0];
                         if (main) setActiveServerId(main.id);
                       }
                       setStreamErrorMsg(null);
@@ -385,7 +395,7 @@ export default function WatchPage() {
                 )}
                 <button
                   onClick={() => {
-                    const mainSrv = servers.find(s => s.id === 'vidsrc_to') || servers[0];
+                    const mainSrv = servers.find(s => s.id === 'original') || servers[0];
                     if (mainSrv) setActiveServerId(mainSrv.id);
                     setStreamErrorMsg(null);
                   }}
