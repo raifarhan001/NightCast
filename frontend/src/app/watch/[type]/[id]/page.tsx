@@ -27,13 +27,13 @@ export default function WatchPage() {
 
   const [meta, setMeta] = useState<any>(null);
   const [recommendations, setRecommendations] = useState<any[]>([]);
-  const [languagePref, setLanguagePref] = useState<'all' | 'hi' | 'regional' | 'en'>('all');
+  const [isHindiDubbed, setIsHindiDubbed] = useState(true);
 
   const [servers, setServers] = useState<any[]>(() => {
     const defaultServers: any[] = [
       {
         id: 'server1',
-        name: 'Server 1 (vidsrc-embed.ru)',
+        name: 'Server 1 (Ru)',
         url: type === 'tv'
           ? `https://vidsrc-embed.ru/embed/tv/${id}/${currentSeason}-${currentEpisode}`
           : `https://vidsrc-embed.ru/embed/movie/${id}`,
@@ -42,7 +42,7 @@ export default function WatchPage() {
       },
       {
         id: 'server2',
-        name: 'Server 2 (vidsrc-embed.su)',
+        name: 'Server 2 (Su)',
         url: type === 'tv'
           ? `https://vidsrc-embed.su/embed/tv/${id}/${currentSeason}-${currentEpisode}`
           : `https://vidsrc-embed.su/embed/movie/${id}`,
@@ -51,7 +51,7 @@ export default function WatchPage() {
       },
       {
         id: 'server3',
-        name: 'Server 3 (vidsrcme.su)',
+        name: 'Server 3 (Me)',
         url: type === 'tv'
           ? `https://vidsrcme.su/embed/tv/${id}/${currentSeason}-${currentEpisode}`
           : `https://vidsrcme.su/embed/movie/${id}`,
@@ -60,17 +60,18 @@ export default function WatchPage() {
       },
       {
         id: 'server4',
-        name: 'Server 4 (vsrc.su)',
+        name: 'Server 4 (Vsrc - Hindi)',
         url: type === 'tv'
-          ? `https://vsrc.su/embed/tv/${id}/${currentSeason}-${currentEpisode}`
-          : `https://vsrc.su/embed/movie/${id}`,
+          ? `https://vsrc.su/embed/tv/${id}/${currentSeason}-${currentEpisode}?ds_lang=hi`
+          : `https://vsrc.su/embed/movie/${id}?ds_lang=hi`,
         type: 'iframe',
-        language: 'en'
+        language: 'hi',
+        is_dub: true
       }
     ];
     return defaultServers;
   });
-  const [activeServerId, setActiveServerId] = useState('server1');
+  const [activeServerId, setActiveServerId] = useState('server4');
   const [playerUrl, setPlayerUrl] = useState("");
   const [seasonEpisodes, setSeasonEpisodes] = useState<any[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(false);
@@ -157,19 +158,17 @@ export default function WatchPage() {
     const fetchServers = async () => {
       try {
         if (!id || !type) return;
+        const langParam = isHindiDubbed ? 'hi' : 'en';
         const data = await apiFetch(
-          `/api/tmdb/${type}/${id}/streams?season=${currentSeason}&episode=${currentEpisode}&language=${languagePref}`
+          `/api/tmdb/${type}/${id}/streams?season=${currentSeason}&episode=${currentEpisode}&language=${langParam}`
         );
         if (data?.servers) {
           const filteredServers = data.servers.filter((s: any) => s.id !== 'vidsrc-pro');
           if (filteredServers.length > 0) {
             setServers(filteredServers);
-            if (languagePref === 'hi') {
-              const hiSrv = filteredServers.find((s: any) => s.language === 'hi' || s.id.includes('hindi-dub'));
+            if (isHindiDubbed) {
+              const hiSrv = filteredServers.find((s: any) => s.language === 'hi' || s.id === 'server4');
               if (hiSrv) setActiveServerId(hiSrv.id);
-            } else if (languagePref === 'regional') {
-              const regSrv = filteredServers.find((s: any) => s.is_dub && s.language !== 'en');
-              if (regSrv) setActiveServerId(regSrv.id);
             }
           }
         }
@@ -178,12 +177,18 @@ export default function WatchPage() {
       }
     };
     fetchServers();
-  }, [id, type, currentSeason, currentEpisode, languagePref]);
+  }, [id, type, currentSeason, currentEpisode, isHindiDubbed]);
 
   useEffect(() => {
-    if (!activeServer?.url) return;
-
     let finalUrl = activeServer.url;
+
+    if (isHindiDubbed && activeServer.id === 'server4') {
+      if (!finalUrl.includes('ds_lang=hi')) {
+        finalUrl += (finalUrl.includes('?') ? '&ds_lang=hi' : '?ds_lang=hi');
+      }
+    } else if (!isHindiDubbed && activeServer.id === 'server4') {
+      finalUrl = finalUrl.replace(/[?&]ds_lang=hi/, '');
+    }
 
     if (finalUrl.includes('vidlink.pro')) {
       let startAtParam = "";
@@ -202,22 +207,7 @@ export default function WatchPage() {
 
     setPlayerUrl(finalUrl);
     setIsIframeLoaded(false);
-    setStreamErrorMsg(null);
-
-    // Strict 4-second timeout check for iframe sources
-    if (activeServer.type !== 'hls') {
-      const timer = setTimeout(() => {
-        if (!isIframeLoaded) {
-          if (activeServer.language === 'hi' || activeServer.id === 'hindi-dubbed') {
-            setStreamErrorMsg("Hindi stream unavailable on this server, please try another server or switch to VidSrc Main.");
-          } else {
-            setStreamErrorMsg("Server unavailable, please retry");
-          }
-        }
-      }, 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [activeServer, id, type, currentSeason, currentEpisode]);
+  }, [activeServer, id, type, currentSeason, currentEpisode, isHindiDubbed]);
 
   useEffect(() => {
     if (!id) return;
@@ -370,6 +360,19 @@ export default function WatchPage() {
 
           {/* Server Selection & Action Row */}
           <div className="flex flex-wrap items-center gap-3">
+            {/* Hindi Dubbed Toggle */}
+            <button
+              onClick={() => setIsHindiDubbed(!isHindiDubbed)}
+              className={`px-3 py-1.5 rounded-full font-bold transition-all text-[11px] border flex items-center gap-1.5 ${
+                isHindiDubbed
+                  ? 'bg-amber-500/20 border-amber-500/50 text-amber-400 shadow-sm'
+                  : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
+              }`}
+            >
+              <span>🎙️</span>
+              <span>{isHindiDubbed ? 'Hindi Dubbed: ON' : 'Hindi Dubbed: OFF'}</span>
+            </button>
+
             {/* Server List Pills */}
             <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-full bg-white/5 border border-white/10">
               {servers.map((srv) => {

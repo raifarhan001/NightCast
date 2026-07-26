@@ -50,58 +50,63 @@ class StreamExtractor:
             logger.info(f"Cache hit for {cache_key}")
             return cached
 
-        # 1. SERVER 1 (PRIMARY: VIDSRC-EMBED.RU)
+        # 1. SERVER 1 (VIDSRC-EMBED.RU)
         if media_type == "movie":
             s1_url = f"https://vidsrc-embed.ru/embed/movie/{tmdb_id}"
             s2_url = f"https://vidsrc-embed.su/embed/movie/{tmdb_id}"
             s3_url = f"https://vidsrcme.su/embed/movie/{tmdb_id}"
-            s4_url = f"https://vsrc.su/embed/movie/{tmdb_id}"
+            s4_url = f"https://vsrc.su/embed/movie/{tmdb_id}?ds_lang=hi" if language_pref == "hi" else f"https://vsrc.su/embed/movie/{tmdb_id}"
         else:
             s1_url = f"https://vidsrc-embed.ru/embed/tv/{tmdb_id}/{season}-{episode}"
             s2_url = f"https://vidsrc-embed.su/embed/tv/{tmdb_id}/{season}-{episode}"
             s3_url = f"https://vidsrcme.su/embed/tv/{tmdb_id}/{season}-{episode}"
-            s4_url = f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}"
+            s4_url = f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}?ds_lang=hi" if language_pref == "hi" else f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}"
             
         server1 = {
             "id": "server1",
-            "name": "Server 1 (vidsrc-embed.ru)",
+            "name": "Server 1 (Ru)",
             "url": s1_url,
             "type": "iframe",
             "language": "en",
             "language_name": "vidsrc-embed.ru"
         }
 
-        # 2. SERVER 2 (FALLBACK 1: VIDSRC-EMBED.SU)
+        # 2. SERVER 2 (VIDSRC-EMBED.SU)
         server2 = {
             "id": "server2",
-            "name": "Server 2 (vidsrc-embed.su)",
+            "name": "Server 2 (Su)",
             "url": s2_url,
             "type": "iframe",
             "language": "en",
             "language_name": "vidsrc-embed.su"
         }
 
-        # 3. SERVER 3 (FALLBACK 2: VIDSRCME.SU)
+        # 3. SERVER 3 (VIDSRCME.SU)
         server3 = {
             "id": "server3",
-            "name": "Server 3 (vidsrcme.su)",
+            "name": "Server 3 (Me)",
             "url": s3_url,
             "type": "iframe",
             "language": "en",
             "language_name": "vidsrcme.su"
         }
 
-        # 4. SERVER 4 (FALLBACK 3: VSRC.SU)
+        # 4. SERVER 4 (VSRC.SU - HINDI)
         server4 = {
             "id": "server4",
-            "name": "Server 4 (vsrc.su)",
+            "name": "Server 4 (Vsrc - Hindi)",
             "url": s4_url,
             "type": "iframe",
-            "language": "en",
-            "language_name": "vsrc.su"
+            "language": "hi",
+            "language_name": "vsrc.su",
+            "is_dub": True
         }
 
-        all_servers = [server1, server2, server3, server4]
+        # Default order: prioritize server4 if language_pref == "hi"
+        if language_pref == "hi":
+            all_servers = [server4, server1, server2, server3]
+        else:
+            all_servers = [server4, server1, server2, server3]
 
         # Prioritize based on language_pref if provided
         if language_pref == "hi":
