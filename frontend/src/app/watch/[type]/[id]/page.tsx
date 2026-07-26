@@ -33,37 +33,37 @@ export default function WatchPage() {
     const defaultServers: any[] = [
       {
         id: 'server1',
-        name: 'Server 1 (Vidsrc.to)',
+        name: 'Server 1 (vidsrc-embed.ru)',
         url: type === 'tv'
-          ? `https://vidsrc.to/embed/tv/${id}/${currentSeason}/${currentEpisode}`
-          : `https://vidsrc.to/embed/movie/${id}`,
+          ? `https://vidsrc-embed.ru/embed/tv/${id}/${currentSeason}-${currentEpisode}`
+          : `https://vidsrc-embed.ru/embed/movie/${id}`,
         type: 'iframe',
         language: 'en'
       },
       {
         id: 'server2',
-        name: 'Server 2 (Vidsrc.cc)',
+        name: 'Server 2 (vidsrc-embed.su)',
         url: type === 'tv'
-          ? `https://vidsrc.cc/v2/embed/tv/${id}/${currentSeason}/${currentEpisode}`
-          : `https://vidsrc.cc/v2/embed/movie/${id}`,
+          ? `https://vidsrc-embed.su/embed/tv/${id}/${currentSeason}-${currentEpisode}`
+          : `https://vidsrc-embed.su/embed/movie/${id}`,
         type: 'iframe',
         language: 'en'
       },
       {
         id: 'server3',
-        name: 'Server 3 (MultiEmbed)',
+        name: 'Server 3 (vidsrcme.su)',
         url: type === 'tv'
-          ? `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${currentSeason}&e=${currentEpisode}`
-          : `https://multiembed.mov/?video_id=${id}&tmdb=1`,
+          ? `https://vidsrcme.su/embed/tv/${id}/${currentSeason}-${currentEpisode}`
+          : `https://vidsrcme.su/embed/movie/${id}`,
         type: 'iframe',
-        language: 'multi'
+        language: 'en'
       },
       {
         id: 'server4',
-        name: 'Server 4 (Embed.cx)',
+        name: 'Server 4 (vsrc.su)',
         url: type === 'tv'
-          ? `https://embed.cx/embed/tv/${id}/${currentSeason}/${currentEpisode}`
-          : `https://embed.cx/embed/movie/${id}`,
+          ? `https://vsrc.su/embed/tv/${id}/${currentSeason}-${currentEpisode}`
+          : `https://vsrc.su/embed/movie/${id}`,
         type: 'iframe',
         language: 'en'
       }

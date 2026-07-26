@@ -50,55 +50,55 @@ class StreamExtractor:
             logger.info(f"Cache hit for {cache_key}")
             return cached
 
-        # 1. SERVER 1 (VIDSRC.TO)
+        # 1. SERVER 1 (PRIMARY: VIDSRC-EMBED.RU)
         if media_type == "movie":
-            vidsrc_to_url = f"https://vidsrc.to/embed/movie/{tmdb_id}"
-            vidsrc_cc_url = f"https://vidsrc.cc/v2/embed/movie/{tmdb_id}"
-            multiembed_url = f"https://multiembed.mov/?video_id={tmdb_id}&tmdb=1"
-            embed_cx_url = f"https://embed.cx/embed/movie/{tmdb_id}"
+            s1_url = f"https://vidsrc-embed.ru/embed/movie/{tmdb_id}"
+            s2_url = f"https://vidsrc-embed.su/embed/movie/{tmdb_id}"
+            s3_url = f"https://vidsrcme.su/embed/movie/{tmdb_id}"
+            s4_url = f"https://vsrc.su/embed/movie/{tmdb_id}"
         else:
-            vidsrc_to_url = f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}"
-            vidsrc_cc_url = f"https://vidsrc.cc/v2/embed/tv/{tmdb_id}/{season}/{episode}"
-            multiembed_url = f"https://multiembed.mov/?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}"
-            embed_cx_url = f"https://embed.cx/embed/tv/{tmdb_id}/{season}/{episode}"
+            s1_url = f"https://vidsrc-embed.ru/embed/tv/{tmdb_id}/{season}-{episode}"
+            s2_url = f"https://vidsrc-embed.su/embed/tv/{tmdb_id}/{season}-{episode}"
+            s3_url = f"https://vidsrcme.su/embed/tv/{tmdb_id}/{season}-{episode}"
+            s4_url = f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}"
             
         server1 = {
             "id": "server1",
-            "name": "Server 1 (Vidsrc.to)",
-            "url": vidsrc_to_url,
+            "name": "Server 1 (vidsrc-embed.ru)",
+            "url": s1_url,
             "type": "iframe",
             "language": "en",
-            "language_name": "Vidsrc.to"
+            "language_name": "vidsrc-embed.ru"
         }
 
-        # 2. SERVER 2 (VIDSRC.CC)
+        # 2. SERVER 2 (FALLBACK 1: VIDSRC-EMBED.SU)
         server2 = {
             "id": "server2",
-            "name": "Server 2 (Vidsrc.cc)",
-            "url": vidsrc_cc_url,
+            "name": "Server 2 (vidsrc-embed.su)",
+            "url": s2_url,
             "type": "iframe",
             "language": "en",
-            "language_name": "Vidsrc.cc V2"
+            "language_name": "vidsrc-embed.su"
         }
 
-        # 3. SERVER 3 (MULTIEMBED)
+        # 3. SERVER 3 (FALLBACK 2: VIDSRCME.SU)
         server3 = {
             "id": "server3",
-            "name": "Server 3 (MultiEmbed)",
-            "url": multiembed_url,
-            "type": "iframe",
-            "language": "multi",
-            "language_name": "MultiEmbed"
-        }
-
-        # 4. SERVER 4 (EMBED.CX)
-        server4 = {
-            "id": "server4",
-            "name": "Server 4 (Embed.cx)",
-            "url": embed_cx_url,
+            "name": "Server 3 (vidsrcme.su)",
+            "url": s3_url,
             "type": "iframe",
             "language": "en",
-            "language_name": "Embed.cx"
+            "language_name": "vidsrcme.su"
+        }
+
+        # 4. SERVER 4 (FALLBACK 3: VSRC.SU)
+        server4 = {
+            "id": "server4",
+            "name": "Server 4 (vsrc.su)",
+            "url": s4_url,
+            "type": "iframe",
+            "language": "en",
+            "language_name": "vsrc.su"
         }
 
         all_servers = [server1, server2, server3, server4]
