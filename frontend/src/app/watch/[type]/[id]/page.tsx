@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { apiFetch, API_BASE_URL } from '../../../../lib/api';
 import { saveWatchProgress, getSavedTimestamp } from '../../../../lib/progress';
 import { ImageService } from '../../../../lib/ImageService';
-import { Play, Star, Download, DownloadCloud, Languages, Globe, X, Check, Loader2 } from 'lucide-react';
+import { Play, Star, Download, DownloadCloud, Languages, Globe, X, Check, Loader2, AlertTriangle, RotateCcw } from 'lucide-react';
 import { useUserStore } from '../../../../store/userStore';
 import HLSPlayer from '../../../../components/player/HLSPlayer';
 import MovieRow from '../../../../components/shared/MovieRow';
@@ -87,6 +87,8 @@ export default function WatchPage() {
   const [episodesLoading, setEpisodesLoading] = useState(false);
   const [resumeTime, setResumeTime] = useState(0);
   const [hlsFailedServers, setHlsFailedServers] = useState<string[]>([]);
+  const [iframeFailedServers, setIframeFailedServers] = useState<string[]>([]);
+  const [streamErrorMsg, setStreamErrorMsg] = useState<string | null>(null);
 
   // Download Modal state
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
@@ -96,14 +98,17 @@ export default function WatchPage() {
 
   useEffect(() => {
     setHlsFailedServers([]);
+    setIframeFailedServers([]);
+    setStreamErrorMsg(null);
   }, [id, currentSeason, currentEpisode]);
 
   const rawActiveServer = servers.find(s => s.id === activeServerId) || servers[0];
   const isHlsFailed = rawActiveServer && hlsFailedServers.includes(rawActiveServer.id);
+  const isIframeFailed = rawActiveServer && iframeFailedServers.includes(rawActiveServer.id);
 
   const activeServer = useMemo(() => {
     if (!rawActiveServer) return null;
-    if (isHlsFailed) {
+    if (isHlsFailed || isIframeFailed) {
       let fallbackUrl = rawActiveServer.url;
       if (rawActiveServer.id === 'vidsrc-main') {
         fallbackUrl = type === 'tv'
@@ -117,7 +122,7 @@ export default function WatchPage() {
       };
     }
     return rawActiveServer;
-  }, [rawActiveServer, isHlsFailed, type, id, currentSeason, currentEpisode]);
+  }, [rawActiveServer, isHlsFailed, isIframeFailed, type, id, currentSeason, currentEpisode]);
 
   useEffect(() => {
     const s = parseInt(searchParams.get('season') || '1', 10);
@@ -171,7 +176,7 @@ export default function WatchPage() {
           if (filteredServers.length > 0) {
             setServers(filteredServers);
             if (languagePref === 'hi') {
-              const hiSrv = filteredServers.find((s: any) => s.language === 'hi' || s.id === 'hindi-dub');
+              const hiSrv = filteredServers.find((s: any) => s.language === 'hi' || s.id.includes('hindi-dub'));
               if (hiSrv) setActiveServerId(hiSrv.id);
             } else if (languagePref === 'regional') {
               const regSrv = filteredServers.find((s: any) => s.is_dub && s.language !== 'en');
@@ -208,6 +213,21 @@ export default function WatchPage() {
 
     setPlayerUrl(finalUrl);
     setIsIframeLoaded(false);
+    setStreamErrorMsg(null);
+
+    // Timeout check for iframe sources
+    if (activeServer.type !== 'hls') {
+      const timer = setTimeout(() => {
+        if (!isIframeLoaded) {
+          if (activeServer.language === 'hi') {
+            setStreamErrorMsg("Hindi stream unavailable on this server, please try another server.");
+          } else {
+            setStreamErrorMsg("Stream load timeout. Please try another server.");
+          }
+        }
+      }, 12000);
+      return () => clearTimeout(timer);
+    }
   }, [activeServer, id, type, currentSeason, currentEpisode]);
 
   useEffect(() => {
@@ -318,11 +338,59 @@ export default function WatchPage() {
       <div className="space-y-6">
         {/* Full Player Container */}
         <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-white/10 bg-[#000000] shadow-2xl">
-          {!isIframeLoaded && (
+          {!isIframeLoaded && !streamErrorMsg && (
             <div className="absolute inset-0 z-20">
               <PlayerSkeleton />
             </div>
           )}
+
+          {streamErrorMsg && (
+            <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#090A0F]/90 backdrop-blur-md p-6 text-center space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                <AlertTriangle className="w-7 h-7 text-amber-400" />
+              </div>
+              <div className="space-y-1 max-w-md">
+                <h3 className="text-base font-extrabold text-white font-display">
+                  {activeServer?.language === 'hi' ? 'Hindi Stream Unavailable' : 'Stream Unavailable'}
+                </h3>
+                <p className="text-xs text-white/60">
+                  {streamErrorMsg}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                {activeServer?.language === 'hi' && (
+                  <button
+                    onClick={() => {
+                      const altHi = servers.find(s => (s.id.includes('hindi-dub') || s.language === 'hi') && s.id !== activeServerId);
+                      if (altHi) {
+                        setActiveServerId(altHi.id);
+                      } else {
+                        const main = servers.find(s => s.id === 'vidsrc-main') || servers[0];
+                        if (main) setActiveServerId(main.id);
+                      }
+                      setStreamErrorMsg(null);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Try Hindi Fallback Server</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    const mainSrv = servers.find(s => s.id === 'vidsrc-main') || servers[0];
+                    if (mainSrv) setActiveServerId(mainSrv.id);
+                    setStreamErrorMsg(null);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-1.5 transition-all"
+                >
+                  <Globe className="w-3.5 h-3.5" />
+                  <span>Switch to Main Server</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {playerUrl ? (
             activeServer?.type === 'hls' ? (
               <HLSPlayer
@@ -334,6 +402,11 @@ export default function WatchPage() {
                 onError={() => {
                   if (activeServer?.id) {
                     setHlsFailedServers(prev => [...prev, activeServer.id]);
+                    if (activeServer.language === 'hi') {
+                      setStreamErrorMsg("Hindi stream unavailable on this server, please try another server.");
+                    } else {
+                      setStreamErrorMsg("Stream failed to load. Please try another server.");
+                    }
                   }
                 }}
               />
@@ -341,8 +414,15 @@ export default function WatchPage() {
               <iframe
                 src={playerUrl}
                 onLoad={() => setIsIframeLoaded(true)}
+                onError={() => {
+                  if (activeServer?.language === 'hi') {
+                    setStreamErrorMsg("Hindi stream unavailable, please try another server.");
+                  } else {
+                    setStreamErrorMsg("Failed to load iframe stream.");
+                  }
+                }}
                 className={`absolute top-0 left-0 w-full h-full transition-opacity duration-500 ${
-                  isIframeLoaded ? 'opacity-100' : 'opacity-0'
+                  isIframeLoaded && !streamErrorMsg ? 'opacity-100' : 'opacity-0'
                 }`}
                 allowFullScreen
                 frameBorder="0"

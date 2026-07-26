@@ -64,19 +64,45 @@ class StreamExtractor:
             "language_name": "English / Multi"
         }
 
-        # 2. HINDI DUB (PRIMARY)
+        # 2. HINDI DUB (PRIMARY - MULTIEMBED)
         if media_type == "movie":
             me_hi_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&ds_lang=hi"
+            hi_proxy_url = f"/api/v1/tmdb/proxy-embed?url={me_hi_url}"
+            vidsrc_hi_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}&ds_lang=hi"
+            super_hi_url = f"https://multiembed.org/directstream.php?video_id={tmdb_id}&tmdb=1&ds_lang=hi"
         else:
             me_hi_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}&ds_lang=hi"
+            hi_proxy_url = f"/api/v1/tmdb/proxy-embed?url={me_hi_url}"
+            vidsrc_hi_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}&ds_lang=hi"
+            super_hi_url = f"https://multiembed.org/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}&ds_lang=hi"
 
         server2 = {
-            "id": "hindi-dub",
-            "name": "HINDI DUB",
+            "id": "hindi-dub-primary",
+            "name": "HINDI DUB (MAIN)",
             "url": me_hi_url,
             "type": "iframe",
             "language": "hi",
             "language_name": "Hindi Dubbed",
+            "is_dub": True
+        }
+
+        server2_fallback = {
+            "id": "hindi-dub-secondary",
+            "name": "HINDI DUB (ALT)",
+            "url": super_hi_url,
+            "type": "iframe",
+            "language": "hi",
+            "language_name": "Hindi Dubbed",
+            "is_dub": True
+        }
+
+        server2_proxied = {
+            "id": "hindi-dub-proxy",
+            "name": "HINDI DUB (PROXIED)",
+            "url": hi_proxy_url,
+            "type": "iframe",
+            "language": "hi",
+            "language_name": "Hindi Dubbed (Proxied)",
             "is_dub": True
         }
 
@@ -142,7 +168,7 @@ class StreamExtractor:
             "language_name": "English Dubbed"
         }
 
-        all_servers = [server1, server2, server3, server4, server5, server6]
+        all_servers = [server1, server2, server2_fallback, server2_proxied, server3, server4, server5, server6]
 
         # Prioritize based on language_pref if provided
         if language_pref == "hi":
