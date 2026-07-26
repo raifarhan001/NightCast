@@ -50,14 +50,14 @@ class StreamExtractor:
             logger.info(f"Cache hit for {cache_key}")
             return cached
 
-        # 1. VIDSRC MAIN (ENGLISH / ORIGINAL)
+        # 1. VIDSRC MAIN (ENGLISH / ORIGINAL - V2 ACTIVE DOMAIN)
         if media_type == "movie":
-            vidsrc_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
-            hindi_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1"
+            vidsrc_url = f"https://vidsrc.cc/v2/embed/movie/{tmdb_id}"
+            hindi_url = f"https://vidsrc.cc/v2/embed/movie/{tmdb_id}?ds_lang=hi"
             embed2_url = f"https://www.2embed.cc/embed/{tmdb_id}"
         else:
-            vidsrc_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
-            hindi_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}"
+            vidsrc_url = f"https://vidsrc.cc/v2/embed/tv/{tmdb_id}/{season}/{episode}"
+            hindi_url = f"https://vidsrc.cc/v2/embed/tv/{tmdb_id}/{season}/{episode}?ds_lang=hi"
             embed2_url = f"https://www.2embed.cc/embedtv/{tmdb_id}&s={season}&e={episode}"
             
         server1 = {
@@ -76,7 +76,7 @@ class StreamExtractor:
             "url": hindi_url,
             "type": "iframe",
             "language": "hi",
-            "language_name": "Hindi / Multi-Audio Dubbed",
+            "language_name": "Hindi Dubbed",
             "is_dub": True
         }
 

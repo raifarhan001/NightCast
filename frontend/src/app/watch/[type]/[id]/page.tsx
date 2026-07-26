@@ -35,8 +35,8 @@ export default function WatchPage() {
         id: 'vidsrc-main',
         name: 'VidSrc Main',
         url: type === 'tv'
-          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
-          : `https://vidsrc.me/embed/movie?tmdb=${id}`,
+          ? `https://vidsrc.cc/v2/embed/tv/${id}/${currentSeason}/${currentEpisode}`
+          : `https://vidsrc.cc/v2/embed/movie/${id}`,
         type: 'iframe',
         language: 'en'
       },
@@ -44,8 +44,8 @@ export default function WatchPage() {
         id: 'hindi-dubbed',
         name: 'Hindi Dubbed',
         url: type === 'tv'
-          ? `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${currentSeason}&e=${currentEpisode}`
-          : `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1`,
+          ? `https://vidsrc.cc/v2/embed/tv/${id}/${currentSeason}/${currentEpisode}?ds_lang=hi`
+          : `https://vidsrc.cc/v2/embed/movie/${id}?ds_lang=hi`,
         type: 'iframe',
         language: 'hi',
         is_dub: true
@@ -435,7 +435,7 @@ export default function WatchPage() {
                 allowFullScreen
                 frameBorder="0"
                 referrerPolicy="origin"
-                allow="autoplay; encrypted-media; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               />
             )
           ) : (
