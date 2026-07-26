@@ -296,50 +296,19 @@ export default function WatchPage() {
       }
     } catch (e) {
       console.error("Failed to fetch download links", e);
-      const fallbackUrl = type === 'tv'
-        ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
-        : `https://vidsrc.me/embed/movie?tmdb=${id}`;
-      setDownloadOptions([{
-        label: "Primary Streaming Source",
-        url: fallbackUrl,
-        quality: "1080p",
-        format: "stream",
-        type: "stream_fallback"
-      }]);
-      setDownloadProgress("Direct download unavailable for this source, please use streaming or try another server.");
     }
   };
 
-  const handleStartDownload = async (opt: any) => {
-    setIsDownloading(true);
-    try {
-      if (opt.type === "stream_fallback") {
-        setDownloadProgress("Opening stream link in browser download manager...");
-        window.open(opt.url, "_blank");
-      } else {
-        setDownloadProgress("Initiating direct download stream...");
-        const titleClean = (meta?.title || meta?.name || "NightCast_Movie").replace(/[^a-zA-Z0-9]/g, "_");
-        const filename = type === 'tv'
-          ? `${titleClean}_S${currentSeason}E${currentEpisode}.mp4`
-          : `${titleClean}.mp4`;
-
-        const downloadProxyUrl = `${API_BASE_URL}/api/v1/tmdb/download-proxy?url=${encodeURIComponent(opt.url)}&filename=${encodeURIComponent(filename)}`;
-
-        const a = document.createElement("a");
-        a.href = downloadProxyUrl;
-        a.download = filename;
-        a.target = "_blank";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
-        setDownloadProgress("Download started! Check your browser downloads.");
-      }
-    } catch (err: any) {
-      setDownloadProgress("Failed to trigger download: " + err.message);
-    } finally {
-      setTimeout(() => setIsDownloading(false), 3000);
-    }
+  const handleSecureDownload = () => {
+    const downloadUrl = playerUrl || (activeServer ? activeServer.url : "");
+    if (!downloadUrl) return;
+    const anchor = document.createElement('a');
+    anchor.href = downloadUrl;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
   };
 
   const movieTitle = meta?.title || meta?.name || "Loading Stream...";
@@ -494,62 +463,44 @@ export default function WatchPage() {
           </div>
         </div>
 
-        {/* Download Options Modal */}
+        {/* Download Options Modal Popup */}
         {isDownloadModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-[#12141F] border border-white/15 rounded-3xl p-6 max-w-lg w-full space-y-5 shadow-2xl relative animate-in fade-in zoom-in-95">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in">
+            <div className="bg-[#12141F] border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl relative">
               <button
                 onClick={() => setIsDownloadModalOpen(false)}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+                className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors"
               >
-                <X className="w-4 h-4" />
+                ✕
               </button>
-
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                  <DownloadCloud className="w-6 h-6 text-emerald-400" />
-                </div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">📥</div>
                 <div>
-                  <h3 className="text-lg font-extrabold text-white font-display">Download Movie / Episode</h3>
-                  <p className="text-xs text-white/50">Save for offline viewing directly on your device</p>
+                  <h3 className="font-extrabold text-lg text-white font-display">Download Movie / Episode</h3>
+                  <p className="text-xs text-white/50">Save for offline viewing directly via stream source</p>
                 </div>
               </div>
-
-              {downloadProgress && (
-                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-300 flex items-center gap-2">
-                  {isDownloading ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> : <Check className="w-4 h-4 text-emerald-400 shrink-0" />}
-                  <span>{downloadProgress}</span>
+              
+              <div className="bg-black/50 p-4 rounded-xl border border-white/10 flex items-center justify-between mb-6">
+                <div>
+                  <p className="font-semibold text-sm text-white truncate max-w-[200px]">{movieTitle}</p>
+                  <p className="text-[10px] text-emerald-400 font-mono mt-0.5 uppercase tracking-wider font-bold">1080P • STREAM SOURCE</p>
                 </div>
-              )}
-
-              <div className="space-y-2 max-h-60 overflow-y-auto no-scrollbar pt-1">
-                {downloadOptions.length > 0 ? (
-                  downloadOptions.map((opt, idx) => (
-                    <div
-                      key={idx}
-                      className="p-3.5 rounded-2xl bg-white/5 border border-white/10 hover:border-emerald-500/40 flex items-center justify-between gap-3 transition-colors"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-xs font-bold text-white truncate">{opt.label}</h4>
-                        <p className="text-[10px] text-white/50 uppercase font-mono">{opt.quality} • {opt.format.toUpperCase()}</p>
-                      </div>
-                      <button
-                        disabled={isDownloading}
-                        onClick={() => handleStartDownload(opt)}
-                        className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-transform active:scale-95 shrink-0 flex items-center gap-1.5"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Save</span>
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <div className="py-8 text-center text-white/50 text-xs font-medium space-y-2">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-emerald-400" />
-                    <p>Fetching direct download streams...</p>
-                  </div>
-                )}
+                <button
+                  onClick={handleSecureDownload}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Save</span>
+                </button>
               </div>
+
+              <button
+                onClick={() => setIsDownloadModalOpen(false)}
+                className="w-full py-2.5 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-xl transition-all"
+              >
+                Close
+              </button>
             </div>
           </div>
         )}
