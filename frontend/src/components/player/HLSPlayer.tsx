@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Play, Pause, Volume2, VolumeX, Maximize, Minimize,
-  RotateCcw, Loader2, AlertTriangle, SkipForward, SkipBack
+  RotateCcw, Loader2, AlertTriangle, SkipForward, SkipBack, Languages
 } from 'lucide-react';
 
 interface HLSPlayerProps {
@@ -33,6 +33,9 @@ export default function HLSPlayer({ src, headers, startAt = 0, onProgress, poste
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
+  const [audioTracks, setAudioTracks] = useState<Array<{ id: number; name: string; lang?: string }>>([]);
+  const [currentAudioTrack, setCurrentAudioTrack] = useState<number>(-1);
+  const [showAudioMenu, setShowAudioMenu] = useState(false);
 
   // Trigger parent onError hook when error state changes
   useEffect(() => {
@@ -48,6 +51,8 @@ export default function HLSPlayer({ src, headers, startAt = 0, onProgress, poste
 
     setIsLoading(true);
     setError(null);
+    setAudioTracks([]);
+    setCurrentAudioTrack(-1);
 
     const initHls = async () => {
       // Dynamically import hls.js to avoid SSR issues
@@ -77,6 +82,25 @@ export default function HLSPlayer({ src, headers, startAt = 0, onProgress, poste
           setIsLoading(false);
           if (startAt > 0) {
             video.currentTime = startAt;
+          }
+          if (hls.audioTracks && hls.audioTracks.length > 0) {
+            setAudioTracks(hls.audioTracks.map((t: any, idx: number) => ({
+              id: idx,
+              name: t.name || t.lang || `Audio Track ${idx + 1}`,
+              lang: t.lang
+            })));
+            setCurrentAudioTrack(hls.audioTrack);
+          }
+        });
+
+        hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_: any, data: any) => {
+          if (data.audioTracks && data.audioTracks.length > 0) {
+            setAudioTracks(data.audioTracks.map((t: any, idx: number) => ({
+              id: idx,
+              name: t.name || t.lang || `Audio Track ${idx + 1}`,
+              lang: t.lang
+            })));
+            setCurrentAudioTrack(hls.audioTrack);
           }
         });
 
@@ -489,7 +513,56 @@ export default function HLSPlayer({ src, headers, startAt = 0, onProgress, poste
             </div>
 
             {/* Right controls */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 relative">
+              {audioTracks.length > 0 && (
+                <div className="relative">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowAudioMenu(prev => !prev); }}
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 ${
+                      showAudioMenu ? 'bg-[#00D2FF]/20 text-[#00D2FF]' : 'bg-white/5 hover:bg-white/10 text-white/80'
+                    }`}
+                    title="Audio Track Selector"
+                  >
+                    <Languages className="w-4 h-4" />
+                  </button>
+
+                  {showAudioMenu && (
+                    <div
+                      className="absolute bottom-12 right-0 bg-[#12141F] border border-white/15 rounded-xl p-2 w-48 shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/50 px-2 py-1 mb-1 border-b border-white/10">
+                        Select Audio Track
+                      </p>
+                      <div className="space-y-1 max-h-40 overflow-y-auto no-scrollbar">
+                        {audioTracks.map((track) => (
+                          <button
+                            key={track.id}
+                            onClick={() => {
+                              if (hlsRef.current) {
+                                hlsRef.current.audioTrack = track.id;
+                                setCurrentAudioTrack(track.id);
+                              }
+                              setShowAudioMenu(false);
+                            }}
+                            className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors ${
+                              currentAudioTrack === track.id
+                                ? 'bg-[#00D2FF]/15 text-[#00D2FF]'
+                                : 'text-white/80 hover:bg-white/10 hover:text-white'
+                            }`}
+                          >
+                            <span className="truncate">{track.name}</span>
+                            {currentAudioTrack === track.id && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#00D2FF]" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <button
                 onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
                 className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all duration-200"

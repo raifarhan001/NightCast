@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useUserStore } from "../store/userStore";
 import { apiFetch, MediaItem, ContinueWatchingItem } from "../lib/api";
+import { getContinueWatchingList, LocalProgressItem } from "../lib/progress";
 import HeroCarousel from "../components/home/HeroCarousel";
 import MovieRow from "../components/shared/MovieRow";
 import { HeroSkeleton, MovieRowSkeleton } from "../components/shared/Skeletons";
@@ -13,6 +14,12 @@ function HomePageContent() {
   const searchParams = useSearchParams();
   const activeTab = searchParams.get("tab") || "foryou";
   const { activeProfile } = useUserStore();
+
+  const [localContinueWatching, setLocalContinueWatching] = React.useState<LocalProgressItem[]>([]);
+
+  React.useEffect(() => {
+    setLocalContinueWatching(getContinueWatchingList());
+  }, []);
 
   // 1. Top Picks For You (Mixed Trending)
   const { data: topPicks = [], isLoading: topPicksLoading } = useQuery<MediaItem[]>({
@@ -62,7 +69,7 @@ function HomePageContent() {
     queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=35"),
   });
 
-  // Continue Watching History
+  // Backend Continue Watching History
   const { data: continueWatching = [] } = useQuery<ContinueWatchingItem[]>({
     queryKey: ["continue-watching", activeProfile?.id],
     queryFn: () => apiFetch("/api/progress/continue", {
@@ -70,6 +77,48 @@ function HomePageContent() {
     }),
     enabled: !!activeProfile,
   });
+
+  // Merge Local & Backend Continue Watching (De-duplicate)
+  const mergedContinueWatching = React.useMemo(() => {
+    const map = new Map<string, any>();
+
+    // Add local items first
+    for (const item of localContinueWatching) {
+      const key = item.media_type === 'tv' ? `${item.id}_s${item.season || 1}e${item.episode || 1}` : `${item.id}`;
+      map.set(key, {
+        id: item.id,
+        media_type: item.media_type,
+        title: item.title,
+        poster_path: item.poster_path,
+        backdrop_path: item.backdrop_path,
+        season: item.season,
+        episode: item.episode,
+        progress_percent: item.progress_percent,
+        updated_at: item.updated_at,
+      });
+    }
+
+    // Overlay backend items
+    for (const c of continueWatching) {
+      const key = c.media_type === 'tv' ? `${c.media_id}_s${c.season || 1}e${c.episode || 1}` : `${c.media_id}`;
+      map.set(key, {
+        id: c.media_id || c.id,
+        media_type: c.media_type,
+        title: c.title,
+        poster_path: c.poster_path,
+        season: c.season,
+        episode: c.episode,
+        progress_percent: c.progress_percent,
+        updated_at: c.updated_at,
+      });
+    }
+
+    return Array.from(map.values()).sort((a, b) => {
+      const timeA = a.updated_at ? new Date(a.updated_at).getTime() : 0;
+      const timeB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
+      return timeB - timeA;
+    });
+  }, [localContinueWatching, continueWatching]);
 
   // Dynamic Hero Carousel items
   const heroItems = topPicks.length > 0 ? topPicks.slice(0, 7) : trendingMovies.slice(0, 7);
@@ -89,19 +138,11 @@ function HomePageContent() {
       {/* Immersive Google TV Hero Banner with Ambient Backlight Glow */}
       <HeroCarousel items={heroItems} />
 
-      {/* Continue Watching (if available) */}
-      {continueWatching.length > 0 && (
+      {/* Continue Watching (Merged Local + Synced Backend) */}
+      {mergedContinueWatching.length > 0 && (
         <MovieRow
           title="Continue Watching"
-          items={continueWatching.map((c) => ({
-            id: c.media_id || c.id,
-            media_type: c.media_type,
-            title: c.title,
-            poster_path: c.poster_path,
-            season: c.season,
-            episode: c.episode,
-            progress_percent: c.progress_percent,
-          }))}
+          items={mergedContinueWatching}
         />
       )}
 

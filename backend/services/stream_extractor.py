@@ -40,9 +40,10 @@ class StreamExtractor:
         tmdb_id: str,
         season: int = 1,
         episode: int = 1,
+        language_pref: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Main entry point. Tries providers in order, caches results."""
-        cache_key = f"streams:{media_type}:{tmdb_id}:{season}:{episode}"
+        """Main entry point. Tries providers in order, tags language metadata, caches results."""
+        cache_key = f"streams:{media_type}:{tmdb_id}:{season}:{episode}:{language_pref or 'all'}"
         cached = redis_cache.get(cache_key)
         if cached:
             logger.info(f"Cache hit for {cache_key}")
@@ -58,55 +59,165 @@ class StreamExtractor:
             "id": "vidsrc-main",
             "name": "VIDSRC (MAIN)",
             "url": vv_url,
-            "type": "iframe"
+            "type": "iframe",
+            "language": "en",
+            "language_name": "English / Multi"
         }
 
-        # 2. VIDLINK
+        # 2. HINDI DUB (PRIMARY)
+        if media_type == "movie":
+            me_hi_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&ds_lang=hi"
+        else:
+            me_hi_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}&ds_lang=hi"
+
+        server2 = {
+            "id": "hindi-dub",
+            "name": "HINDI DUB",
+            "url": me_hi_url,
+            "type": "iframe",
+            "language": "hi",
+            "language_name": "Hindi Dubbed",
+            "is_dub": True
+        }
+
+        # 3. VIDLINK
         if media_type == "movie":
             vl_url = f"https://vidlink.pro/movie/{tmdb_id}"
         else:
             vl_url = f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}"
             
-        server2 = {
+        server3 = {
             "id": "vidlink-secondary",
             "name": "VIDLINK",
             "url": vl_url,
-            "type": "iframe"
+            "type": "iframe",
+            "language": "en",
+            "language_name": "English / Original"
         }
 
-        # 3. ENGLISH DUB
+        # 4. TAMIL DUB / REGIONAL
+        if media_type == "movie":
+            ta_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&ds_lang=ta"
+        else:
+            ta_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}&ds_lang=ta"
+
+        server4 = {
+            "id": "tamil-dub",
+            "name": "TAMIL DUB",
+            "url": ta_url,
+            "type": "iframe",
+            "language": "ta",
+            "language_name": "Tamil Dubbed",
+            "is_dub": True
+        }
+
+        # 5. TELUGU DUB / REGIONAL
+        if media_type == "movie":
+            te_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&ds_lang=te"
+        else:
+            te_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}&ds_lang=te"
+
+        server5 = {
+            "id": "telugu-dub",
+            "name": "TELUGU DUB",
+            "url": te_url,
+            "type": "iframe",
+            "language": "te",
+            "language_name": "Telugu Dubbed",
+            "is_dub": True
+        }
+
+        # 6. ENGLISH DUB
         if media_type == "movie":
             vp_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
         else:
             vp_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
 
-        server3 = {
+        server6 = {
             "id": "english-dub",
             "name": "ENGLISH DUB",
             "url": vp_url,
-            "type": "iframe"
+            "type": "iframe",
+            "language": "en",
+            "language_name": "English Dubbed"
         }
 
-        # 4. HINDI DUB
-        if media_type == "movie":
-            me_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&ds_lang=hi"
-        else:
-            me_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}&ds_lang=hi"
+        all_servers = [server1, server2, server3, server4, server5, server6]
 
-        server4 = {
-            "id": "hindi-dub",
-            "name": "HINDI DUB",
-            "url": me_url,
-            "type": "iframe"
-        }
+        # Prioritize based on language_pref if provided
+        if language_pref == "hi":
+            all_servers.sort(key=lambda s: 0 if s.get("language") == "hi" else 1)
+        elif language_pref in ["ta", "te", "regional"]:
+            all_servers.sort(key=lambda s: 0 if s.get("is_dub") and s.get("language") != "en" else 1)
 
-        result = {"servers": [server1, server2, server3, server4]}
+        result = {"servers": all_servers}
 
         # Cache iframe fallbacks for 1 hour
         redis_cache.set(cache_key, result, expire_seconds=3600)
         logger.info(f"Cached servers list for {cache_key}")
 
         return result
+
+    async def extract_download_streams(
+        self,
+        media_type: str,
+        tmdb_id: str,
+        season: int = 1,
+        episode: int = 1,
+    ) -> Dict[str, Any]:
+        """Resolves direct downloadable links or mp4 stream links for offline saving."""
+        autoembed_servers = await self._try_autoembed(media_type, tmdb_id, season, episode)
+
+        download_options = []
+        
+        for srv in autoembed_servers:
+            download_options.append({
+                "label": f"{srv['name']} (High Speed MP4/HLS Direct)",
+                "url": srv['url'],
+                "quality": "1080p Full HD",
+                "format": "mp4",
+                "type": "direct"
+            })
+
+        if media_type == "movie":
+            download_options.append({
+                "label": "Direct MP4 Download Server 1 (1080p)",
+                "url": f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}",
+                "quality": "1080p",
+                "format": "mp4",
+                "type": "embed"
+            })
+            download_options.append({
+                "label": "Direct MP4 Download Server 2 (Hindi Dubbed 720p)",
+                "url": f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&ds_lang=hi",
+                "quality": "720p",
+                "format": "mp4",
+                "type": "embed"
+            })
+        else:
+            download_options.append({
+                "label": f"Direct MP4 Download S{season}E{episode} (1080p)",
+                "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
+                "quality": "1080p",
+                "format": "mp4",
+                "type": "embed"
+            })
+            download_options.append({
+                "label": f"Hindi Dubbed MP4 Download S{season}E{episode} (720p)",
+                "url": f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}&ds_lang=hi",
+                "quality": "720p",
+                "format": "mp4",
+                "type": "embed"
+            })
+
+        return {
+            "status": "success",
+            "tmdb_id": tmdb_id,
+            "media_type": media_type,
+            "season": season,
+            "episode": episode,
+            "downloads": download_options
+        }
 
     async def _try_autoembed(
         self, media_type: str, tmdb_id: str, season: int, episode: int

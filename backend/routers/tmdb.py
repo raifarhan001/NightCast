@@ -128,13 +128,16 @@ async def get_tv_season(tv_id: str, season_number: int):
             "episodes": []
         }
 
+from fastapi.responses import HTMLResponse, StreamingResponse
+
 @router.get("/{media_type}/{tmdb_id}/streams")
 async def get_streams(
     media_type: str,
     tmdb_id: str,
     response: Response,
     season: int = 1,
-    episode: int = 1
+    episode: int = 1,
+    language: str = Query("all", description="Language preference e.g. hi, ta, te, en")
 ):
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     response.headers["Pragma"] = "no-cache"
@@ -145,9 +148,61 @@ async def get_streams(
             tmdb_id=tmdb_id,
             season=season,
             episode=episode,
+            language_pref=language
         )
     except Exception as e:
         return {"streams": [], "error": str(e)}
+
+@router.get("/{media_type}/{tmdb_id}/download")
+async def get_download_streams(
+    media_type: str,
+    tmdb_id: str,
+    season: int = 1,
+    episode: int = 1
+):
+    try:
+        return await stream_extractor.extract_download_streams(
+            media_type=media_type,
+            tmdb_id=tmdb_id,
+            season=season,
+            episode=episode
+        )
+    except Exception as e:
+        return {"downloads": [], "error": str(e)}
+
+@router.get("/download-proxy")
+async def download_proxy(url: str, filename: str = Query("nightcast_video.mp4")):
+    """Proxies and streams video binary data with attachment disposition for offline saving."""
+    try:
+        client = httpx.AsyncClient(follow_redirects=True, verify=False, timeout=60.0)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "*/*",
+        }
+        
+        req = client.build_request("GET", url, headers=headers)
+        res = await client.send(req, stream=True)
+
+        safe_filename = filename.replace('"', '').replace("'", "")
+        if not safe_filename.endswith(".mp4"):
+            safe_filename += ".mp4"
+
+        headers_out = {
+            "Content-Disposition": f'attachment; filename="{safe_filename}"',
+            "Content-Type": res.headers.get("content-type", "video/mp4"),
+        }
+
+        async def stream_generator():
+            try:
+                async for chunk in res.aiter_bytes(chunk_size=65536):
+                    yield chunk
+            finally:
+                await res.aclose()
+                await client.aclose()
+
+        return StreamingResponse(stream_generator(), headers=headers_out, status_code=200)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Download proxy error: {str(e)}")
 
 @router.get("/proxy-stream")
 async def proxy_stream(url: str):

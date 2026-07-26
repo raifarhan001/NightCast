@@ -4,9 +4,10 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { apiFetch } from '../../../../lib/api';
+import { apiFetch, API_BASE_URL } from '../../../../lib/api';
+import { saveWatchProgress, getSavedTimestamp } from '../../../../lib/progress';
 import { ImageService } from '../../../../lib/ImageService';
-import { Play, Star } from 'lucide-react';
+import { Play, Star, Download, DownloadCloud, Languages, Globe, X, Check, Loader2 } from 'lucide-react';
 import { useUserStore } from '../../../../store/userStore';
 import HLSPlayer from '../../../../components/player/HLSPlayer';
 import MovieRow from '../../../../components/shared/MovieRow';
@@ -26,6 +27,8 @@ export default function WatchPage() {
 
   const [meta, setMeta] = useState<any>(null);
   const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [languagePref, setLanguagePref] = useState<'all' | 'hi' | 'regional' | 'en'>('all');
+
   const [servers, setServers] = useState<any[]>(() => {
     const defaultServers: any[] = [
       {
@@ -34,23 +37,8 @@ export default function WatchPage() {
         url: type === 'tv'
           ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
           : `https://vidsrc.me/embed/movie?tmdb=${id}`,
-        type: 'iframe'
-      },
-      {
-        id: 'vidlink-secondary',
-        name: 'VIDLINK',
-        url: type === 'tv'
-          ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}`
-          : `https://vidlink.pro/movie/${id}`,
-        type: 'iframe'
-      },
-      {
-        id: 'english-dub',
-        name: 'ENGLISH DUB',
-        url: type === 'tv'
-          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
-          : `https://vidsrc.me/embed/movie?tmdb=${id}`,
-        type: 'iframe'
+        type: 'iframe',
+        language: 'en'
       },
       {
         id: 'hindi-dub',
@@ -58,7 +46,37 @@ export default function WatchPage() {
         url: type === 'tv'
           ? `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${currentSeason}&e=${currentEpisode}&ds_lang=hi`
           : `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&ds_lang=hi`,
-        type: 'iframe'
+        type: 'iframe',
+        language: 'hi',
+        is_dub: true
+      },
+      {
+        id: 'vidlink-secondary',
+        name: 'VIDLINK',
+        url: type === 'tv'
+          ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}`
+          : `https://vidlink.pro/movie/${id}`,
+        type: 'iframe',
+        language: 'en'
+      },
+      {
+        id: 'tamil-dub',
+        name: 'TAMIL DUB',
+        url: type === 'tv'
+          ? `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${currentSeason}&e=${currentEpisode}&ds_lang=ta`
+          : `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&ds_lang=ta`,
+        type: 'iframe',
+        language: 'ta',
+        is_dub: true
+      },
+      {
+        id: 'english-dub',
+        name: 'ENGLISH DUB',
+        url: type === 'tv'
+          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
+          : `https://vidsrc.me/embed/movie?tmdb=${id}`,
+        type: 'iframe',
+        language: 'en'
       }
     ];
     return defaultServers;
@@ -69,6 +87,12 @@ export default function WatchPage() {
   const [episodesLoading, setEpisodesLoading] = useState(false);
   const [resumeTime, setResumeTime] = useState(0);
   const [hlsFailedServers, setHlsFailedServers] = useState<string[]>([]);
+
+  // Download Modal state
+  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
+  const [downloadOptions, setDownloadOptions] = useState<any[]>([]);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState<string | null>(null);
 
   useEffect(() => {
     setHlsFailedServers([]);
@@ -140,12 +164,19 @@ export default function WatchPage() {
       try {
         if (!id || !type) return;
         const data = await apiFetch(
-          `/api/tmdb/${type}/${id}/streams?season=${currentSeason}&episode=${currentEpisode}`
+          `/api/tmdb/${type}/${id}/streams?season=${currentSeason}&episode=${currentEpisode}&language=${languagePref}`
         );
         if (data?.servers) {
           const filteredServers = data.servers.filter((s: any) => s.id !== 'vidsrc-pro');
           if (filteredServers.length > 0) {
             setServers(filteredServers);
+            if (languagePref === 'hi') {
+              const hiSrv = filteredServers.find((s: any) => s.language === 'hi' || s.id === 'hindi-dub');
+              if (hiSrv) setActiveServerId(hiSrv.id);
+            } else if (languagePref === 'regional') {
+              const regSrv = filteredServers.find((s: any) => s.is_dub && s.language !== 'en');
+              if (regSrv) setActiveServerId(regSrv.id);
+            }
           }
         }
       } catch (err) {
@@ -153,7 +184,7 @@ export default function WatchPage() {
       }
     };
     fetchServers();
-  }, [id, type, currentSeason, currentEpisode]);
+  }, [id, type, currentSeason, currentEpisode, languagePref]);
 
   useEffect(() => {
     if (!activeServer?.url) return;
@@ -163,13 +194,8 @@ export default function WatchPage() {
     if (finalUrl.includes('vidlink.pro')) {
       let startAtParam = "";
       try {
-        const savedProgress = localStorage.getItem('vidLinkProgress');
-        if (savedProgress) {
-          const progressObj = JSON.parse(savedProgress);
-          const key = type === 'tv' ? `${id}_s${currentSeason}e${currentEpisode}` : id;
-          const entry = id ? progressObj[key as string] : null;
-          const watched = entry?.watched ?? entry?.progress?.watched ?? 0;
-          const seconds = Math.floor(watched);
+        if (id) {
+          const seconds = getSavedTimestamp(id, currentSeason, currentEpisode);
           if (seconds > 10) {
             startAtParam = `&startAt=${seconds}`;
           }
@@ -186,41 +212,27 @@ export default function WatchPage() {
 
   useEffect(() => {
     if (!id) return;
-    try {
-      const savedProgress = localStorage.getItem('vidLinkProgress');
-      if (savedProgress) {
-        const progressObj = JSON.parse(savedProgress);
-        const key = type === 'tv' ? `${id}_s${currentSeason}e${currentEpisode}` : id;
-        const entry = progressObj[key as string];
-        const watched = entry?.watched ?? entry?.progress?.watched ?? 0;
-        const seconds = Math.floor(watched);
-        if (seconds > 10) {
-          setResumeTime(seconds);
-        } else {
-          setResumeTime(0);
-        }
-      } else {
-        setResumeTime(0);
-      }
-    } catch (e) {
-      console.error(e);
-      setResumeTime(0);
-    }
+    const seconds = getSavedTimestamp(id, currentSeason, currentEpisode);
+    setResumeTime(seconds);
   }, [id, activeServerId, currentSeason, currentEpisode, type]);
 
   const handlePlayerProgress = useCallback((currentTime: number, duration: number) => {
     if (!id) return;
     try {
-      const raw = localStorage.getItem('vidLinkProgress');
-      const map = raw ? JSON.parse(raw) : {};
-      const key = type === 'tv' ? `${id}_s${currentSeason}e${currentEpisode}` : id;
-      const progressData = {
-        watched: currentTime,
-        duration: duration,
-        progress: duration > 0 ? (currentTime / duration) * 100 : 0
-      };
-      map[key as string] = progressData;
-      localStorage.setItem('vidLinkProgress', JSON.stringify(map));
+      const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
+      
+      saveWatchProgress({
+        id: id,
+        media_type: type as 'movie' | 'tv',
+        title: meta?.title || meta?.name || 'Untitled',
+        poster_path: meta?.poster_path || null,
+        backdrop_path: meta?.backdrop_path || null,
+        season: type === 'tv' ? currentSeason : undefined,
+        episode: type === 'tv' ? currentEpisode : undefined,
+        timestamp_seconds: currentTime,
+        duration_seconds: duration,
+        progress_percent: progressPercent
+      });
 
       if (activeProfile && meta) {
         apiFetch('/api/progress/update', {
@@ -231,7 +243,7 @@ export default function WatchPage() {
             id: id,
             currentTime: currentTime,
             duration: duration,
-            progress: duration > 0 ? (currentTime / duration) * 100 : 0,
+            progress: progressPercent,
             season: type === 'tv' ? currentSeason : undefined,
             episode: type === 'tv' ? currentEpisode : undefined,
             event: 'progress',
@@ -249,6 +261,48 @@ export default function WatchPage() {
     setCurrentSeason(s);
     setCurrentEpisode(ep);
     window.history.pushState(null, '', `/watch/tv/${id}?season=${s}&episode=${ep}`);
+  };
+
+  const handleOpenDownloadModal = async () => {
+    setIsDownloadModalOpen(true);
+    setIsDownloading(false);
+    setDownloadProgress(null);
+    try {
+      const res = await apiFetch(`/api/tmdb/${type}/${id}/download?season=${currentSeason}&episode=${currentEpisode}`);
+      if (res?.downloads) {
+        setDownloadOptions(res.downloads);
+      }
+    } catch (e) {
+      console.error("Failed to fetch download links", e);
+    }
+  };
+
+  const handleStartDownload = async (opt: any) => {
+    setIsDownloading(true);
+    setDownloadProgress("Initiating direct download stream...");
+    try {
+      const titleClean = (meta?.title || meta?.name || "NightCast_Movie").replace(/[^a-zA-Z0-9]/g, "_");
+      const filename = type === 'tv'
+        ? `${titleClean}_S${currentSeason}E${currentEpisode}.mp4`
+        : `${titleClean}.mp4`;
+
+      const downloadProxyUrl = `${API_BASE_URL}/api/v1/tmdb/download-proxy?url=${encodeURIComponent(opt.url)}&filename=${encodeURIComponent(filename)}`;
+
+      // Create hidden link and trigger download
+      const a = document.createElement("a");
+      a.href = downloadProxyUrl;
+      a.download = filename;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      setDownloadProgress("Download started! Check your browser downloads.");
+    } catch (err: any) {
+      setDownloadProgress("Failed to trigger download: " + err.message);
+    } finally {
+      setTimeout(() => setIsDownloading(false), 3000);
+    }
   };
 
   const movieTitle = meta?.title || meta?.name || "Loading Stream...";
@@ -301,9 +355,9 @@ export default function WatchPage() {
           )}
         </div>
 
-        {/* Server Selector Bar */}
-        <div className="p-5 bg-[#12141F] border border-white/10 rounded-2xl flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-          <div>
+        {/* Server & Audio Selector Bar */}
+        <div className="p-5 bg-[#12141F] border border-white/10 rounded-2xl flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+          <div className="flex-1">
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/60 mb-1">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
               <span>NIGHTCAST STREAM ENGINE</span>
@@ -313,21 +367,130 @@ export default function WatchPage() {
             </h1>
           </div>
 
-          <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-full bg-white/5 border border-white/10">
-            {servers.map((srv) => {
-              const isActive = srv.id === activeServerId;
-              return (
-                <button
-                  key={srv.id}
-                  onClick={() => setActiveServerId(srv.id)}
-                  className={isActive ? "gtv-tab-pill-active text-[10px]" : "gtv-tab-pill text-[10px]"}
-                >
-                  {srv.name}
-                </button>
-              );
-            })}
+          {/* Audio Dub Language Filters */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1 p-1 rounded-full bg-white/5 border border-white/10">
+              <button
+                onClick={() => setLanguagePref('all')}
+                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1 ${
+                  languagePref === 'all' ? 'bg-[#00D2FF] text-black shadow-md' : 'text-white/70 hover:text-white'
+                }`}
+              >
+                <Globe className="w-3 h-3" />
+                <span>All</span>
+              </button>
+              <button
+                onClick={() => setLanguagePref('hi')}
+                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1 ${
+                  languagePref === 'hi' ? 'bg-orange-500 text-white shadow-md' : 'text-white/70 hover:text-white'
+                }`}
+              >
+                <span>🇮🇳 Hindi Dubbed</span>
+              </button>
+              <button
+                onClick={() => setLanguagePref('regional')}
+                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1 ${
+                  languagePref === 'regional' ? 'bg-purple-500 text-white shadow-md' : 'text-white/70 hover:text-white'
+                }`}
+              >
+                <span>🎭 Regional Dubbed</span>
+              </button>
+              <button
+                onClick={() => setLanguagePref('en')}
+                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1 ${
+                  languagePref === 'en' ? 'bg-blue-600 text-white shadow-md' : 'text-white/70 hover:text-white'
+                }`}
+              >
+                <span>🇬🇧 English</span>
+              </button>
+            </div>
+
+            {/* Server List Pills */}
+            <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-full bg-white/5 border border-white/10">
+              {servers.map((srv) => {
+                const isActive = srv.id === activeServerId;
+                return (
+                  <button
+                    key={srv.id}
+                    onClick={() => setActiveServerId(srv.id)}
+                    className={isActive ? "gtv-tab-pill-active text-[10px]" : "gtv-tab-pill text-[10px]"}
+                  >
+                    {srv.name}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Direct Download Button */}
+            <button
+              onClick={handleOpenDownloadModal}
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-lg transition-all transform hover:scale-105 active:scale-95"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download Offline</span>
+            </button>
           </div>
         </div>
+
+        {/* Download Options Modal */}
+        {isDownloadModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-[#12141F] border border-white/15 rounded-3xl p-6 max-w-lg w-full space-y-5 shadow-2xl relative animate-in fade-in zoom-in-95">
+              <button
+                onClick={() => setIsDownloadModalOpen(false)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                  <DownloadCloud className="w-6 h-6 text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-white font-display">Download Movie / Episode</h3>
+                  <p className="text-xs text-white/50">Save for offline viewing directly on your device</p>
+                </div>
+              </div>
+
+              {downloadProgress && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs font-semibold text-emerald-300 flex items-center gap-2">
+                  {isDownloading ? <Loader2 className="w-4 h-4 animate-spin shrink-0" /> : <Check className="w-4 h-4 text-emerald-400 shrink-0" />}
+                  <span>{downloadProgress}</span>
+                </div>
+              )}
+
+              <div className="space-y-2 max-h-60 overflow-y-auto no-scrollbar pt-1">
+                {downloadOptions.length > 0 ? (
+                  downloadOptions.map((opt, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3.5 rounded-2xl bg-white/5 border border-white/10 hover:border-emerald-500/40 flex items-center justify-between gap-3 transition-colors"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-xs font-bold text-white truncate">{opt.label}</h4>
+                        <p className="text-[10px] text-white/50 uppercase font-mono">{opt.quality} • {opt.format.toUpperCase()}</p>
+                      </div>
+                      <button
+                        disabled={isDownloading}
+                        onClick={() => handleStartDownload(opt)}
+                        className="px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-transform active:scale-95 shrink-0 flex items-center gap-1.5"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Save</span>
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-8 text-center text-white/50 text-xs font-medium space-y-2">
+                    <Loader2 className="w-6 h-6 animate-spin mx-auto text-emerald-400" />
+                    <p>Fetching direct download streams...</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* TV Season & Episode Selector */}
         {type === 'tv' && (
