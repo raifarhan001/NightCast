@@ -32,8 +32,17 @@ export default function WatchPage() {
   const [servers, setServers] = useState<any[]>(() => {
     const defaultServers: any[] = [
       {
-        id: 'vidsrc-main',
-        name: 'VidSrc Main',
+        id: 'vidsrc_to',
+        name: 'Server 1 (Multi-Audio / Vidsrc.to)',
+        url: type === 'tv'
+          ? `https://vidsrc.to/embed/tv/${id}/${currentSeason}/${currentEpisode}`
+          : `https://vidsrc.to/embed/movie/${id}`,
+        type: 'iframe',
+        language: 'multi'
+      },
+      {
+        id: 'vidsrc_me',
+        name: 'Server 2 (Backup / Vidsrc.me)',
         url: type === 'tv'
           ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
           : `https://vidsrc.me/embed/movie?tmdb=${id}`,
@@ -41,28 +50,18 @@ export default function WatchPage() {
         language: 'en'
       },
       {
-        id: 'hindi-dubbed',
-        name: 'Hindi Dubbed',
+        id: 'multiembed',
+        name: 'Server 3 (MultiEmbed)',
         url: type === 'tv'
-          ? `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${currentSeason}&e=${currentEpisode}`
-          : `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1`,
+          ? `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${currentSeason}&e=${currentEpisode}`
+          : `https://multiembed.mov/?video_id=${id}&tmdb=1`,
         type: 'iframe',
-        language: 'hi',
-        is_dub: true
-      },
-      {
-        id: '2embed-alt',
-        name: '2Embed Alt',
-        url: type === 'tv'
-          ? `https://www.2embed.cc/embedtv/${id}&s=${currentSeason}&e=${currentEpisode}`
-          : `https://www.2embed.cc/embed/${id}`,
-        type: 'iframe',
-        language: 'en'
+        language: 'multi'
       }
     ];
     return defaultServers;
   });
-  const [activeServerId, setActiveServerId] = useState('vidsrc-main');
+  const [activeServerId, setActiveServerId] = useState('vidsrc_to');
   const [playerUrl, setPlayerUrl] = useState("");
   const [seasonEpisodes, setSeasonEpisodes] = useState<any[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(false);
@@ -386,7 +385,7 @@ export default function WatchPage() {
                 )}
                 <button
                   onClick={() => {
-                    const mainSrv = servers.find(s => s.id === 'vidsrc-main') || servers[0];
+                    const mainSrv = servers.find(s => s.id === 'vidsrc_to') || servers[0];
                     if (mainSrv) setActiveServerId(mainSrv.id);
                     setStreamErrorMsg(null);
                   }}

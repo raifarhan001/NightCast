@@ -50,44 +50,43 @@ class StreamExtractor:
             logger.info(f"Cache hit for {cache_key}")
             return cached
 
-        # 1. VIDSRC MAIN (ENGLISH / ORIGINAL)
+        # 1. SERVER 1 (MULTI-AUDIO / VIDSRC.TO)
         if media_type == "movie":
-            vidsrc_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
-            hindi_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1"
-            embed2_url = f"https://www.2embed.cc/embed/{tmdb_id}"
+            vidsrc_to_url = f"https://vidsrc.to/embed/movie/{tmdb_id}"
+            vidsrc_me_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
+            multiembed_url = f"https://multiembed.mov/?video_id={tmdb_id}&tmdb=1"
         else:
-            vidsrc_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
-            hindi_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}"
-            embed2_url = f"https://www.2embed.cc/embedtv/{tmdb_id}&s={season}&e={episode}"
+            vidsrc_to_url = f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}"
+            vidsrc_me_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+            multiembed_url = f"https://multiembed.mov/?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}"
             
         server1 = {
-            "id": "vidsrc-main",
-            "name": "VidSrc Main",
-            "url": vidsrc_url,
+            "id": "vidsrc_to",
+            "name": "Server 1 (Multi-Audio / Vidsrc.to)",
+            "url": vidsrc_to_url,
             "type": "iframe",
-            "language": "en",
-            "language_name": "English / Original"
+            "language": "multi",
+            "language_name": "Multi-Audio / Vidsrc.to"
         }
 
-        # 2. HINDI DUBBED (MULTI-AUDIO)
+        # 2. SERVER 2 (BACKUP / VIDSRC.ME)
         server2 = {
-            "id": "hindi-dubbed",
-            "name": "Hindi Dubbed",
-            "url": hindi_url,
-            "type": "iframe",
-            "language": "hi",
-            "language_name": "Hindi Dubbed",
-            "is_dub": True
-        }
-
-        # 3. 2EMBED ALT (ENGLISH ALTERNATE)
-        server3 = {
-            "id": "2embed-alt",
-            "name": "2Embed Alt",
-            "url": embed2_url,
+            "id": "vidsrc_me",
+            "name": "Server 2 (Backup / Vidsrc.me)",
+            "url": vidsrc_me_url,
             "type": "iframe",
             "language": "en",
-            "language_name": "English Alternate"
+            "language_name": "Backup / Vidsrc.me"
+        }
+
+        # 3. SERVER 3 (MULTIEMBED)
+        server3 = {
+            "id": "multiembed",
+            "name": "Server 3 (MultiEmbed)",
+            "url": multiembed_url,
+            "type": "iframe",
+            "language": "multi",
+            "language_name": "MultiEmbed"
         }
 
         all_servers = [server1, server2, server3]
