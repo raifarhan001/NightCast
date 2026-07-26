@@ -44,8 +44,8 @@ export default function WatchPage() {
         id: 'hindi-dubbed',
         name: 'Hindi Dubbed',
         url: type === 'tv'
-          ? `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${currentSeason}&e=${currentEpisode}&ds_lang=hi`
-          : `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&ds_lang=hi`,
+          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}&ds_lang=hi`
+          : `https://vidsrc.me/embed/movie?tmdb=${id}&ds_lang=hi`,
         type: 'iframe',
         language: 'hi',
         is_dub: true
@@ -196,13 +196,17 @@ export default function WatchPage() {
     setIsIframeLoaded(false);
     setStreamErrorMsg(null);
 
-    // Strict 5-second timeout check for iframe sources
+    // Strict 4-second timeout check for iframe sources
     if (activeServer.type !== 'hls') {
       const timer = setTimeout(() => {
         if (!isIframeLoaded) {
-          setStreamErrorMsg("Server unavailable, please retry");
+          if (activeServer.language === 'hi' || activeServer.id === 'hindi-dubbed') {
+            setStreamErrorMsg("Hindi stream unavailable on this server, please try another server or switch to VidSrc Main.");
+          } else {
+            setStreamErrorMsg("Server unavailable, please retry");
+          }
         }
-      }, 5000);
+      }, 4000);
       return () => clearTimeout(timer);
     }
   }, [activeServer, id, type, currentSeason, currentEpisode]);
