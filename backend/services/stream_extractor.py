@@ -50,56 +50,55 @@ class StreamExtractor:
             logger.info(f"Cache hit for {cache_key}")
             return cached
 
-        # 1. SERVER 1 (ORIGINAL / VIDSRC.TO)
+        # 1. SERVER 1 (VIDSRC.TO)
         if media_type == "movie":
             vidsrc_to_url = f"https://vidsrc.to/embed/movie/{tmdb_id}"
-            vidsrc_me_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
-            embed_su_url = f"https://embed.su/embed/movie/{tmdb_id}"
+            vidsrc_cc_url = f"https://vidsrc.cc/v2/embed/movie/{tmdb_id}"
             multiembed_url = f"https://multiembed.mov/?video_id={tmdb_id}&tmdb=1"
+            embed_cx_url = f"https://iframe.embed.cx/movie?tmdb={tmdb_id}"
         else:
             vidsrc_to_url = f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}"
-            vidsrc_me_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
-            embed_su_url = f"https://embed.su/embed/tv/{tmdb_id}/{season}/{episode}"
+            vidsrc_cc_url = f"https://vidsrc.cc/v2/embed/tv/{tmdb_id}/{season}/{episode}"
             multiembed_url = f"https://multiembed.mov/?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}"
+            embed_cx_url = f"https://iframe.embed.cx/tv?tmdb={tmdb_id}&s={season}&e={episode}"
             
         server1 = {
-            "id": "original",
-            "name": "Server 1 (Original / Vidsrc.to)",
+            "id": "server1",
+            "name": "Server 1 (Vidsrc.to)",
             "url": vidsrc_to_url,
             "type": "iframe",
             "language": "en",
-            "language_name": "Original / Vidsrc.to"
+            "language_name": "Vidsrc.to"
         }
 
-        # 2. SERVER 2 (ENGLISH / VIDSRC.ME)
+        # 2. SERVER 2 (VIDSRC.CC)
         server2 = {
-            "id": "english",
-            "name": "Server 2 (English / Vidsrc.me)",
-            "url": vidsrc_me_url,
+            "id": "server2",
+            "name": "Server 2 (Vidsrc.cc)",
+            "url": vidsrc_cc_url,
             "type": "iframe",
             "language": "en",
-            "language_name": "English / Vidsrc.me"
+            "language_name": "Vidsrc.cc V2"
         }
 
-        # 3. SERVER 3 (HINDI / EMBED.SU)
+        # 3. SERVER 3 (MULTIEMBED)
         server3 = {
-            "id": "hindi",
-            "name": "Server 3 (Hindi / Embed.su)",
-            "url": embed_su_url,
-            "type": "iframe",
-            "language": "hi",
-            "language_name": "Hindi / Embed.su",
-            "is_dub": True
-        }
-
-        # 4. SERVER 4 (BACKUP / MULTIEMBED)
-        server4 = {
-            "id": "backup",
-            "name": "Server 4 (Backup / MultiEmbed)",
+            "id": "server3",
+            "name": "Server 3 (MultiEmbed)",
             "url": multiembed_url,
             "type": "iframe",
             "language": "multi",
-            "language_name": "Backup / MultiEmbed"
+            "language_name": "MultiEmbed"
+        }
+
+        # 4. SERVER 4 (EMBED.CX)
+        server4 = {
+            "id": "server4",
+            "name": "Server 4 (Embed.cx)",
+            "url": embed_cx_url,
+            "type": "iframe",
+            "language": "en",
+            "language_name": "Embed.cx"
         }
 
         all_servers = [server1, server2, server3, server4]
