@@ -323,56 +323,9 @@ export default function WatchPage() {
       <div className="space-y-6">
         {/* Full Player Container */}
         <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-white/10 bg-[#000000] shadow-2xl">
-          {!isIframeLoaded && !streamErrorMsg && (
-            <div className="absolute inset-0 z-20">
+          {!isIframeLoaded && (
+            <div className="absolute inset-0 z-20 pointer-events-none">
               <PlayerSkeleton />
-            </div>
-          )}
-
-          {streamErrorMsg && (
-            <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#090A0F]/90 backdrop-blur-md p-6 text-center space-y-4">
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
-                <AlertTriangle className="w-7 h-7 text-amber-400" />
-              </div>
-              <div className="space-y-1 max-w-md">
-                <h3 className="text-base font-extrabold text-white font-display">
-                  {activeServer?.language === 'hi' ? 'Hindi Stream Unavailable' : 'Stream Unavailable'}
-                </h3>
-                <p className="text-xs text-white/60">
-                  {streamErrorMsg}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
-                {activeServer?.language === 'hi' && (
-                  <button
-                    onClick={() => {
-                      const altHi = servers.find(s => (s.id.includes('hindi-dub') || s.language === 'hi') && s.id !== activeServerId);
-                      if (altHi) {
-                        setActiveServerId(altHi.id);
-                      } else {
-                        const main = servers.find(s => s.id === 'original') || servers[0];
-                        if (main) setActiveServerId(main.id);
-                      }
-                      setStreamErrorMsg(null);
-                    }}
-                    className="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Try Hindi Fallback Server</span>
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    const mainSrv = servers.find(s => s.id === 'original') || servers[0];
-                    if (mainSrv) setActiveServerId(mainSrv.id);
-                    setStreamErrorMsg(null);
-                  }}
-                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-1.5 transition-all"
-                >
-                  <Globe className="w-3.5 h-3.5" />
-                  <span>Switch to Main Server</span>
-                </button>
-              </div>
             </div>
           )}
 
@@ -384,31 +337,13 @@ export default function WatchPage() {
                 startAt={resumeTime}
                 onProgress={handlePlayerProgress}
                 poster={meta?.backdrop_path ? `https://image.tmdb.org/t/p/original${meta.backdrop_path}` : undefined}
-                onError={() => {
-                  if (activeServer?.id) {
-                    setHlsFailedServers(prev => [...prev, activeServer.id]);
-                    if (activeServer.language === 'hi') {
-                      setStreamErrorMsg("Hindi stream unavailable on this server, please try another server.");
-                    } else {
-                      setStreamErrorMsg("Stream failed to load. Please try another server.");
-                    }
-                  }
-                }}
               />
             ) : (
               <iframe
+                key={activeServerId}
                 src={playerUrl}
                 onLoad={() => setIsIframeLoaded(true)}
-                onError={() => {
-                  if (activeServer?.language === 'hi') {
-                    setStreamErrorMsg("Hindi stream unavailable, please try another server.");
-                  } else {
-                    setStreamErrorMsg("Failed to load iframe stream.");
-                  }
-                }}
-                className={`absolute top-0 left-0 w-full h-full border-0 transition-opacity duration-500 ${
-                  isIframeLoaded && !streamErrorMsg ? 'opacity-100' : 'opacity-0'
-                }`}
+                className="absolute top-0 left-0 w-full h-full border-0"
                 allowFullScreen
                 scrolling="no"
                 title="NightCast Media Player"
