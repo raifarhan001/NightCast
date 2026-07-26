@@ -35,8 +35,8 @@ export default function WatchPage() {
         id: 'vidsrc-main',
         name: 'VidSrc Main',
         url: type === 'tv'
-          ? `https://vidsrc.cc/v2/embed/tv/${id}/${currentSeason}/${currentEpisode}`
-          : `https://vidsrc.cc/v2/embed/movie/${id}`,
+          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
+          : `https://vidsrc.me/embed/movie?tmdb=${id}`,
         type: 'iframe',
         language: 'en'
       },
@@ -44,8 +44,8 @@ export default function WatchPage() {
         id: 'hindi-dubbed',
         name: 'Hindi Dubbed',
         url: type === 'tv'
-          ? `https://vidsrc.cc/v2/embed/tv/${id}/${currentSeason}/${currentEpisode}?ds_lang=hi`
-          : `https://vidsrc.cc/v2/embed/movie/${id}?ds_lang=hi`,
+          ? `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${currentSeason}&e=${currentEpisode}`
+          : `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1`,
         type: 'iframe',
         language: 'hi',
         is_dub: true
@@ -455,44 +455,8 @@ export default function WatchPage() {
             </h1>
           </div>
 
-          {/* Audio Dub Language Filters */}
+          {/* Server Selection & Action Row */}
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1 p-1 rounded-full bg-white/5 border border-white/10">
-              <button
-                onClick={() => setLanguagePref('all')}
-                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1 ${
-                  languagePref === 'all' ? 'bg-[#00D2FF] text-black shadow-md' : 'text-white/70 hover:text-white'
-                }`}
-              >
-                <Globe className="w-3 h-3" />
-                <span>All</span>
-              </button>
-              <button
-                onClick={() => setLanguagePref('hi')}
-                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1 ${
-                  languagePref === 'hi' ? 'bg-orange-500 text-white shadow-md' : 'text-white/70 hover:text-white'
-                }`}
-              >
-                <span>🇮🇳 Hindi Dubbed</span>
-              </button>
-              <button
-                onClick={() => setLanguagePref('regional')}
-                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1 ${
-                  languagePref === 'regional' ? 'bg-purple-500 text-white shadow-md' : 'text-white/70 hover:text-white'
-                }`}
-              >
-                <span>🎭 Regional Dubbed</span>
-              </button>
-              <button
-                onClick={() => setLanguagePref('en')}
-                className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1 ${
-                  languagePref === 'en' ? 'bg-blue-600 text-white shadow-md' : 'text-white/70 hover:text-white'
-                }`}
-              >
-                <span>🇬🇧 English</span>
-              </button>
-            </div>
-
             {/* Server List Pills */}
             <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-full bg-white/5 border border-white/10">
               {servers.map((srv) => {
