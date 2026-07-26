@@ -53,6 +53,27 @@ app = FastAPI(
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     print(f"Handled Error on {request.url}: {exc}")
+    if "proxy-embed" in str(request.url) or "proxy-stream" in str(request.url):
+        return HTMLResponse(
+            content=f"""
+            <!DOCTYPE html>
+            <html>
+            <head><meta charset="utf-8"><style>
+                body {{ background-color: #090A0F; color: #ffffff; font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }}
+                .card {{ background: #12141F; border: 1px solid rgba(255,255,255,0.1); padding: 24px; border-radius: 16px; text-align: center; max-width: 400px; }}
+                h3 {{ margin: 0 0 8px 0; color: #f59e0b; font-size: 16px; }}
+                p {{ margin: 0; color: rgba(255,255,255,0.6); font-size: 13px; }}
+            </style></head>
+            <body>
+                <div class="card">
+                    <h3>Stream Proxy Unavailable</h3>
+                    <p>The requested embed stream source is restricted or unavailable. Please switch to another server.</p>
+                </div>
+            </body>
+            </html>
+            """,
+            status_code=200
+        )
     return JSONResponse(
         status_code=200,
         content={"status": "error", "results": [], "message": str(exc)}
@@ -143,12 +164,27 @@ async def global_proxy_stream(url: str):
 @app.get("/api/v1/tmdb/proxy-embed")
 async def global_proxy_embed(url: str):
     try:
-        async with httpx.AsyncClient(follow_redirects=True, verify=False) as client:
+        async with httpx.AsyncClient(follow_redirects=True, verify=False, timeout=5.0) as client:
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             }
-            res = await client.get(url, headers=headers, timeout=12.0)
+            res = await client.get(url, headers=headers)
             
+            if res.status_code >= 400:
+                return HTMLResponse(
+                    content=f"""
+                    <!DOCTYPE html><html><head><meta charset="utf-8"><style>
+                    body {{ background-color:#090A0F; color:#fff; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; }}
+                    .box {{ background:#12141F; border:1px solid rgba(255,255,255,0.1); padding:20px; border-radius:14px; text-align:center; max-width:380px; }}
+                    </style></head><body>
+                    <div class="box"><h4 style="color:#f59e0b;margin:0 0 6px 0;">Embed Unavailable ({res.status_code})</h4><p style="color:#aaa;font-size:12px;margin:0;">The provider blocked or refused the stream connection. Please select another server.</p></div>
+                    </body></html>
+                    """,
+                    media_type="text/html",
+                    status_code=200
+                )
+
             html = res.text
             parsed = urlparse(url)
             base_url = f"{parsed.scheme}://{parsed.netloc}/"
@@ -159,9 +195,20 @@ async def global_proxy_embed(url: str):
             else:
                 html = f"<html><head>{base_tag}</head>{html}"
                 
-            return HTMLResponse(content=html, media_type="text/html")
+            return HTMLResponse(content=html, media_type="text/html", status_code=200)
     except Exception as e:
-        return HTMLResponse(content=f"<h1>Proxy Error: {str(e)}</h1>", media_type="text/html", status_code=500)
+        return HTMLResponse(
+            content=f"""
+            <!DOCTYPE html><html><head><meta charset="utf-8"><style>
+            body {{ background-color:#090A0F; color:#fff; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; }}
+            .box {{ background:#12141F; border:1px solid rgba(255,255,255,0.1); padding:20px; border-radius:14px; text-align:center; max-width:380px; }}
+            </style></head><body>
+            <div class="box"><h4 style="color:#ef4444;margin:0 0 6px 0;">Stream Embed Connection Timeout</h4><p style="color:#aaa;font-size:12px;margin:0;">{str(e)}</p></div>
+            </body></html>
+            """,
+            media_type="text/html",
+            status_code=200
+        )
 
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)

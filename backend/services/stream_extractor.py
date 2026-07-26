@@ -1,6 +1,7 @@
 import httpx
 import re
 import logging
+import asyncio
 from typing import Dict, Any, List, Optional
 from services.redis_service import redis_cache
 
@@ -49,37 +50,37 @@ class StreamExtractor:
             logger.info(f"Cache hit for {cache_key}")
             return cached
 
-        # 1. VIDSRC (MAIN)
+        # 1. VIDSRC (MAIN - XYZ)
         if media_type == "movie":
-            vv_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
+            vidsrc_xyz_url = f"https://vidsrc.xyz/embed/movie?tmdb={tmdb_id}"
+            vidsrc_me_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
         else:
-            vv_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+            vidsrc_xyz_url = f"https://vidsrc.xyz/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+            vidsrc_me_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
             
         server1 = {
             "id": "vidsrc-main",
             "name": "VIDSRC (MAIN)",
-            "url": vv_url,
+            "url": vidsrc_xyz_url,
             "type": "iframe",
             "language": "en",
             "language_name": "English / Multi"
         }
 
-        # 2. HINDI DUB (PRIMARY - MULTIEMBED)
+        # 2. HINDI DUB (PRIMARY & FALLBACKS)
         if media_type == "movie":
+            hi_xyz_url = f"https://vidsrc.xyz/embed/movie?tmdb={tmdb_id}&ds_lang=hi"
             me_hi_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&ds_lang=hi"
-            hi_proxy_url = f"/api/v1/tmdb/proxy-embed?url={me_hi_url}"
-            vidsrc_hi_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}&ds_lang=hi"
-            super_hi_url = f"https://multiembed.org/directstream.php?video_id={tmdb_id}&tmdb=1&ds_lang=hi"
+            hi_proxy_url = f"/api/v1/tmdb/proxy-embed?url={encode_param(hi_xyz_url)}"
         else:
+            hi_xyz_url = f"https://vidsrc.xyz/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}&ds_lang=hi"
             me_hi_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}&ds_lang=hi"
-            hi_proxy_url = f"/api/v1/tmdb/proxy-embed?url={me_hi_url}"
-            vidsrc_hi_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}&ds_lang=hi"
-            super_hi_url = f"https://multiembed.org/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}&ds_lang=hi"
+            hi_proxy_url = f"/api/v1/tmdb/proxy-embed?url={encode_param(hi_xyz_url)}"
 
         server2 = {
             "id": "hindi-dub-primary",
             "name": "HINDI DUB (MAIN)",
-            "url": me_hi_url,
+            "url": hi_xyz_url,
             "type": "iframe",
             "language": "hi",
             "language_name": "Hindi Dubbed",
@@ -89,33 +90,18 @@ class StreamExtractor:
         server2_fallback = {
             "id": "hindi-dub-secondary",
             "name": "HINDI DUB (ALT)",
-            "url": super_hi_url,
+            "url": me_hi_url,
             "type": "iframe",
             "language": "hi",
             "language_name": "Hindi Dubbed",
             "is_dub": True
         }
 
-        server2_proxied = {
-            "id": "hindi-dub-proxy",
-            "name": "HINDI DUB (PROXIED)",
-            "url": hi_proxy_url,
-            "type": "iframe",
-            "language": "hi",
-            "language_name": "Hindi Dubbed (Proxied)",
-            "is_dub": True
-        }
-
-        # 3. VIDLINK
-        if media_type == "movie":
-            vl_url = f"https://vidlink.pro/movie/{tmdb_id}"
-        else:
-            vl_url = f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}"
-            
+        # 3. VIDSRC ME SECONDARY
         server3 = {
-            "id": "vidlink-secondary",
-            "name": "VIDLINK",
-            "url": vl_url,
+            "id": "vidsrc-me",
+            "name": "VIDSRC (MIRROR)",
+            "url": vidsrc_me_url,
             "type": "iframe",
             "language": "en",
             "language_name": "English / Original"
@@ -153,22 +139,22 @@ class StreamExtractor:
             "is_dub": True
         }
 
-        # 6. ENGLISH DUB
+        # 6. 2EMBED / AUTOEMBED
         if media_type == "movie":
-            vp_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
+            embed2_url = f"https://www.2embed.cc/embed/{tmdb_id}"
         else:
-            vp_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+            embed2_url = f"https://www.2embed.cc/embedtv/{tmdb_id}&s={season}&e={episode}"
 
         server6 = {
-            "id": "english-dub",
-            "name": "ENGLISH DUB",
-            "url": vp_url,
+            "id": "2embed-server",
+            "name": "2EMBED",
+            "url": embed2_url,
             "type": "iframe",
             "language": "en",
-            "language_name": "English Dubbed"
+            "language_name": "English / Subbed"
         }
 
-        all_servers = [server1, server2, server2_fallback, server2_proxied, server3, server4, server5, server6]
+        all_servers = [server1, server2, server2_fallback, server3, server4, server5, server6]
 
         # Prioritize based on language_pref if provided
         if language_pref == "hi":
@@ -191,8 +177,15 @@ class StreamExtractor:
         season: int = 1,
         episode: int = 1,
     ) -> Dict[str, Any]:
-        """Resolves direct downloadable links or mp4 stream links for offline saving."""
-        autoembed_servers = await self._try_autoembed(media_type, tmdb_id, season, episode)
+        """Resolves direct downloadable links or mp4 stream links for offline saving with strict fast 3s timeout."""
+        autoembed_servers = []
+        try:
+            autoembed_servers = await asyncio.wait_for(
+                self._try_autoembed(media_type, tmdb_id, season, episode),
+                timeout=3.0
+            )
+        except Exception as e:
+            logger.warning(f"Download stream extraction autoembed timeout/error: {e}")
 
         download_options = []
         
@@ -205,35 +198,36 @@ class StreamExtractor:
                 "type": "direct"
             })
 
+        # Instant fallbacks guaranteed so modal NEVER hangs
         if media_type == "movie":
             download_options.append({
-                "label": "Direct MP4 Download Server 1 (1080p)",
-                "url": f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}",
+                "label": "VIDSRC Direct Stream (1080p)",
+                "url": f"https://vidsrc.xyz/embed/movie?tmdb={tmdb_id}",
                 "quality": "1080p",
                 "format": "mp4",
-                "type": "embed"
+                "type": "stream_fallback"
             })
             download_options.append({
-                "label": "Direct MP4 Download Server 2 (Hindi Dubbed 720p)",
-                "url": f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&ds_lang=hi",
+                "label": "Hindi Dubbed Direct Stream (720p)",
+                "url": f"https://vidsrc.xyz/embed/movie?tmdb={tmdb_id}&ds_lang=hi",
                 "quality": "720p",
                 "format": "mp4",
-                "type": "embed"
+                "type": "stream_fallback"
             })
         else:
             download_options.append({
-                "label": f"Direct MP4 Download S{season}E{episode} (1080p)",
-                "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
+                "label": f"VIDSRC Direct Stream S{season}E{episode} (1080p)",
+                "url": f"https://vidsrc.xyz/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
                 "quality": "1080p",
                 "format": "mp4",
-                "type": "embed"
+                "type": "stream_fallback"
             })
             download_options.append({
-                "label": f"Hindi Dubbed MP4 Download S{season}E{episode} (720p)",
-                "url": f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}&ds_lang=hi",
+                "label": f"Hindi Dubbed Direct Stream S{season}E{episode} (720p)",
+                "url": f"https://vidsrc.xyz/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}&ds_lang=hi",
                 "quality": "720p",
                 "format": "mp4",
-                "type": "embed"
+                "type": "stream_fallback"
             })
 
         return {
@@ -244,6 +238,11 @@ class StreamExtractor:
             "episode": episode,
             "downloads": download_options
         }
+
+
+def encode_param(val: str) -> str:
+    from urllib.parse import quote
+    return quote(val, safe='')
 
     async def _try_autoembed(
         self, media_type: str, tmdb_id: str, season: int, episode: int

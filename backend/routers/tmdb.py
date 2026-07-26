@@ -153,6 +153,9 @@ async def get_streams(
     except Exception as e:
         return {"streams": [], "error": str(e)}
 
+import asyncio
+from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
+
 @router.get("/{media_type}/{tmdb_id}/download")
 async def get_download_streams(
     media_type: str,
@@ -161,12 +164,34 @@ async def get_download_streams(
     episode: int = 1
 ):
     try:
-        return await stream_extractor.extract_download_streams(
-            media_type=media_type,
-            tmdb_id=tmdb_id,
-            season=season,
-            episode=episode
+        return await asyncio.wait_for(
+            stream_extractor.extract_download_streams(
+                media_type=media_type,
+                tmdb_id=tmdb_id,
+                season=season,
+                episode=episode
+            ),
+            timeout=4.0
         )
+    except asyncio.TimeoutError:
+        if media_type == "movie":
+            fallback_url = f"https://vidsrc.xyz/embed/movie?tmdb={tmdb_id}"
+        else:
+            fallback_url = f"https://vidsrc.xyz/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+            
+        return {
+            "status": "fallback",
+            "tmdb_id": tmdb_id,
+            "downloads": [
+                {
+                    "label": "VIDSRC Primary Video Stream (1080p)",
+                    "url": fallback_url,
+                    "quality": "1080p",
+                    "format": "mp4",
+                    "type": "stream_fallback"
+                }
+            ]
+        }
     except Exception as e:
         return {"downloads": [], "error": str(e)}
 
@@ -174,7 +199,7 @@ async def get_download_streams(
 async def download_proxy(url: str, filename: str = Query("nightcast_video.mp4")):
     """Proxies and streams video binary data with attachment disposition for offline saving."""
     try:
-        client = httpx.AsyncClient(follow_redirects=True, verify=False, timeout=60.0)
+        client = httpx.AsyncClient(follow_redirects=True, verify=False, timeout=5.0)
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Accept": "*/*",
@@ -182,6 +207,12 @@ async def download_proxy(url: str, filename: str = Query("nightcast_video.mp4"))
         
         req = client.build_request("GET", url, headers=headers)
         res = await client.send(req, stream=True)
+
+        if res.status_code >= 400:
+            return JSONResponse(
+                status_code=200,
+                content={"status": "error", "message": f"Direct stream download returned status {res.status_code}. Opening stream...", "redirect_url": url}
+            )
 
         safe_filename = filename.replace('"', '').replace("'", "")
         if not safe_filename.endswith(".mp4"):
@@ -202,7 +233,10 @@ async def download_proxy(url: str, filename: str = Query("nightcast_video.mp4"))
 
         return StreamingResponse(stream_generator(), headers=headers_out, status_code=200)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Download proxy error: {str(e)}")
+        return JSONResponse(
+            status_code=200,
+            content={"status": "error", "message": f"Direct download connection timed out. Opening stream directly...", "redirect_url": url}
+        )
 
 @router.get("/proxy-stream")
 async def proxy_stream(url: str):

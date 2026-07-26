@@ -225,7 +225,7 @@ export default function WatchPage() {
             setStreamErrorMsg("Stream load timeout. Please try another server.");
           }
         }
-      }, 12000);
+      }, 7000);
       return () => clearTimeout(timer);
     }
   }, [activeServer, id, type, currentSeason, currentEpisode]);
@@ -289,35 +289,60 @@ export default function WatchPage() {
     setDownloadProgress(null);
     try {
       const res = await apiFetch(`/api/tmdb/${type}/${id}/download?season=${currentSeason}&episode=${currentEpisode}`);
-      if (res?.downloads) {
+      if (res?.downloads && res.downloads.length > 0) {
         setDownloadOptions(res.downloads);
+      } else {
+        const fallbackUrl = type === 'tv'
+          ? `https://vidsrc.xyz/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
+          : `https://vidsrc.xyz/embed/movie?tmdb=${id}`;
+        setDownloadOptions([{
+          label: "Primary Video Stream Link (1080p)",
+          url: fallbackUrl,
+          quality: "1080p",
+          format: "mp4",
+          type: "stream_fallback"
+        }]);
       }
     } catch (e) {
       console.error("Failed to fetch download links", e);
+      const fallbackUrl = type === 'tv'
+        ? `https://vidsrc.xyz/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
+        : `https://vidsrc.xyz/embed/movie?tmdb=${id}`;
+      setDownloadOptions([{
+        label: "Primary Video Stream Link (1080p)",
+        url: fallbackUrl,
+        quality: "1080p",
+        format: "mp4",
+        type: "stream_fallback"
+      }]);
     }
   };
 
   const handleStartDownload = async (opt: any) => {
     setIsDownloading(true);
-    setDownloadProgress("Initiating direct download stream...");
     try {
-      const titleClean = (meta?.title || meta?.name || "NightCast_Movie").replace(/[^a-zA-Z0-9]/g, "_");
-      const filename = type === 'tv'
-        ? `${titleClean}_S${currentSeason}E${currentEpisode}.mp4`
-        : `${titleClean}.mp4`;
+      if (opt.type === "stream_fallback") {
+        setDownloadProgress("Opening stream link in browser download manager...");
+        window.open(opt.url, "_blank");
+      } else {
+        setDownloadProgress("Initiating direct download stream...");
+        const titleClean = (meta?.title || meta?.name || "NightCast_Movie").replace(/[^a-zA-Z0-9]/g, "_");
+        const filename = type === 'tv'
+          ? `${titleClean}_S${currentSeason}E${currentEpisode}.mp4`
+          : `${titleClean}.mp4`;
 
-      const downloadProxyUrl = `${API_BASE_URL}/api/v1/tmdb/download-proxy?url=${encodeURIComponent(opt.url)}&filename=${encodeURIComponent(filename)}`;
+        const downloadProxyUrl = `${API_BASE_URL}/api/v1/tmdb/download-proxy?url=${encodeURIComponent(opt.url)}&filename=${encodeURIComponent(filename)}`;
 
-      // Create hidden link and trigger download
-      const a = document.createElement("a");
-      a.href = downloadProxyUrl;
-      a.download = filename;
-      a.target = "_blank";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+        const a = document.createElement("a");
+        a.href = downloadProxyUrl;
+        a.download = filename;
+        a.target = "_blank";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
 
-      setDownloadProgress("Download started! Check your browser downloads.");
+        setDownloadProgress("Download started! Check your browser downloads.");
+      }
     } catch (err: any) {
       setDownloadProgress("Failed to trigger download: " + err.message);
     } finally {
