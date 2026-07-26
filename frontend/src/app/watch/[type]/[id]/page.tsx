@@ -32,8 +32,8 @@ export default function WatchPage() {
   const [servers, setServers] = useState<any[]>(() => {
     const defaultServers: any[] = [
       {
-        id: 'original',
-        name: 'Server 1 (Original / Vidsrc.to)',
+        id: 'server1',
+        name: 'Server 1 (Vidsrc.to)',
         url: type === 'tv'
           ? `https://vidsrc.to/embed/tv/${id}/${currentSeason}/${currentEpisode}`
           : `https://vidsrc.to/embed/movie/${id}`,
@@ -41,37 +41,36 @@ export default function WatchPage() {
         language: 'en'
       },
       {
-        id: 'english',
-        name: 'Server 2 (English / Vidsrc.me)',
+        id: 'server2',
+        name: 'Server 2 (Vidsrc.cc)',
         url: type === 'tv'
-          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
-          : `https://vidsrc.me/embed/movie?tmdb=${id}`,
+          ? `https://vidsrc.cc/v2/embed/tv/${id}/${currentSeason}/${currentEpisode}`
+          : `https://vidsrc.cc/v2/embed/movie/${id}`,
         type: 'iframe',
         language: 'en'
       },
       {
-        id: 'hindi',
-        name: 'Server 3 (Hindi / Embed.su)',
-        url: type === 'tv'
-          ? `https://embed.su/embed/tv/${id}/${currentSeason}/${currentEpisode}`
-          : `https://embed.su/embed/movie/${id}`,
-        type: 'iframe',
-        language: 'hi',
-        is_dub: true
-      },
-      {
-        id: 'backup',
-        name: 'Server 4 (Backup / MultiEmbed)',
+        id: 'server3',
+        name: 'Server 3 (MultiEmbed)',
         url: type === 'tv'
           ? `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${currentSeason}&e=${currentEpisode}`
           : `https://multiembed.mov/?video_id=${id}&tmdb=1`,
         type: 'iframe',
         language: 'multi'
+      },
+      {
+        id: 'server4',
+        name: 'Server 4 (Embed.cx)',
+        url: type === 'tv'
+          ? `https://embed.cx/embed/tv/${id}/${currentSeason}/${currentEpisode}`
+          : `https://embed.cx/embed/movie/${id}`,
+        type: 'iframe',
+        language: 'en'
       }
     ];
     return defaultServers;
   });
-  const [activeServerId, setActiveServerId] = useState('original');
+  const [activeServerId, setActiveServerId] = useState('server1');
   const [playerUrl, setPlayerUrl] = useState("");
   const [seasonEpisodes, setSeasonEpisodes] = useState<any[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(false);
