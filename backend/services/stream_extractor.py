@@ -53,11 +53,11 @@ class StreamExtractor:
         # 1. VIDSRC MAIN (ENGLISH / ORIGINAL)
         if media_type == "movie":
             vidsrc_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
-            hindi_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}&ds_lang=hi"
+            hindi_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1"
             embed2_url = f"https://www.2embed.cc/embed/{tmdb_id}"
         else:
             vidsrc_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
-            hindi_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}&ds_lang=hi"
+            hindi_url = f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}"
             embed2_url = f"https://www.2embed.cc/embedtv/{tmdb_id}&s={season}&e={episode}"
             
         server1 = {
@@ -69,14 +69,14 @@ class StreamExtractor:
             "language_name": "English / Original"
         }
 
-        # 2. HINDI DUBBED
+        # 2. HINDI DUBBED (MULTI-AUDIO)
         server2 = {
             "id": "hindi-dubbed",
             "name": "Hindi Dubbed",
             "url": hindi_url,
             "type": "iframe",
             "language": "hi",
-            "language_name": "Hindi Dubbed",
+            "language_name": "Hindi / Multi-Audio Dubbed",
             "is_dub": True
         }
 

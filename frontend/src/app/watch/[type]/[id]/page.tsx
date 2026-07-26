@@ -44,8 +44,8 @@ export default function WatchPage() {
         id: 'hindi-dubbed',
         name: 'Hindi Dubbed',
         url: type === 'tv'
-          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}&ds_lang=hi`
-          : `https://vidsrc.me/embed/movie?tmdb=${id}&ds_lang=hi`,
+          ? `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1&s=${currentSeason}&e=${currentEpisode}`
+          : `https://multiembed.mov/directstream.php?video_id=${id}&tmdb=1`,
         type: 'iframe',
         language: 'hi',
         is_dub: true
