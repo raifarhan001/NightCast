@@ -44,8 +44,11 @@ export default function NightCastPlayer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
 
-  const effectiveUrl = playbackData?.manifest_url || streamUrl || "";
-  const isEffectiveHls = (playbackData?.type === "hls" || isHls) && !effectiveUrl.includes("iframe");
+  const rawUrl = playbackData?.manifest_url || streamUrl || "";
+  const [currentAudio, setCurrentAudio] = useState<number | string>("en");
+  
+  const isEmbedUrl = rawUrl.includes("embed") || rawUrl.includes("iframe") || rawUrl.includes("vidsrc") || rawUrl.includes("autoembed");
+  const isEffectiveHls = (playbackData?.type === "hls" || isHls) && !isEmbedUrl && rawUrl.includes(".m3u8");
 
   const [audioTracks, setAudioTracks] = useState<AudioTrackData[]>(() => {
     return playbackData?.audio_tracks || [
@@ -53,10 +56,16 @@ export default function NightCastPlayer({
       { id: "hi", language: "hi", label: "Hindi Dubbed", default: false }
     ];
   });
-  const [currentAudio, setCurrentAudio] = useState<number | string>(0);
   const [statusText, setStatusText] = useState("INITIALIZING STREAM...");
 
-  // Sync external playbackData audio tracks
+  const effectiveUrl = React.useMemo(() => {
+    if (!rawUrl) return "";
+    if (isEmbedUrl && currentAudio === "hi") {
+      return rawUrl.includes("?") ? `${rawUrl}&ds_lang=hi` : `${rawUrl}?ds_lang=hi`;
+    }
+    return rawUrl;
+  }, [rawUrl, isEmbedUrl, currentAudio]);
+
   useEffect(() => {
     if (playbackData?.audio_tracks && playbackData.audio_tracks.length > 0) {
       setAudioTracks(playbackData.audio_tracks);
@@ -147,7 +156,6 @@ export default function NightCastPlayer({
     };
   }, [effectiveUrl, isEffectiveHls, startAt, onError]);
 
-  // Handle periodic progress save
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !onProgress) return;
@@ -175,14 +183,36 @@ export default function NightCastPlayer({
 
   if (!isEffectiveHls && effectiveUrl) {
     return (
-      <iframe
-        src={effectiveUrl}
-        className="w-full h-full border-0"
-        allowFullScreen
-        scrolling="no"
-        title="NightCast Media Player"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-      />
+      <div className="relative w-full h-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl">
+        <iframe
+          src={effectiveUrl}
+          className="w-full h-full border-0"
+          allowFullScreen
+          scrolling="no"
+          title="NightCast Media Player"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        />
+        {audioTracks.length > 0 && (
+          <div className="absolute top-4 right-4 z-20 flex gap-2 bg-black/60 backdrop-blur-md p-1.5 rounded-lg border border-white/10">
+            {audioTracks.map((track, idx) => {
+              const isSelected = currentAudio === track.id || currentAudio === idx || (track.id === "hi" && currentAudio === "hi") || (track.id === "en" && currentAudio === "en");
+              return (
+                <button
+                  key={track.id || idx}
+                  onClick={() => handleAudioChange(track.id, idx)}
+                  className={`px-3 py-1 text-xs rounded-md font-medium transition-all ${
+                    isSelected
+                      ? "bg-indigo-600 text-white shadow-lg font-bold"
+                      : "text-zinc-400 hover:text-white bg-white/5"
+                  }`}
+                >
+                  {track.label || `Audio ${idx + 1} (${track.language || "Original"})`}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
     );
   }
 
