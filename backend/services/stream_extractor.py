@@ -37,41 +37,48 @@ def encode_param(val: str) -> str:
 async def fetch_dual_audio_manifest(
     tmdb_id: str, season: int = 1, episode: int = 1, media_type: str = "tv"
 ) -> Dict[str, Any]:
-    """Parses master HLS playlist (.m3u8) containing multi-audio groups from free embedded sources with active mirror iframe fallback."""
-    if media_type == "movie":
-        target_url = f"https://player.autoembed.cc/embed/movie/{tmdb_id}"
-        fallback_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
+    """Free endpoints for primary (English/Original) and secondary (Hindi dubbed) sources."""
+    if media_type == "tv":
+        primary_url = f"https://player.autoembed.cc/embed/tv/{tmdb_id}/{season}/{episode}"
+        hindi_fallback = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}&ds_lang=hi"
     else:
-        target_url = f"https://player.autoembed.cc/embed/tv/{tmdb_id}/{season}/{episode}"
-        fallback_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+        primary_url = f"https://player.autoembed.cc/embed/movie/{tmdb_id}"
+        hindi_fallback = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}&ds_lang=hi"
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Referer": "https://autoembed.cc/"
     }
 
+    streams = []
+
     async with httpx.AsyncClient(follow_redirects=True, timeout=10.0) as client:
+        # 1. Fetch Primary / English Stream
         try:
-            response = await client.get(target_url, headers=headers)
+            response = await client.get(primary_url, headers=headers)
             if response.status_code == 200:
                 m3u8_matches = re.findall(r'(https?://[^\s<>"]+?\.m3u8[^\s<>"]*)', response.text)
                 if m3u8_matches:
-                    return {
-                        "type": "hls",
-                        "url": m3u8_matches[0],
-                        "multilingual": True,
-                        "headers": {
-                            "Referer": "https://player.autoembed.cc/",
-                            "Origin": "https://player.autoembed.cc"
-                        }
-                    }
+                    streams.append({"quality": "Auto", "url": m3u8_matches[0], "language": "English"})
         except Exception as e:
-            logger.warning(f"Extraction error in fetch_dual_audio_manifest: {e}")
+            logger.warning(f"Primary extraction error: {e}")
 
+    # 2. Return multi-stream configuration with explicit language metadata
     return {
-        "type": "iframe",
-        "url": fallback_url,
-        "multilingual": False
+        "type": "multi-track",
+        "multilingual": True,
+        "tracks": [
+            {
+                "label": "English / Original",
+                "url": streams[0]["url"] if streams else primary_url,
+                "is_iframe": not bool(streams)
+            },
+            {
+                "label": "Hindi Dubbed",
+                "url": hindi_fallback,
+                "is_iframe": True
+            }
+        ]
     }
 
 
