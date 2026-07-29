@@ -11,7 +11,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy import text
 
 from database import init_db, SessionLocal, is_sqlite
-from routers import auth, tmdb, progress, user, ai, admin, discover, f1
+from routers import auth, tmdb, progress, user, ai, admin, discover, f1, streams
 from services.ai_service import populate_mock_embeddings
 from services.redis_service import redis_cache
 from config import settings
@@ -231,6 +231,7 @@ app.include_router(ai.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(discover.router, prefix="/api/v1")
 app.include_router(f1.router, prefix="/api/v1")
+app.include_router(streams.router, prefix="/api/v1")
 
 @app.get("/api/f1/2026-data")
 async def get_f1_2026_direct():

@@ -34,11 +34,55 @@ def encode_param(val: str) -> str:
     return quote(val, safe='')
 
 
+async def fetch_dual_audio_manifest(
+    tmdb_id: str, season: int = 1, episode: int = 1, media_type: str = "tv"
+) -> Dict[str, Any]:
+    """Parses master HLS playlist (.m3u8) containing multi-audio groups from free embedded sources with iframe fallback."""
+    if media_type == "movie":
+        target_url = f"https://player.autoembed.cc/embed/movie/{tmdb_id}"
+        fallback_url = f"https://vidsrc.xyz/embed/movie?tmdb={tmdb_id}"
+    else:
+        target_url = f"https://player.autoembed.cc/embed/tv/{tmdb_id}/{season}/{episode}"
+        fallback_url = f"https://vidsrc.xyz/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://autoembed.cc/"
+    }
+
+    async with httpx.AsyncClient(follow_redirects=True, timeout=10.0) as client:
+        try:
+            response = await client.get(target_url, headers=headers)
+            if response.status_code == 200:
+                m3u8_matches = re.findall(r'(https?://[^\s<>"]+?\.m3u8[^\s<>"]*)', response.text)
+                if m3u8_matches:
+                    return {
+                        "type": "hls",
+                        "url": m3u8_matches[0],
+                        "multilingual": True,
+                        "headers": {
+                            "Referer": "https://player.autoembed.cc/",
+                            "Origin": "https://player.autoembed.cc"
+                        }
+                    }
+        except Exception as e:
+            logger.warning(f"Extraction error in fetch_dual_audio_manifest: {e}")
+
+    return {
+        "type": "iframe",
+        "url": fallback_url,
+        "multilingual": False
+    }
+
+
 class StreamExtractor:
     """Extracts raw .m3u8 HLS stream URLs and multi-audio language tracks from multiple free providers."""
 
     def __init__(self):
         pass
+
+    async def fetch_dual_audio_manifest(self, tmdb_id: str, season: int = 1, episode: int = 1, media_type: str = "tv") -> Dict[str, Any]:
+        return await fetch_dual_audio_manifest(tmdb_id, season, episode, media_type)
 
     def _parse_m3u8_audio_tracks(self, m3u8_content: str) -> List[Dict[str, str]]:
         """Parse #EXT-X-MEDIA:TYPE=AUDIO tags from an HLS master playlist manifest."""
@@ -69,7 +113,6 @@ class StreamExtractor:
                 audio_tracks.append({"lang": lang.lower(), "label": label})
 
         if not audio_tracks:
-            # Standard multi-audio language profiles when specific tags are implicit
             audio_tracks = [
                 {"lang": "en", "label": "English"},
                 {"lang": "hi", "label": "Hindi"},
@@ -93,7 +136,6 @@ class StreamExtractor:
             logger.info(f"Cache hit for {cache_key}")
             return cached
 
-        # Try extracting direct HLS streams
         hls_servers = []
         try:
             hls_servers = await asyncio.wait_for(
@@ -103,7 +145,6 @@ class StreamExtractor:
         except Exception as e:
             logger.warning(f"Direct HLS stream extraction timeout/error: {e}")
 
-        # If direct HLS streams were found, inspect & parse audio tracks for each
         if hls_servers:
             async with httpx.AsyncClient(timeout=3.0, follow_redirects=True, headers=BROWSER_HEADERS) as client:
                 for server in hls_servers:
@@ -125,7 +166,6 @@ class StreamExtractor:
                                 {"lang": "ko", "label": "Korean"}
                             ]
         else:
-            # Build primary custom HLS server fallback structure
             path_suffix = f"movie/{tmdb_id}" if media_type == "movie" else f"tv/{tmdb_id}/{season}/{episode}"
             hls_servers = [
                 {
@@ -145,7 +185,6 @@ class StreamExtractor:
                 }
             ]
 
-        # Standard Iframe Servers
         if media_type == "movie":
             s1_url = f"https://vidsrc-embed.ru/embed/movie/{tmdb_id}"
             s2_url = f"https://vidsrc-embed.su/embed/movie/{tmdb_id}"
@@ -193,7 +232,6 @@ class StreamExtractor:
             }
         ]
 
-        # Combine direct HLS servers at top, followed by iframe fallbacks
         all_servers = hls_servers + iframe_servers
 
         if language_pref == "hi":
@@ -201,7 +239,6 @@ class StreamExtractor:
 
         result = {"servers": all_servers}
 
-        # Cache server list for 1 hour
         redis_cache.set(cache_key, result, expire_seconds=3600)
         logger.info(f"Cached servers list for {cache_key}")
 
@@ -302,7 +339,6 @@ class StreamExtractor:
                 "type": "direct"
             })
 
-        # Instant fallbacks guaranteed so modal NEVER hangs
         if media_type == "movie":
             download_options.append({
                 "label": "VIDSRC Primary Stream (1080p)",

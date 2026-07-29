@@ -10,6 +10,7 @@ import { ImageService } from '../../../../lib/ImageService';
 import { Play, Star, Download, DownloadCloud, Languages, Globe, X, Check, Loader2, AlertTriangle, RotateCcw } from 'lucide-react';
 import { useUserStore } from '../../../../store/userStore';
 import HLSPlayer from '../../../../components/player/HLSPlayer';
+import NightCastPlayer from '../../../../components/player/NightCastPlayer';
 import MovieRow from '../../../../components/shared/MovieRow';
 import { PlayerSkeleton } from '../../../../components/shared/Skeletons';
 
@@ -192,6 +193,25 @@ export default function WatchPage() {
     const fetchServers = async () => {
       try {
         if (!id || !type) return;
+        // Try resolve endpoint first for multi-language HLS manifest
+        try {
+          const resolved = await apiFetch(`/api/streams/resolve/${id}?season=${currentSeason}&episode=${currentEpisode}&media_type=${type}`);
+          if (resolved?.status === "success" && resolved?.data?.url) {
+            const resolvedServer = {
+              id: "hls-resolved",
+              name: "Server HLS (Direct Multi-Audio)",
+              url: resolved.data.url,
+              type: resolved.data.type || "hls",
+              headers: resolved.data.headers
+            };
+            setServers(prev => [resolvedServer, ...prev.filter(s => s.id !== "hls-resolved")]);
+            setActiveServerId("hls-resolved");
+            return;
+          }
+        } catch (e) {
+          console.log("Resolve endpoint fallback:", e);
+        }
+
         const langParam = isHindiDubbed ? 'hi' : 'en';
         const data = await apiFetch(
           `/api/tmdb/${type}/${id}/streams?season=${currentSeason}&episode=${currentEpisode}&language=${langParam}`
@@ -373,16 +393,13 @@ export default function WatchPage() {
 
           {playerUrl ? (
             activeServer?.type === 'hls' ? (
-              <HLSPlayer
-                src={playerUrl}
-                headers={activeServer.headers}
+              <NightCastPlayer
+                streamUrl={playerUrl}
+                isHls={true}
                 startAt={resumeTime}
                 onProgress={handlePlayerProgress}
                 poster={meta?.backdrop_path ? `https://image.tmdb.org/t/p/original${meta.backdrop_path}` : undefined}
                 onError={handleHlsError}
-                selectedAudioTrack={selectedAudioTrack}
-                onAudioTracksChange={handleAudioTracksChange}
-                onAudioTrackSelect={(trackId) => setSelectedAudioTrack(trackId)}
               />
             ) : (
               <iframe
