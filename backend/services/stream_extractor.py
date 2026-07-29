@@ -37,13 +37,13 @@ def encode_param(val: str) -> str:
 async def fetch_dual_audio_manifest(
     tmdb_id: str, season: int = 1, episode: int = 1, media_type: str = "tv"
 ) -> Dict[str, Any]:
-    """Parses master HLS playlist (.m3u8) containing multi-audio groups from free embedded sources with iframe fallback."""
+    """Parses master HLS playlist (.m3u8) containing multi-audio groups from free embedded sources with active mirror iframe fallback."""
     if media_type == "movie":
         target_url = f"https://player.autoembed.cc/embed/movie/{tmdb_id}"
-        fallback_url = f"https://vidsrc.xyz/embed/movie?tmdb={tmdb_id}"
+        fallback_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
     else:
         target_url = f"https://player.autoembed.cc/embed/tv/{tmdb_id}/{season}/{episode}"
-        fallback_url = f"https://vidsrc.xyz/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+        fallback_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",

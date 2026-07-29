@@ -12,7 +12,7 @@ async def resolve_stream(
     episode: int = Query(1, ge=1),
     media_type: str = Query("tv", description="tv or movie")
 ):
-    """Resolve raw HLS manifest URL or fallback iframe for multi-language streaming."""
+    """Resolve raw HLS manifest URL or active mirror fallback iframe for multi-language streaming."""
     try:
         stream_data = await fetch_dual_audio_manifest(
             tmdb_id=tmdb_id,
@@ -22,11 +22,16 @@ async def resolve_stream(
         )
         return {"status": "success", "data": stream_data}
     except Exception as e:
+        fallback_url = (
+            f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+            if media_type == "tv"
+            else f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
+        )
         return {
             "status": "fallback",
             "data": {
                 "type": "iframe",
-                "url": f"https://vidsrc.xyz/embed/{media_type}?tmdb={tmdb_id}" + (f"&season={season}&episode={episode}" if media_type == "tv" else ""),
+                "url": fallback_url,
                 "multilingual": False,
                 "error": str(e)
             }
