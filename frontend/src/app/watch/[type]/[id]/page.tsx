@@ -193,6 +193,25 @@ export default function WatchPage() {
     const fetchServers = async () => {
       try {
         if (!id || !type) return;
+        // Try provider endpoint for normalized PlaybackResponse manifest
+        try {
+          const playbackResponse = await apiFetch(`/api/streams/${type}/${id}`);
+          if (playbackResponse?.manifest_url) {
+            const providerServer = {
+              id: "provider-hls",
+              name: "Provider HLS (Multi-Audio)",
+              url: playbackResponse.manifest_url,
+              type: playbackResponse.type || "hls",
+              audio_tracks: playbackResponse.audio_tracks || []
+            };
+            setServers(prev => [providerServer, ...prev.filter(s => s.id !== "provider-hls")]);
+            setActiveServerId("provider-hls");
+            return;
+          }
+        } catch (e) {
+          console.log("Provider endpoint fallback:", e);
+        }
+
         // Try resolve endpoint first for multi-language HLS manifest
         try {
           const resolved = await apiFetch(`/api/streams/resolve/${id}?season=${currentSeason}&episode=${currentEpisode}&media_type=${type}`);

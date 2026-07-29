@@ -2,9 +2,30 @@
 import React, { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 
+export interface AudioTrackData {
+  id: string | number;
+  language?: string;
+  label: string;
+  default?: boolean;
+}
+
+export interface SubtitleTrackData {
+  language: string;
+  url: string;
+}
+
+export interface PlaybackData {
+  content_id?: string;
+  type?: string;
+  manifest_url?: string;
+  audio_tracks?: AudioTrackData[];
+  subtitles?: SubtitleTrackData[];
+}
+
 interface PlayerProps {
-  streamUrl: string;
-  isHls: boolean;
+  streamUrl?: string;
+  isHls?: boolean;
+  playbackData?: PlaybackData;
   poster?: string;
   onProgress?: (currentTime: number, duration: number) => void;
   startAt?: number;
@@ -13,7 +34,8 @@ interface PlayerProps {
 
 export default function NightCastPlayer({
   streamUrl,
-  isHls,
+  isHls = true,
+  playbackData,
   poster,
   onProgress,
   startAt = 0,
@@ -22,20 +44,35 @@ export default function NightCastPlayer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
 
-  const [audioTracks, setAudioTracks] = useState<any[]>([]);
-  const [currentAudio, setCurrentAudio] = useState<number>(0);
+  const effectiveUrl = playbackData?.manifest_url || streamUrl || "";
+  const isEffectiveHls = (playbackData?.type === "hls" || isHls) && !effectiveUrl.includes("iframe");
+
+  const [audioTracks, setAudioTracks] = useState<AudioTrackData[]>(() => {
+    return playbackData?.audio_tracks || [
+      { id: "en", language: "en", label: "English / Original", default: true },
+      { id: "hi", language: "hi", label: "Hindi Dubbed", default: false }
+    ];
+  });
+  const [currentAudio, setCurrentAudio] = useState<number | string>(0);
   const [statusText, setStatusText] = useState("INITIALIZING STREAM...");
+
+  // Sync external playbackData audio tracks
+  useEffect(() => {
+    if (playbackData?.audio_tracks && playbackData.audio_tracks.length > 0) {
+      setAudioTracks(playbackData.audio_tracks);
+    }
+  }, [playbackData]);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !streamUrl) return;
+    if (!video || !effectiveUrl) return;
 
     let hls: Hls | null = null;
 
-    if (isHls && Hls.isSupported()) {
+    if (isEffectiveHls && Hls.isSupported()) {
       setStatusText("INITIALIZING STREAM...");
       hls = new Hls({ debug: false, enableWorker: true });
-      hls.loadSource(streamUrl);
+      hls.loadSource(effectiveUrl);
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
@@ -43,10 +80,17 @@ export default function NightCastPlayer({
         if (startAt > 0) {
           video.currentTime = startAt;
         }
+
         if (hls && hls.audioTracks && hls.audioTracks.length > 0) {
-          setAudioTracks(hls.audioTracks);
+          const parsedTracks: AudioTrackData[] = hls.audioTracks.map((t: any, idx: number) => ({
+            id: idx,
+            language: t.lang || "en",
+            label: t.name || t.lang?.toUpperCase() || `Audio ${idx + 1}`
+          }));
+          setAudioTracks(parsedTracks);
           setCurrentAudio(hls.audioTrack);
         }
+
         video.play().catch(() => {
           console.log("Autoplay blocked, waiting for user interaction");
         });
@@ -54,7 +98,12 @@ export default function NightCastPlayer({
 
       hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (event, data: any) => {
         if (data.audioTracks && data.audioTracks.length > 0) {
-          setAudioTracks(data.audioTracks);
+          const parsedTracks: AudioTrackData[] = data.audioTracks.map((t: any, idx: number) => ({
+            id: idx,
+            language: t.lang || "en",
+            label: t.name || t.lang?.toUpperCase() || `Audio ${idx + 1}`
+          }));
+          setAudioTracks(parsedTracks);
           setCurrentAudio(hls?.audioTrack ?? 0);
         }
       });
@@ -84,9 +133,9 @@ export default function NightCastPlayer({
 
       hlsRef.current = hls;
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = streamUrl;
+      video.src = effectiveUrl;
       setStatusText("");
-    } else if (!isHls) {
+    } else if (!isEffectiveHls) {
       setStatusText("");
     }
 
@@ -96,7 +145,7 @@ export default function NightCastPlayer({
         hlsRef.current = null;
       }
     };
-  }, [streamUrl, isHls, startAt, onError]);
+  }, [effectiveUrl, isEffectiveHls, startAt, onError]);
 
   // Handle periodic progress save
   useEffect(() => {
@@ -112,17 +161,22 @@ export default function NightCastPlayer({
     return () => clearInterval(interval);
   }, [onProgress]);
 
-  const handleAudioChange = (trackIndex: number) => {
-    if (hlsRef.current) {
-      hlsRef.current.audioTrack = trackIndex;
-      setCurrentAudio(trackIndex);
+  const handleAudioChange = (trackId: string | number, idx: number) => {
+    if (hlsRef.current && typeof trackId === "number") {
+      hlsRef.current.audioTrack = trackId;
+      setCurrentAudio(trackId);
+    } else if (hlsRef.current && hlsRef.current.audioTracks.length > idx) {
+      hlsRef.current.audioTrack = idx;
+      setCurrentAudio(trackId);
+    } else {
+      setCurrentAudio(trackId);
     }
   };
 
-  if (!isHls && streamUrl) {
+  if (!isEffectiveHls && effectiveUrl) {
     return (
       <iframe
-        src={streamUrl}
+        src={effectiveUrl}
         className="w-full h-full border-0"
         allowFullScreen
         scrolling="no"
@@ -147,19 +201,22 @@ export default function NightCastPlayer({
 
       {audioTracks.length > 0 && (
         <div className="absolute top-4 right-4 z-20 flex gap-2 bg-black/60 backdrop-blur-md p-1.5 rounded-lg border border-white/10">
-          {audioTracks.map((track, idx) => (
-            <button
-              key={idx}
-              onClick={() => handleAudioChange(idx)}
-              className={`px-3 py-1 text-xs rounded-md font-medium transition-all ${
-                currentAudio === idx
-                  ? "bg-indigo-600 text-white shadow-lg"
-                  : "text-zinc-400 hover:text-white bg-white/5"
-              }`}
-            >
-              {track.name || `Audio ${idx + 1} (${track.lang || "Original"})`}
-            </button>
-          ))}
+          {audioTracks.map((track, idx) => {
+            const isSelected = currentAudio === track.id || currentAudio === idx;
+            return (
+              <button
+                key={track.id || idx}
+                onClick={() => handleAudioChange(track.id, idx)}
+                className={`px-3 py-1 text-xs rounded-md font-medium transition-all ${
+                  isSelected
+                    ? "bg-indigo-600 text-white shadow-lg font-bold"
+                    : "text-zinc-400 hover:text-white bg-white/5"
+                }`}
+              >
+                {track.label || `Audio ${idx + 1} (${track.language || "Original"})`}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
