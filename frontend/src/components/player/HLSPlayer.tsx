@@ -12,9 +12,22 @@ interface HLSPlayerProps {
   onProgress?: (currentTime: number, duration: number) => void;
   poster?: string;
   onError?: () => void;
+  selectedAudioTrack?: number;
+  onAudioTracksChange?: (tracks: Array<{ id: number; name: string; lang?: string }>, currentTrackId: number) => void;
+  onAudioTrackSelect?: (trackId: number) => void;
 }
 
-export default function HLSPlayer({ src, headers, startAt = 0, onProgress, poster, onError }: HLSPlayerProps) {
+export default function HLSPlayer({
+  src,
+  headers,
+  startAt = 0,
+  onProgress,
+  poster,
+  onError,
+  selectedAudioTrack,
+  onAudioTracksChange,
+  onAudioTrackSelect
+}: HLSPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hlsRef = useRef<any>(null);
@@ -43,6 +56,16 @@ export default function HLSPlayer({ src, headers, startAt = 0, onProgress, poste
       onError?.();
     }
   }, [error, onError]);
+
+  // Sync external selectedAudioTrack prop with HLS instance
+  useEffect(() => {
+    if (selectedAudioTrack !== undefined && selectedAudioTrack >= 0 && hlsRef.current) {
+      if (hlsRef.current.audioTrack !== selectedAudioTrack) {
+        hlsRef.current.audioTrack = selectedAudioTrack;
+        setCurrentAudioTrack(selectedAudioTrack);
+      }
+    }
+  }, [selectedAudioTrack]);
 
   // Initialize HLS
   useEffect(() => {
@@ -84,24 +107,32 @@ export default function HLSPlayer({ src, headers, startAt = 0, onProgress, poste
             video.currentTime = startAt;
           }
           if (hls.audioTracks && hls.audioTracks.length > 0) {
-            setAudioTracks(hls.audioTracks.map((t: any, idx: number) => ({
+            const parsedTracks = hls.audioTracks.map((t: any, idx: number) => ({
               id: idx,
               name: t.name || t.lang || `Audio Track ${idx + 1}`,
               lang: t.lang
-            })));
+            }));
+            setAudioTracks(parsedTracks);
             setCurrentAudioTrack(hls.audioTrack);
+            onAudioTracksChange?.(parsedTracks, hls.audioTrack);
           }
         });
 
         hls.on(Hls.Events.AUDIO_TRACKS_UPDATED, (_: any, data: any) => {
           if (data.audioTracks && data.audioTracks.length > 0) {
-            setAudioTracks(data.audioTracks.map((t: any, idx: number) => ({
+            const parsedTracks = data.audioTracks.map((t: any, idx: number) => ({
               id: idx,
               name: t.name || t.lang || `Audio Track ${idx + 1}`,
               lang: t.lang
-            })));
+            }));
+            setAudioTracks(parsedTracks);
             setCurrentAudioTrack(hls.audioTrack);
+            onAudioTracksChange?.(parsedTracks, hls.audioTrack);
           }
+        });
+
+        hls.on(Hls.Events.AUDIO_TRACK_SWITCHED, (_: any, data: any) => {
+          setCurrentAudioTrack(data.id);
         });
 
         hls.on(Hls.Events.ERROR, (_: any, data: any) => {
@@ -220,7 +251,6 @@ export default function HLSPlayer({ src, headers, startAt = 0, onProgress, poste
     const handleKeyDown = (e: KeyboardEvent) => {
       const video = videoRef.current;
       if (!video) return;
-      // Don't capture if user is typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
       switch (e.key.toLowerCase()) {
@@ -321,17 +351,24 @@ export default function HLSPlayer({ src, headers, startAt = 0, onProgress, poste
       hlsRef.current.destroy();
       hlsRef.current = null;
     }
-    // Re-trigger the src effect by forcing a re-render
     const video = videoRef.current;
     if (video) {
       video.src = '';
-      // The useEffect on src will handle re-initialization
       setTimeout(() => {
         const event = new Event('retry');
         window.dispatchEvent(event);
       }, 100);
     }
   }, []);
+
+  const handleSelectTrack = useCallback((trackId: number) => {
+    if (hlsRef.current) {
+      hlsRef.current.audioTrack = trackId;
+      setCurrentAudioTrack(trackId);
+      onAudioTrackSelect?.(trackId);
+    }
+    setShowAudioMenu(false);
+  }, [onAudioTrackSelect]);
 
   const formatTime = (seconds: number): string => {
     if (!isFinite(seconds) || seconds < 0) return '0:00';
@@ -352,7 +389,6 @@ export default function HLSPlayer({ src, headers, startAt = 0, onProgress, poste
       onMouseMove={resetControlsTimeout}
       onMouseLeave={() => { if (isPlaying) setShowControls(false); }}
       onClick={(e) => {
-        // Only toggle play if clicking the video area, not controls
         if ((e.target as HTMLElement).closest('[data-controls]')) return;
         togglePlay();
       }}
@@ -422,7 +458,6 @@ export default function HLSPlayer({ src, headers, startAt = 0, onProgress, poste
           showControls ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
         }`}
       >
-        {/* Gradient backdrop */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
 
         <div className="relative px-4 pb-4 pt-12">
@@ -432,17 +467,14 @@ export default function HLSPlayer({ src, headers, startAt = 0, onProgress, poste
             className="group/seek w-full h-1.5 bg-white/10 rounded-full cursor-pointer mb-3 relative hover:h-2.5 transition-all duration-200"
             onClick={handleSeek}
           >
-            {/* Buffer progress */}
             <div
               className="absolute top-0 left-0 h-full bg-white/20 rounded-full pointer-events-none"
               style={{ width: `${bufferProgress}%` }}
             />
-            {/* Play progress */}
             <div
               className="absolute top-0 left-0 h-full bg-[#00D2FF] rounded-full pointer-events-none shadow-[0_0_10px_rgba(0,210,255,0.5)]"
               style={{ width: `${progress}%` }}
             />
-            {/* Seek thumb */}
             <div
               className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-[#00D2FF] rounded-full shadow-lg opacity-0 group-hover/seek:opacity-100 transition-opacity duration-200 pointer-events-none"
               style={{ left: `calc(${progress}% - 7px)` }}
@@ -538,13 +570,7 @@ export default function HLSPlayer({ src, headers, startAt = 0, onProgress, poste
                         {audioTracks.map((track) => (
                           <button
                             key={track.id}
-                            onClick={() => {
-                              if (hlsRef.current) {
-                                hlsRef.current.audioTrack = track.id;
-                                setCurrentAudioTrack(track.id);
-                              }
-                              setShowAudioMenu(false);
-                            }}
+                            onClick={() => handleSelectTrack(track.id)}
                             className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors ${
                               currentAudioTrack === track.id
                                 ? 'bg-[#00D2FF]/15 text-[#00D2FF]'

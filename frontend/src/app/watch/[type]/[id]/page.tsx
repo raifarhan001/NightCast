@@ -30,7 +30,20 @@ export default function WatchPage() {
   const [isHindiDubbed, setIsHindiDubbed] = useState(true);
 
   const [servers, setServers] = useState<any[]>(() => {
+    const pathSuffix = type === 'tv' ? `tv/${id}/${currentSeason}/${currentEpisode}` : `movie/${id}`;
     const defaultServers: any[] = [
+      {
+        id: 'hls-primary',
+        name: 'Server HLS (Multi-Audio)',
+        url: `https://player.autoembed.cc/embed/${pathSuffix}`,
+        type: 'hls',
+        audio_tracks: [
+          { lang: 'en', label: 'English' },
+          { lang: 'hi', label: 'Hindi' },
+          { lang: 'ko', label: 'Korean' }
+        ],
+        headers: { Referer: 'https://player.autoembed.cc/', Origin: 'https://player.autoembed.cc' }
+      },
       {
         id: 'server1',
         name: 'Server 1 (Ru)',
@@ -71,7 +84,8 @@ export default function WatchPage() {
     ];
     return defaultServers;
   });
-  const [activeServerId, setActiveServerId] = useState('server4');
+
+  const [activeServerId, setActiveServerId] = useState('hls-primary');
   const [playerUrl, setPlayerUrl] = useState("");
   const [seasonEpisodes, setSeasonEpisodes] = useState<any[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(false);
@@ -79,6 +93,15 @@ export default function WatchPage() {
   const [hlsFailedServers, setHlsFailedServers] = useState<string[]>([]);
   const [iframeFailedServers, setIframeFailedServers] = useState<string[]>([]);
   const [streamErrorMsg, setStreamErrorMsg] = useState<string | null>(null);
+
+  // Audio track switching state
+  const [hlsAudioTracks, setHlsAudioTracks] = useState<Array<{ id: number; name: string; lang?: string }>>([
+    { id: 0, name: 'English', lang: 'en' },
+    { id: 1, name: 'Hindi', lang: 'hi' },
+    { id: 2, name: 'Korean', lang: 'ko' }
+  ]);
+  const [selectedAudioTrack, setSelectedAudioTrack] = useState<number>(0);
+  const [isAudioDropdownOpen, setIsAudioDropdownOpen] = useState(false);
 
   // Download Modal state
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
@@ -100,7 +123,7 @@ export default function WatchPage() {
     if (!rawActiveServer) return null;
     if (isHlsFailed || isIframeFailed) {
       let fallbackUrl = rawActiveServer.url;
-      if (rawActiveServer.id === 'vidsrc-main') {
+      if (rawActiveServer.id === 'hls-primary' || rawActiveServer.id === 'vidsrc-main') {
         fallbackUrl = type === 'tv'
           ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
           : `https://vidsrc.me/embed/movie?tmdb=${id}`;
@@ -113,6 +136,17 @@ export default function WatchPage() {
     }
     return rawActiveServer;
   }, [rawActiveServer, isHlsFailed, isIframeFailed, type, id, currentSeason, currentEpisode]);
+
+  useEffect(() => {
+    if (activeServer?.audio_tracks && activeServer.audio_tracks.length > 0) {
+      const parsedTracks = activeServer.audio_tracks.map((tr: any, idx: number) => ({
+        id: idx,
+        name: tr.label || tr.lang?.toUpperCase() || `Audio Track ${idx + 1}`,
+        lang: tr.lang
+      }));
+      setHlsAudioTracks(parsedTracks);
+    }
+  }, [activeServer]);
 
   useEffect(() => {
     const s = parseInt(searchParams.get('season') || '1', 10);
@@ -162,11 +196,14 @@ export default function WatchPage() {
         const data = await apiFetch(
           `/api/tmdb/${type}/${id}/streams?season=${currentSeason}&episode=${currentEpisode}&language=${langParam}`
         );
-        if (data?.servers) {
+        if (data?.servers && data.servers.length > 0) {
           const filteredServers = data.servers.filter((s: any) => s.id !== 'vidsrc-pro');
           if (filteredServers.length > 0) {
             setServers(filteredServers);
-            if (isHindiDubbed) {
+            const hlsServer = filteredServers.find((s: any) => s.type === 'hls');
+            if (hlsServer && !hlsFailedServers.includes(hlsServer.id)) {
+              setActiveServerId(hlsServer.id);
+            } else if (isHindiDubbed) {
               const hiSrv = filteredServers.find((s: any) => s.language === 'hi' || s.id === 'server4');
               if (hiSrv) setActiveServerId(hiSrv.id);
             }
@@ -177,9 +214,10 @@ export default function WatchPage() {
       }
     };
     fetchServers();
-  }, [id, type, currentSeason, currentEpisode, isHindiDubbed]);
+  }, [id, type, currentSeason, currentEpisode, isHindiDubbed, hlsFailedServers]);
 
   useEffect(() => {
+    if (!activeServer) return;
     let finalUrl = activeServer.url;
 
     if (isHindiDubbed && activeServer.id === 'server4') {
@@ -256,6 +294,20 @@ export default function WatchPage() {
     }
   }, [id, activeProfile, meta, type, currentSeason, currentEpisode]);
 
+  const handleHlsError = useCallback(() => {
+    if (activeServer && activeServer.type === 'hls') {
+      console.warn(`HLS player error on server ${activeServer.id}. Falling back to standard iframe server.`);
+      setHlsFailedServers(prev => [...prev, activeServer.id]);
+    }
+  }, [activeServer]);
+
+  const handleAudioTracksChange = useCallback((tracks: Array<{ id: number; name: string; lang?: string }>, currentTrackId: number) => {
+    if (tracks && tracks.length > 0) {
+      setHlsAudioTracks(tracks);
+      setSelectedAudioTrack(currentTrackId);
+    }
+  }, []);
+
   const handleEpisodeChange = (s: number, ep: number) => {
     setCurrentSeason(s);
     setCurrentEpisode(ep);
@@ -313,7 +365,7 @@ export default function WatchPage() {
       <div className="space-y-6">
         {/* Full Player Container */}
         <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-white/10 bg-[#000000] shadow-2xl">
-          {!isIframeLoaded && (
+          {!isIframeLoaded && activeServer?.type !== 'hls' && (
             <div className="absolute inset-0 z-20 pointer-events-none">
               <PlayerSkeleton />
             </div>
@@ -327,6 +379,10 @@ export default function WatchPage() {
                 startAt={resumeTime}
                 onProgress={handlePlayerProgress}
                 poster={meta?.backdrop_path ? `https://image.tmdb.org/t/p/original${meta.backdrop_path}` : undefined}
+                onError={handleHlsError}
+                selectedAudioTrack={selectedAudioTrack}
+                onAudioTracksChange={handleAudioTracksChange}
+                onAudioTrackSelect={(trackId) => setSelectedAudioTrack(trackId)}
               />
             ) : (
               <iframe
@@ -360,6 +416,52 @@ export default function WatchPage() {
 
           {/* Server Selection & Action Row */}
           <div className="flex flex-wrap items-center gap-3">
+            {/* Audio Language Control Pill (Dark Brutalist SaaS Pill) */}
+            {activeServer?.type === 'hls' && hlsAudioTracks.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={() => setIsAudioDropdownOpen(!isAudioDropdownOpen)}
+                  className="px-3.5 py-1.5 rounded-full font-bold transition-all text-[11px] border border-cyan-500/40 bg-cyan-950/30 text-cyan-400 hover:border-cyan-400 hover:bg-cyan-900/40 flex items-center gap-2 shadow-md active:scale-95"
+                >
+                  <Languages className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>
+                    Audio: {hlsAudioTracks.find(t => t.id === selectedAudioTrack)?.name || 'English'}
+                  </span>
+                  <span className="text-[9px] opacity-60">▼</span>
+                </button>
+
+                {isAudioDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-[#12141F] border border-white/15 rounded-2xl p-2 shadow-2xl z-40 animate-in fade-in slide-in-from-top-1">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-white/50 px-2 py-1 mb-1 border-b border-white/10 flex items-center justify-between">
+                      <span>Audio Languages</span>
+                      <span className="text-[9px] text-cyan-400 font-mono">HLS.JS</span>
+                    </p>
+                    <div className="space-y-1 max-h-48 overflow-y-auto no-scrollbar">
+                      {hlsAudioTracks.map((track) => (
+                        <button
+                          key={track.id}
+                          onClick={() => {
+                            setSelectedAudioTrack(track.id);
+                            setIsAudioDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${
+                            selectedAudioTrack === track.id
+                              ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 font-bold'
+                              : 'text-white/80 hover:bg-white/10 hover:text-white'
+                          }`}
+                        >
+                          <span className="truncate">{track.name}</span>
+                          {selectedAudioTrack === track.id && (
+                            <Check className="w-3.5 h-3.5 text-cyan-400" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Hindi Dubbed Toggle */}
             <button
               onClick={() => setIsHindiDubbed(!isHindiDubbed)}

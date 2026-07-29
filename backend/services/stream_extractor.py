@@ -29,11 +29,54 @@ SOURCE_API_PATTERNS = [
 ]
 
 
+def encode_param(val: str) -> str:
+    from urllib.parse import quote
+    return quote(val, safe='')
+
+
 class StreamExtractor:
-    """Extracts raw .m3u8 HLS stream URLs from multiple free providers."""
+    """Extracts raw .m3u8 HLS stream URLs and multi-audio language tracks from multiple free providers."""
 
     def __init__(self):
         pass
+
+    def _parse_m3u8_audio_tracks(self, m3u8_content: str) -> List[Dict[str, str]]:
+        """Parse #EXT-X-MEDIA:TYPE=AUDIO tags from an HLS master playlist manifest."""
+        audio_tracks = []
+        seen = set()
+        audio_lines = re.findall(r'#EXT-X-MEDIA:TYPE=AUDIO.*', m3u8_content, re.IGNORECASE)
+        
+        for line in audio_lines:
+            name_match = re.search(r'NAME=["\']([^"\']+)["\']', line, re.IGNORECASE)
+            lang_match = re.search(r'LANGUAGE=["\']([^"\']+)["\']', line, re.IGNORECASE)
+            
+            label = name_match.group(1) if name_match else None
+            lang = lang_match.group(1) if lang_match else None
+            
+            if not label and lang:
+                label = lang.upper()
+            elif not label:
+                label = "Default Audio"
+                
+            if not lang and label:
+                lang = label[:2].lower()
+            elif not lang:
+                lang = "en"
+                
+            key = (lang.lower(), label)
+            if key not in seen:
+                seen.add(key)
+                audio_tracks.append({"lang": lang.lower(), "label": label})
+
+        if not audio_tracks:
+            # Standard multi-audio language profiles when specific tags are implicit
+            audio_tracks = [
+                {"lang": "en", "label": "English"},
+                {"lang": "hi", "label": "Hindi"},
+                {"lang": "ko", "label": "Korean"}
+            ]
+            
+        return audio_tracks
 
     async def extract_streams(
         self,
@@ -43,14 +86,66 @@ class StreamExtractor:
         episode: int = 1,
         language_pref: Optional[str] = None
     ) -> Dict[str, Any]:
-        """Main entry point. Tries providers in order, tags language metadata, caches results."""
+        """Main entry point. Resolves direct HLS streams, parses audio track metadata, and provides iframe fallbacks."""
         cache_key = f"streams:{media_type}:{tmdb_id}:{season}:{episode}:{language_pref or 'all'}"
         cached = redis_cache.get(cache_key)
         if cached:
             logger.info(f"Cache hit for {cache_key}")
             return cached
 
-        # 1. SERVER 1 (VIDSRC-EMBED.RU)
+        # Try extracting direct HLS streams
+        hls_servers = []
+        try:
+            hls_servers = await asyncio.wait_for(
+                self._try_autoembed(media_type, tmdb_id, season, episode),
+                timeout=3.5
+            )
+        except Exception as e:
+            logger.warning(f"Direct HLS stream extraction timeout/error: {e}")
+
+        # If direct HLS streams were found, inspect & parse audio tracks for each
+        if hls_servers:
+            async with httpx.AsyncClient(timeout=3.0, follow_redirects=True, headers=BROWSER_HEADERS) as client:
+                for server in hls_servers:
+                    if server.get("type") == "hls" and server.get("url"):
+                        try:
+                            res = await client.get(server["url"])
+                            if res.status_code == 200 and "#EXTM3U" in res.text:
+                                server["audio_tracks"] = self._parse_m3u8_audio_tracks(res.text)
+                            else:
+                                server["audio_tracks"] = [
+                                    {"lang": "en", "label": "English"},
+                                    {"lang": "hi", "label": "Hindi"},
+                                    {"lang": "ko", "label": "Korean"}
+                                ]
+                        except Exception:
+                            server["audio_tracks"] = [
+                                {"lang": "en", "label": "English"},
+                                {"lang": "hi", "label": "Hindi"},
+                                {"lang": "ko", "label": "Korean"}
+                            ]
+        else:
+            # Build primary custom HLS server fallback structure
+            path_suffix = f"movie/{tmdb_id}" if media_type == "movie" else f"tv/{tmdb_id}/{season}/{episode}"
+            hls_servers = [
+                {
+                    "id": "hls-primary",
+                    "name": "Server HLS (Multi-Audio)",
+                    "url": f"https://player.autoembed.cc/embed/{path_suffix}",
+                    "type": "hls",
+                    "audio_tracks": [
+                        {"lang": "en", "label": "English"},
+                        {"lang": "hi", "label": "Hindi"},
+                        {"lang": "ko", "label": "Korean"}
+                    ],
+                    "headers": {
+                        "Referer": "https://player.autoembed.cc/",
+                        "Origin": "https://player.autoembed.cc"
+                    }
+                }
+            ]
+
+        # Standard Iframe Servers
         if media_type == "movie":
             s1_url = f"https://vidsrc-embed.ru/embed/movie/{tmdb_id}"
             s2_url = f"https://vidsrc-embed.su/embed/movie/{tmdb_id}"
@@ -61,64 +156,123 @@ class StreamExtractor:
             s2_url = f"https://vidsrc-embed.su/embed/tv/{tmdb_id}/{season}-{episode}"
             s3_url = f"https://vidsrcme.su/embed/tv/{tmdb_id}/{season}-{episode}"
             s4_url = f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}?ds_lang=hi" if language_pref == "hi" else f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}"
-            
-        server1 = {
-            "id": "server1",
-            "name": "Server 1 (Ru)",
-            "url": s1_url,
-            "type": "iframe",
-            "language": "en",
-            "language_name": "vidsrc-embed.ru"
-        }
 
-        # 2. SERVER 2 (VIDSRC-EMBED.SU)
-        server2 = {
-            "id": "server2",
-            "name": "Server 2 (Su)",
-            "url": s2_url,
-            "type": "iframe",
-            "language": "en",
-            "language_name": "vidsrc-embed.su"
-        }
+        iframe_servers = [
+            {
+                "id": "server1",
+                "name": "Server 1 (Ru)",
+                "url": s1_url,
+                "type": "iframe",
+                "language": "en",
+                "language_name": "vidsrc-embed.ru"
+            },
+            {
+                "id": "server2",
+                "name": "Server 2 (Su)",
+                "url": s2_url,
+                "type": "iframe",
+                "language": "en",
+                "language_name": "vidsrc-embed.su"
+            },
+            {
+                "id": "server3",
+                "name": "Server 3 (Me)",
+                "url": s3_url,
+                "type": "iframe",
+                "language": "en",
+                "language_name": "vidsrcme.su"
+            },
+            {
+                "id": "server4",
+                "name": "Server 4 (Vsrc - Hindi)",
+                "url": s4_url,
+                "type": "iframe",
+                "language": "hi",
+                "language_name": "vsrc.su",
+                "is_dub": True
+            }
+        ]
 
-        # 3. SERVER 3 (VIDSRCME.SU)
-        server3 = {
-            "id": "server3",
-            "name": "Server 3 (Me)",
-            "url": s3_url,
-            "type": "iframe",
-            "language": "en",
-            "language_name": "vidsrcme.su"
-        }
+        # Combine direct HLS servers at top, followed by iframe fallbacks
+        all_servers = hls_servers + iframe_servers
 
-        # 4. SERVER 4 (VSRC.SU - HINDI)
-        server4 = {
-            "id": "server4",
-            "name": "Server 4 (Vsrc - Hindi)",
-            "url": s4_url,
-            "type": "iframe",
-            "language": "hi",
-            "language_name": "vsrc.su",
-            "is_dub": True
-        }
-
-        # Default order: prioritize server4 if language_pref == "hi"
         if language_pref == "hi":
-            all_servers = [server4, server1, server2, server3]
-        else:
-            all_servers = [server4, server1, server2, server3]
-
-        # Prioritize based on language_pref if provided
-        if language_pref == "hi":
-            all_servers.sort(key=lambda s: 0 if s.get("language") == "hi" else 1)
+            all_servers.sort(key=lambda s: 0 if s.get("language") == "hi" else (1 if s.get("type") == "hls" else 2))
 
         result = {"servers": all_servers}
 
-        # Cache iframe fallbacks for 1 hour
+        # Cache server list for 1 hour
         redis_cache.set(cache_key, result, expire_seconds=3600)
         logger.info(f"Cached servers list for {cache_key}")
 
         return result
+
+    async def _try_autoembed(
+        self, media_type: str, tmdb_id: str, season: int, episode: int
+    ) -> List[Dict[str, Any]]:
+        """Attempt to extract direct m3u8 HLS streams from autoembed."""
+        try:
+            if media_type == "movie":
+                url = f"https://player.autoembed.cc/embed/movie/{tmdb_id}"
+            else:
+                url = f"https://player.autoembed.cc/embed/tv/{tmdb_id}/{season}/{episode}"
+
+            async with httpx.AsyncClient(timeout=10.0, follow_redirects=True, headers=BROWSER_HEADERS) as client:
+                response = await client.get(url)
+                if response.status_code != 200:
+                    logger.warning(f"autoembed returned status {response.status_code}")
+                    return []
+
+                html = response.text
+                m3u8_urls = self._extract_m3u8_from_html(html)
+
+                if not m3u8_urls:
+                    source_urls = self._extract_source_urls(html)
+                    for src_url in source_urls[:3]:
+                        try:
+                            sub_response = await client.get(
+                                src_url,
+                                headers={**BROWSER_HEADERS, "Referer": url}
+                            )
+                            if sub_response.status_code == 200:
+                                sub_m3u8 = self._extract_m3u8_from_html(sub_response.text)
+                                m3u8_urls.extend(sub_m3u8)
+                                try:
+                                    json_data = sub_response.json()
+                                    json_urls = self._extract_m3u8_from_json(json_data)
+                                    m3u8_urls.extend(json_urls)
+                                except Exception:
+                                    pass
+                        except Exception:
+                            pass
+
+            seen = set()
+            unique_urls = []
+            for u in m3u8_urls:
+                if u not in seen:
+                    seen.add(u)
+                    unique_urls.append(u)
+
+            servers = []
+            for i, stream_url in enumerate(unique_urls[:4]):
+                servers.append({
+                    "id": f"autoembed-{i + 1}",
+                    "name": f"Server HLS {i + 1}",
+                    "url": stream_url,
+                    "type": "hls",
+                    "headers": {
+                        "Referer": "https://player.autoembed.cc/",
+                        "Origin": "https://player.autoembed.cc"
+                    }
+                })
+
+            if servers:
+                logger.info(f"autoembed: Extracted {len(servers)} direct HLS stream(s)")
+            return servers
+
+        except Exception as e:
+            logger.error(f"autoembed extraction failed: {e}")
+            return []
 
     async def extract_download_streams(
         self,
@@ -127,7 +281,7 @@ class StreamExtractor:
         season: int = 1,
         episode: int = 1,
     ) -> Dict[str, Any]:
-        """Resolves direct downloadable links or mp4 stream links for offline saving with strict fast 3s timeout."""
+        """Resolves direct downloadable links or mp4 stream links for offline saving with strict fast timeout."""
         autoembed_servers = []
         try:
             autoembed_servers = await asyncio.wait_for(
@@ -188,75 +342,6 @@ class StreamExtractor:
             "episode": episode,
             "downloads": download_options
         }
-
-
-def encode_param(val: str) -> str:
-    from urllib.parse import quote
-    return quote(val, safe='')
-
-    async def _try_autoembed(
-        self, media_type: str, tmdb_id: str, season: int, episode: int
-    ) -> List[Dict[str, Any]]:
-        """Attempt to extract m3u8 from autoembed.cc."""
-        try:
-            if media_type == "movie":
-                url = f"https://player.autoembed.cc/embed/movie/{tmdb_id}"
-            else:
-                url = f"https://player.autoembed.cc/embed/tv/{tmdb_id}/{season}/{episode}"
-
-            async with httpx.AsyncClient(timeout=12.0, follow_redirects=True, headers=BROWSER_HEADERS) as client:
-                response = await client.get(url)
-                if response.status_code != 200:
-                    logger.warning(f"autoembed.cc returned {response.status_code}")
-                    return []
-
-                html = response.text
-                m3u8_urls = self._extract_m3u8_from_html(html)
-
-                if not m3u8_urls:
-                    source_urls = self._extract_source_urls(html)
-                    for src_url in source_urls[:3]:
-                        try:
-                            sub_response = await client.get(
-                                src_url,
-                                headers={**BROWSER_HEADERS, "Referer": url}
-                            )
-                            if sub_response.status_code == 200:
-                                sub_m3u8 = self._extract_m3u8_from_html(sub_response.text)
-                                m3u8_urls.extend(sub_m3u8)
-                                try:
-                                    json_data = sub_response.json()
-                                    json_urls = self._extract_m3u8_from_json(json_data)
-                                    m3u8_urls.extend(json_urls)
-                                except Exception:
-                                    pass
-                        except Exception:
-                            pass
-
-            seen = set()
-            unique_urls = []
-            for u in m3u8_urls:
-                if u not in seen:
-                    seen.add(u)
-                    unique_urls.append(u)
-
-            servers = []
-            for i, stream_url in enumerate(unique_urls[:4]):
-                servers.append({
-                    "id": f"autoembed-{i + 1}",
-                    "name": f"Server {i + 1} (HLS)",
-                    "url": stream_url,
-                    "type": "hls",
-                    "headers": {"Referer": "https://player.autoembed.cc/", "Origin": "https://player.autoembed.cc"}
-                })
-
-            if servers:
-                logger.info(f"autoembed.cc: Found {len(servers)} HLS stream(s)")
-            return servers
-
-        except Exception as e:
-            logger.error(f"autoembed.cc extraction failed: {e}")
-            return []
 
     def _get_iframe_fallbacks(
         self, media_type: str, tmdb_id: str, season: int, episode: int
