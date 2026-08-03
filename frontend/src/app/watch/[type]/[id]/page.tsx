@@ -10,6 +10,8 @@ import { ImageService } from '../../../../lib/ImageService';
 import { Play, Star, Download, DownloadCloud, Languages, Globe, X, Check, Loader2, AlertTriangle, RotateCcw } from 'lucide-react';
 import { useUserStore } from '../../../../store/userStore';
 import HLSPlayer from '../../../../components/player/HLSPlayer';
+import { useLanguageSources } from '../../../../hooks/useLanguageSources';
+import AudioLanguageSelector from '../../../../components/AudioLanguageSelector';
 import NightCastPlayer from '../../../../components/player/NightCastPlayer';
 import MovieRow from '../../../../components/shared/MovieRow';
 import { PlayerSkeleton } from '../../../../components/shared/Skeletons';
@@ -94,6 +96,17 @@ export default function WatchPage() {
   const [hlsFailedServers, setHlsFailedServers] = useState<string[]>([]);
   const [iframeFailedServers, setIframeFailedServers] = useState<string[]>([]);
   const [streamErrorMsg, setStreamErrorMsg] = useState<string | null>(null);
+
+  // Multi-Language Audio Source Management Hook
+  const languageSources = useLanguageSources(servers);
+  const lastPlaybackTimeRef = useRef<number>(0);
+
+  // Sync active server when language sources hook updates selected audio source
+  useEffect(() => {
+    if (languageSources.activeSource && languageSources.activeSource.id !== activeServerId) {
+      setActiveServerId(languageSources.activeSource.id);
+    }
+  }, [languageSources.activeSource, activeServerId]);
 
   // Audio track switching state
   const [hlsAudioTracks, setHlsAudioTracks] = useState<Array<{ id: number; name: string; lang?: string }>>([
@@ -294,6 +307,7 @@ export default function WatchPage() {
 
   const handlePlayerProgress = useCallback((currentTime: number, duration: number) => {
     if (!id) return;
+    lastPlaybackTimeRef.current = currentTime;
     try {
       const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
       
@@ -334,11 +348,19 @@ export default function WatchPage() {
   }, [id, activeProfile, meta, type, currentSeason, currentEpisode]);
 
   const handleHlsError = useCallback(() => {
-    if (activeServer && activeServer.type === 'hls') {
-      console.warn(`HLS player error on server ${activeServer.id}. Falling back to standard iframe server.`);
+    if (activeServer) {
+      console.warn(`HLS player error on server ${activeServer.id}. Falling back.`);
       setHlsFailedServers(prev => [...prev, activeServer.id]);
+      languageSources.handleSourceError(activeServer.id);
     }
-  }, [activeServer]);
+  }, [activeServer, languageSources]);
+
+  const handleSelectLanguage = useCallback((lang: any) => {
+    if (lastPlaybackTimeRef.current > 0) {
+      setResumeTime(lastPlaybackTimeRef.current);
+    }
+    languageSources.selectLanguage(lang);
+  }, [languageSources]);
 
   const handleAudioTracksChange = useCallback((tracks: Array<{ id: number; name: string; lang?: string }>, currentTrackId: number) => {
     if (tracks && tracks.length > 0) {
@@ -438,6 +460,22 @@ export default function WatchPage() {
           )}
         </div>
 
+        {/* Source Error / Fallback Notification Toast */}
+        {languageSources.toastMessage && (
+          <div className="p-3.5 px-5 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-between text-xs text-amber-300 shadow-xl animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>{languageSources.toastMessage}</span>
+            </div>
+            <button
+              onClick={languageSources.clearToast}
+              className="text-amber-400/70 hover:text-amber-300 text-xs font-bold px-2 py-0.5 rounded-lg hover:bg-amber-500/20 transition-all"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* Server & Audio Selector Bar */}
         <div className="p-5 bg-[#12141F] border border-white/10 rounded-2xl flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
           <div className="flex-1">
@@ -452,7 +490,14 @@ export default function WatchPage() {
 
           {/* Server Selection & Action Row */}
           <div className="flex flex-wrap items-center gap-3">
-            {/* Audio Language Control Pill (Dark Brutalist SaaS Pill) */}
+            {/* Audio Language Source Selector Toggle Component */}
+            <AudioLanguageSelector
+              selectedLanguage={languageSources.selectedLanguage}
+              onSelectLanguage={handleSelectLanguage}
+              buckets={languageSources.buckets}
+            />
+
+            {/* Internal HLS Audio Track Dropdown (if active server is multi-audio HLS manifest) */}
             {activeServer?.type === 'hls' && hlsAudioTracks.length > 0 && (
               <div className="relative">
                 <button
@@ -461,7 +506,7 @@ export default function WatchPage() {
                 >
                   <Languages className="w-3.5 h-3.5 text-cyan-400" />
                   <span>
-                    Audio: {hlsAudioTracks.find(t => t.id === selectedAudioTrack)?.name || 'English'}
+                    Track: {hlsAudioTracks.find(t => t.id === selectedAudioTrack)?.name || 'English'}
                   </span>
                   <span className="text-[9px] opacity-60">▼</span>
                 </button>
@@ -469,7 +514,7 @@ export default function WatchPage() {
                 {isAudioDropdownOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-[#12141F] border border-white/15 rounded-2xl p-2 shadow-2xl z-40 animate-in fade-in slide-in-from-top-1">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-white/50 px-2 py-1 mb-1 border-b border-white/10 flex items-center justify-between">
-                      <span>Audio Languages</span>
+                      <span>Internal HLS Tracks</span>
                       <span className="text-[9px] text-cyan-400 font-mono">HLS.JS</span>
                     </p>
                     <div className="space-y-1 max-h-48 overflow-y-auto no-scrollbar">
@@ -498,28 +543,28 @@ export default function WatchPage() {
               </div>
             )}
 
-            {/* Hindi Dubbed Toggle */}
-            <button
-              onClick={() => setIsHindiDubbed(!isHindiDubbed)}
-              className={`px-3 py-1.5 rounded-full font-bold transition-all text-[11px] border flex items-center gap-1.5 ${
-                isHindiDubbed
-                  ? 'bg-amber-500/20 border-amber-500/50 text-amber-400 shadow-sm'
-                  : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
-              }`}
-            >
-              <span>🎙️</span>
-              <span>{isHindiDubbed ? 'Hindi Dubbed: ON' : 'Hindi Dubbed: OFF'}</span>
-            </button>
-
             {/* Server List Pills */}
             <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-full bg-white/5 border border-white/10">
               {servers.map((srv) => {
                 const isActive = srv.id === activeServerId;
+                const isFailed = languageSources.failedSourceIds.includes(srv.id);
                 return (
                   <button
                     key={srv.id}
-                    onClick={() => setActiveServerId(srv.id)}
-                    className={isActive ? "gtv-tab-pill-active text-[10px]" : "gtv-tab-pill text-[10px]"}
+                    onClick={() => {
+                      if (!isFailed) {
+                        languageSources.setActiveSourceId(srv.id);
+                        setActiveServerId(srv.id);
+                      }
+                    }}
+                    disabled={isFailed}
+                    className={
+                      isFailed
+                        ? "px-3 py-1.5 rounded-full text-[10px] font-semibold text-white/20 line-through cursor-not-allowed"
+                        : isActive
+                        ? "gtv-tab-pill-active text-[10px]"
+                        : "gtv-tab-pill text-[10px]"
+                    }
                   >
                     {srv.name}
                   </button>

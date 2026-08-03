@@ -73,3 +73,40 @@ Use these IDs to verify the integrated player:
 - **Movie ID**: `1078605` (*The Creator*) or `157336` (*Interstellar*)
 - **TV ID**: `119051` (*Wednesday* - Season 1, Episodes 1 to 8)
 - **Alternative TV ID**: `85922` (*Succession*)
+
+---
+
+## Adding New Audio Language Buckets
+
+The audio language detection system uses a decoupled matching utility located in `/src/utils/languageDetector.ts`. Core player and UI logic do not hardcode language matching rules.
+
+### How to Add a New Language (e.g. Tamil, Telugu, Spanish)
+
+1. Open `/src/utils/languageDetector.ts`.
+2. Add the new language key to `LanguageType`:
+   ```ts
+   export type LanguageType = 'english' | 'hindi' | 'tamil' | 'unknown';
+   ```
+3. Add a matching pattern definition to `LANGUAGE_PATTERN_DEFINITIONS`:
+   ```ts
+   {
+     type: 'tamil',
+     label: 'Tamil Dubbed',
+     isoCode: 'ta',
+     patterns: [
+       /\b(tam|tamil|tamdub)\b/i,
+       /[?&]ds_lang=ta\b/i
+     ]
+   }
+   ```
+4. Add the property to `LanguageBucket`:
+   ```ts
+   export interface LanguageBucket {
+     english: ServerSource[];
+     hindi: ServerSource[];
+     tamil: ServerSource[];
+     unknown: ServerSource[];
+   }
+   ```
+5. Update `groupSourcesByLanguage` initial buckets and `AudioLanguageSelector.tsx` options list.
+
