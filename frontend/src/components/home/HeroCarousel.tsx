@@ -71,62 +71,65 @@ export default function HeroCarousel({ items }: HeroCarouselProps) {
       {/* Main Full-Screen Backdrop Artwork */}
       <AnimatePresence mode="wait">
         <motion.div
-          key={`backdrop-${currentIndex}-${item.id}`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          key={item.id}
+          initial={{ opacity: 0, scale: 1.02 }}
+          animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.8 }}
-          className="absolute inset-0 z-10"
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="absolute inset-0 select-none"
         >
           <Image
             src={backdropUrl}
             alt={title}
             fill
-            className="object-cover object-top opacity-90"
+            className="object-cover object-center sm:object-top opacity-100 brightness-[1.05]"
             priority
             placeholder="blur"
             blurDataURL={ImageService.getBlurHash()}
           />
 
-          {/* Top Navbar Seamless Gradient Fade */}
-          <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-[#050508] via-[#050508]/60 to-transparent z-15 pointer-events-none" />
+          {/* Top Navbar Subtle Gradient Fade */}
+          <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#011425]/90 via-[#011425]/30 to-transparent z-15 pointer-events-none" />
 
-          {/* Fiery & Dark Bottom & Side Gradients */}
-          <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/70 to-transparent z-15" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#050508] via-[#050508]/80 to-transparent z-15" />
+          {/* Left Text Scrim (Left-only so center and right posters are 100% visible) */}
+          <div className="absolute inset-y-0 left-0 w-full sm:w-3/4 md:w-2/3 bg-gradient-to-r from-[#011425] via-[#011425]/75 to-transparent z-15 pointer-events-none" />
+
+          {/* Smooth Bottom Blend */}
+          <div className="absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-[#011425] via-[#011425]/60 to-transparent z-15 pointer-events-none" />
         </motion.div>
       </AnimatePresence>
 
       {/* Hero Content Suite */}
-      <div className="absolute bottom-20 left-6 md:left-12 z-20 max-w-2xl space-y-3.5 pointer-events-none">
-        <div className="space-y-3 pointer-events-auto">
-          {/* Director / Category Callout Tagline */}
-          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-orange-400 drop-shadow-md">
-            {calloutText}
+      <div className="absolute bottom-10 sm:bottom-16 left-4 sm:left-6 md:left-12 z-20 max-w-2xl space-y-2.5 sm:space-y-3.5 pointer-events-none pr-4">
+        <div className="space-y-2 sm:space-y-3 pointer-events-auto">
+          {/* Category Callout Tagline */}
+          <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-[#5C7C89] drop-shadow-md flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#1F4959]" />
+            <span>{calloutText}</span>
           </p>
 
-          {/* Massive Bold Title */}
-          <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-[0.95] font-display uppercase drop-shadow-2xl">
+          {/* Responsive Bold Title */}
+          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white leading-[1.05] sm:leading-[0.95] font-display uppercase drop-shadow-2xl">
             {title}
           </h1>
 
           {/* Sub-meta Line */}
-          <p className="text-xs font-semibold text-white/70 tracking-wide font-mono">
+          <p className="text-[11px] sm:text-xs font-semibold text-[#5C7C89] tracking-wide font-mono">
             {genreSubmeta}
           </p>
 
-          {/* Synopsis Overview */}
-          <p className="text-xs sm:text-sm text-white/85 font-normal line-clamp-3 leading-relaxed max-w-xl drop-shadow-md">
+          {/* Synopsis Overview (Compact 2 lines on mobile) */}
+          <p className="text-xs sm:text-sm text-white/80 font-normal line-clamp-2 sm:line-clamp-3 leading-relaxed max-w-xl drop-shadow-md">
             {item.overview || "Stream high-definition cinema and exclusive television series directly on Nightcast."}
           </p>
 
           {/* High-Contrast Watch Now Pill Button */}
-          <div className="pt-2">
+          <div className="pt-1.5 sm:pt-2">
             <Link
               href={`/watch/${type}/${item.id}`}
-              className="gtv-btn-primary"
+              className="gtv-btn-primary inline-flex text-xs sm:text-sm px-5 py-2.5"
             >
-              <Play className="w-4 h-4 fill-current ml-0.5" />
+              <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current ml-0.5" />
               <span>Watch Now</span>
             </Link>
           </div>
@@ -134,13 +137,15 @@ export default function HeroCarousel({ items }: HeroCarouselProps) {
       </div>
 
       {/* Hero Carousel Indicator Dots */}
-      <div className="absolute bottom-12 right-6 md:right-12 z-20 flex items-center gap-2 pointer-events-auto">
+      <div className="absolute bottom-6 sm:bottom-10 right-4 sm:right-6 md:right-12 z-20 flex items-center gap-1.5 sm:gap-2 pointer-events-auto">
         {items.slice(0, 7).map((_, idx) => (
           <button
             key={idx}
             onClick={() => setCurrentIndex(idx)}
-            className={`h-2.5 rounded-full transition-all duration-300 ${
-              idx === currentIndex ? "w-7 bg-white shadow-lg shadow-white/30" : "w-2.5 bg-white/40 hover:bg-white/70"
+            className={`h-2 sm:h-2.5 rounded-full transition-all duration-300 ${
+              idx === currentIndex
+                ? "w-6 sm:w-8 bg-gradient-to-r from-[#1F4959] to-[#5C7C89] shadow-lg shadow-[#1F4959]/50 border border-[#5C7C89]/60"
+                : "w-2 sm:w-2.5 bg-[#5C7C89]/30 hover:bg-[#5C7C89]/60"
             }`}
             aria-label={`Slide ${idx + 1}`}
           />

@@ -143,95 +143,40 @@ class StreamExtractor:
             logger.info(f"Cache hit for {cache_key}")
             return cached
 
-        hls_servers = []
-        try:
-            hls_servers = await asyncio.wait_for(
-                self._try_autoembed(media_type, tmdb_id, season, episode),
-                timeout=3.5
-            )
-        except Exception as e:
-            logger.warning(f"Direct HLS stream extraction timeout/error: {e}")
-
-        if hls_servers:
-            async with httpx.AsyncClient(timeout=3.0, follow_redirects=True, headers=BROWSER_HEADERS) as client:
-                for server in hls_servers:
-                    if server.get("type") == "hls" and server.get("url"):
-                        try:
-                            res = await client.get(server["url"])
-                            if res.status_code == 200 and "#EXTM3U" in res.text:
-                                server["audio_tracks"] = self._parse_m3u8_audio_tracks(res.text)
-                            else:
-                                server["audio_tracks"] = [
-                                    {"lang": "en", "label": "English"},
-                                    {"lang": "hi", "label": "Hindi"},
-                                    {"lang": "ko", "label": "Korean"}
-                                ]
-                        except Exception:
-                            server["audio_tracks"] = [
-                                {"lang": "en", "label": "English"},
-                                {"lang": "hi", "label": "Hindi"},
-                                {"lang": "ko", "label": "Korean"}
-                            ]
-        else:
-            path_suffix = f"movie/{tmdb_id}" if media_type == "movie" else f"tv/{tmdb_id}/{season}/{episode}"
-            hls_servers = [
-                {
-                    "id": "hls-primary",
-                    "name": "Server HLS (Multi-Audio)",
-                    "url": f"https://player.autoembed.cc/embed/{path_suffix}",
-                    "type": "hls",
-                    "audio_tracks": [
-                        {"lang": "en", "label": "English"},
-                        {"lang": "hi", "label": "Hindi"},
-                        {"lang": "ko", "label": "Korean"}
-                    ],
-                    "headers": {
-                        "Referer": "https://player.autoembed.cc/",
-                        "Origin": "https://player.autoembed.cc"
-                    }
-                }
-            ]
-
         if media_type == "movie":
-            s1_url = f"https://vidsrc-embed.ru/embed/movie/{tmdb_id}"
-            s2_url = f"https://vidsrc-embed.su/embed/movie/{tmdb_id}"
-            s3_url = f"https://vidsrcme.su/embed/movie/{tmdb_id}"
-            s4_url = f"https://vsrc.su/embed/movie/{tmdb_id}?ds_lang=hi" if language_pref == "hi" else f"https://vsrc.su/embed/movie/{tmdb_id}"
+            s1_vidbolt = f"https://vidbolt.xyz/movie/{tmdb_id}"
+            s2_vidsrc = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
+            s3_hindi = f"https://vsrc.su/embed/movie/{tmdb_id}?ds_lang=hi"
+        elif media_type == "anime":
+            s1_vidbolt = f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}"
+            s2_vidsrc = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+            s3_hindi = f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}?ds_lang=hi"
         else:
-            s1_url = f"https://vidsrc-embed.ru/embed/tv/{tmdb_id}/{season}-{episode}"
-            s2_url = f"https://vidsrc-embed.su/embed/tv/{tmdb_id}/{season}-{episode}"
-            s3_url = f"https://vidsrcme.su/embed/tv/{tmdb_id}/{season}-{episode}"
-            s4_url = f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}?ds_lang=hi" if language_pref == "hi" else f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}"
+            s1_vidbolt = f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}"
+            s2_vidsrc = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+            s3_hindi = f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}?ds_lang=hi"
 
-        iframe_servers = [
+        all_servers = [
             {
-                "id": "server1",
-                "name": "Server 1 (Ru)",
-                "url": s1_url,
+                "id": "vidbolt",
+                "name": "Server 1 (VidBolt)",
+                "url": s1_vidbolt,
                 "type": "iframe",
                 "language": "en",
-                "language_name": "vidsrc-embed.ru"
+                "language_name": "vidbolt.xyz"
             },
             {
-                "id": "server2",
-                "name": "Server 2 (Su)",
-                "url": s2_url,
+                "id": "vidsrc",
+                "name": "Server 2 (VidSrc)",
+                "url": s2_vidsrc,
                 "type": "iframe",
                 "language": "en",
-                "language_name": "vidsrc-embed.su"
+                "language_name": "vidsrc.me"
             },
             {
-                "id": "server3",
-                "name": "Server 3 (Me)",
-                "url": s3_url,
-                "type": "iframe",
-                "language": "en",
-                "language_name": "vidsrcme.su"
-            },
-            {
-                "id": "server4",
-                "name": "Server 4 (Vsrc - Hindi)",
-                "url": s4_url,
+                "id": "hindi-dubbed",
+                "name": "Server 3 (Hindi Dubbed)",
+                "url": s3_hindi,
                 "type": "iframe",
                 "language": "hi",
                 "language_name": "vsrc.su",
@@ -239,10 +184,8 @@ class StreamExtractor:
             }
         ]
 
-        all_servers = hls_servers + iframe_servers
-
         if language_pref == "hi":
-            all_servers.sort(key=lambda s: 0 if s.get("language") == "hi" else (1 if s.get("type") == "hls" else 2))
+            all_servers.sort(key=lambda s: 0 if s.get("language") == "hi" else 1)
 
         result = {"servers": all_servers}
 
@@ -325,56 +268,75 @@ class StreamExtractor:
         season: int = 1,
         episode: int = 1,
     ) -> Dict[str, Any]:
-        """Resolves direct downloadable links or mp4 stream links for offline saving with strict fast timeout."""
-        autoembed_servers = []
-        try:
-            autoembed_servers = await asyncio.wait_for(
-                self._try_autoembed(media_type, tmdb_id, season, episode),
-                timeout=3.0
-            )
-        except Exception as e:
-            logger.warning(f"Download stream extraction autoembed timeout/error: {e}")
-
+        """Resolves direct downloadable links and stream endpoints for offline saving with immediate response."""
         download_options = []
-        
-        for srv in autoembed_servers:
-            download_options.append({
-                "label": f"{srv['name']} (High Speed MP4/HLS Direct)",
-                "url": srv['url'],
-                "quality": "1080p Full HD",
-                "format": "mp4",
-                "type": "direct"
-            })
 
         if media_type == "movie":
             download_options.append({
-                "label": "VIDSRC Primary Stream (1080p)",
-                "url": f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}",
-                "quality": "1080p",
-                "format": "mp4",
-                "type": "stream_fallback"
+                "id": "vidbolt-download",
+                "label": "VidBolt Ultra Fast Stream (1080p)",
+                "url": f"https://vidbolt.xyz/movie/{tmdb_id}",
+                "quality": "1080p Full HD",
+                "format": "mp4/stream",
+                "type": "direct_stream"
             })
             download_options.append({
-                "label": "Hindi Dubbed Primary Stream (720p)",
-                "url": f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&ds_lang=hi",
-                "quality": "720p",
-                "format": "mp4",
-                "type": "stream_fallback"
+                "id": "vidsrc-download",
+                "label": "VidSrc Primary HD Source (1080p)",
+                "url": f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}",
+                "quality": "1080p",
+                "format": "mp4/stream",
+                "type": "direct_stream"
+            })
+            download_options.append({
+                "id": "hindi-download",
+                "label": "Hindi Dubbed Stream Source (720p/1080p)",
+                "url": f"https://vsrc.su/embed/movie/{tmdb_id}?ds_lang=hi",
+                "quality": "720p / 1080p",
+                "format": "mp4/stream",
+                "type": "direct_stream"
+            })
+        elif media_type == "anime":
+            download_options.append({
+                "id": "vidbolt-download",
+                "label": f"VidBolt Anime Stream Ep {episode} (1080p)",
+                "url": f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}",
+                "quality": "1080p Full HD",
+                "format": "mp4/stream",
+                "type": "direct_stream"
+            })
+            download_options.append({
+                "id": "vidsrc-download",
+                "label": f"VidSrc Primary Stream Ep {episode} (1080p)",
+                "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
+                "quality": "1080p",
+                "format": "mp4/stream",
+                "type": "direct_stream"
             })
         else:
             download_options.append({
-                "label": f"VIDSRC Primary Stream S{season}E{episode} (1080p)",
-                "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
-                "quality": "1080p",
-                "format": "mp4",
-                "type": "stream_fallback"
+                "id": "vidbolt-download",
+                "label": f"VidBolt Stream S{season}E{episode} (1080p)",
+                "url": f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}",
+                "quality": "1080p Full HD",
+                "format": "mp4/stream",
+                "type": "direct_stream"
             })
             download_options.append({
-                "label": f"Hindi Dubbed Primary Stream S{season}E{episode} (720p)",
-                "url": f"https://multiembed.mov/directstream.php?video_id={tmdb_id}&tmdb=1&s={season}&e={episode}&ds_lang=hi",
-                "quality": "720p",
-                "format": "mp4",
-                "type": "stream_fallback"
+                "id": "vidsrc-download",
+                "label": f"VidSrc Primary Stream S{season}E{episode} (1080p)",
+                "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
+                "quality": "1080p",
+                "format": "mp4/stream",
+                "type": "direct_stream"
+            })
+            download_options.append({
+                "id": "hindi-download",
+                "label": f"Hindi Dubbed Stream S{season}E{episode} (720p/1080p)",
+                "url": f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}?ds_lang=hi",
+                "quality": "720p / 1080p",
+                "format": "mp4/stream",
+                "type": "direct_stream"
             })
 
         return {
@@ -393,30 +355,63 @@ class StreamExtractor:
         if media_type == "movie":
             return [
                 {
-                    "id": "fallback-vidsrc",
-                    "name": "VIDSRC (MAIN)",
+                    "id": "vidbolt",
+                    "name": "Server 1 (VidBolt)",
+                    "url": f"https://vidbolt.xyz/movie/{tmdb_id}",
+                    "type": "iframe",
+                },
+                {
+                    "id": "vidsrc",
+                    "name": "Server 2 (VidSrc)",
                     "url": f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}",
                     "type": "iframe",
                 },
                 {
-                    "id": "fallback-vidlink",
-                    "name": "VIDLINK",
-                    "url": f"https://vidlink.pro/movie/{tmdb_id}",
+                    "id": "hindi-dubbed",
+                    "name": "Server 3 (Hindi Dubbed)",
+                    "url": f"https://vsrc.su/embed/movie/{tmdb_id}?ds_lang=hi",
+                    "type": "iframe",
+                },
+            ]
+        elif media_type == "anime":
+            return [
+                {
+                    "id": "vidbolt",
+                    "name": "Server 1 (VidBolt)",
+                    "url": f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}",
+                    "type": "iframe",
+                },
+                {
+                    "id": "vidsrc",
+                    "name": "Server 2 (VidSrc)",
+                    "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
+                    "type": "iframe",
+                },
+                {
+                    "id": "hindi-dubbed",
+                    "name": "Server 3 (Hindi Dubbed)",
+                    "url": f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}?ds_lang=hi",
                     "type": "iframe",
                 },
             ]
         else:
             return [
                 {
-                    "id": "fallback-vidsrc",
-                    "name": "VIDSRC (MAIN)",
+                    "id": "vidbolt",
+                    "name": "Server 1 (VidBolt)",
+                    "url": f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}",
+                    "type": "iframe",
+                },
+                {
+                    "id": "vidsrc",
+                    "name": "Server 2 (VidSrc)",
                     "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
                     "type": "iframe",
                 },
                 {
-                    "id": "fallback-vidlink",
-                    "name": "VIDLINK",
-                    "url": f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}",
+                    "id": "hindi-dubbed",
+                    "name": "Server 3 (Hindi Dubbed)",
+                    "url": f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}?ds_lang=hi",
                     "type": "iframe",
                 },
             ]

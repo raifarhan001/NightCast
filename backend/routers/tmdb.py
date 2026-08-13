@@ -55,6 +55,8 @@ async def discover(
     watch_region: str = Query("US", description="ISO 3166-1 code"),
     with_genres: str = Query("", description="Comma or pipe delimited genre IDs"),
     with_original_language: str = Query("", description="Language codes e.g. hi"),
+    with_networks: str = Query("", description="Network IDs e.g. 213 for Netflix"),
+    with_companies: str = Query("", description="Company IDs e.g. 17846 for Netflix Studios"),
     page: int = Query(1, ge=1, le=500)
 ):
     try:
@@ -63,6 +65,10 @@ async def discover(
             params["watch_region"] = watch_region
         if with_watch_providers:
             params["with_watch_providers"] = with_watch_providers
+        if with_networks:
+            params["with_networks"] = with_networks
+        if with_companies:
+            params["with_companies"] = with_companies
         if with_genres:
             params["with_genres"] = with_genres
         if with_original_language:

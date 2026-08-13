@@ -8,6 +8,8 @@ import { apiFetch, MediaItem, ContinueWatchingItem } from "../lib/api";
 import { getContinueWatchingList, LocalProgressItem } from "../lib/progress";
 import HeroCarousel from "../components/home/HeroCarousel";
 import MovieRow from "../components/shared/MovieRow";
+import Top10RankedRow from "../components/home/Top10RankedRow";
+import StudiosRow from "../components/home/StudiosRow";
 import { HeroSkeleton, MovieRowSkeleton } from "../components/shared/Skeletons";
 
 function HomePageContent() {
@@ -125,7 +127,7 @@ function HomePageContent() {
 
   if (topPicksLoading) {
     return (
-      <div className="w-full min-h-screen bg-[#090A0F]">
+      <div className="w-full min-h-screen bg-[#011425]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />
@@ -134,7 +136,7 @@ function HomePageContent() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#090A0F] pb-28 space-y-4">
+    <div className="w-full min-h-screen bg-[#011425] pb-28 space-y-6">
       {/* Immersive Google TV Hero Banner with Ambient Backlight Glow */}
       <HeroCarousel items={heroItems} />
 
@@ -146,13 +148,22 @@ function HomePageContent() {
         />
       )}
 
-      {/* 1. Top Picks */}
+      {/* 1. Trending Right Now (Top 10 Ranked with Big Numbers) */}
+      <Top10RankedRow
+        title="Trending Right Now"
+        items={topPicks.length > 0 ? topPicks : trendingMovies}
+      />
+
+      {/* 2. Studios & Platforms Branding Bar */}
+      <StudiosRow />
+
+      {/* 3. Top Picks For You */}
       <MovieRow
-        title="Top Picks"
+        title="Top Picks For You"
         items={topPicks}
       />
 
-      {/* 2. Trending Movies */}
+      {/* 4. Trending Movies */}
       <MovieRow
         title="Trending Movies"
         items={trendingMovies.map((m) => ({ ...m, media_type: "movie" }))}
@@ -200,7 +211,7 @@ function HomePageContent() {
 export default function HomePage() {
   return (
     <Suspense fallback={
-      <div className="w-full min-h-screen bg-[#090A0F]">
+      <div className="w-full min-h-screen bg-[#011425]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />

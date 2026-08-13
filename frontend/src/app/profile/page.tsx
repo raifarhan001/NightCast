@@ -101,13 +101,13 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="max-w-md mx-auto px-6 py-20 min-h-[85vh] flex flex-col justify-center bg-[#030308]">
-        <div className="glass-panel rounded-3xl p-8 space-y-6 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+      <div className="max-w-md mx-auto px-6 py-20 min-h-[85vh] flex flex-col justify-center bg-[#011425]">
+        <div className="bg-[#081E30] rounded-3xl p-8 space-y-6 border border-[#5C7C89]/25 shadow-2xl">
           <div className="text-center space-y-2">
-            <h1 className="font-display text-2xl font-black tracking-widest text-white uppercase text-gradient-cyan">
-              {authMode === 'login' ? 'NEXUS Sign In' : 'Join NEXUS PLAY'}
+            <h1 className="font-display text-2xl font-black tracking-widest text-white uppercase">
+              {authMode === 'login' ? 'NIGHTCAST Sign In' : 'Join NIGHTCAST'}
             </h1>
-            <p className="text-xs text-zinc-400 font-medium">
+            <p className="text-xs text-[#5C7C89] font-medium">
               {authMode === 'login' ? 'Access your watchlist, profiles, and history' : 'Create an account to begin streaming'}
             </p>
           </div>
@@ -120,34 +120,34 @@ export default function ProfilePage() {
 
           <form onSubmit={handleAuthSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-bold tracking-widest text-zinc-400">Email Address</label>
+              <label className="text-[10px] uppercase font-bold tracking-widest text-[#5C7C89]">Email Address</label>
               <div className="relative">
                 <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@domain.com"
-                  className="w-full pl-10 pr-4 py-3 bg-[#080812] rounded-xl border border-white/10 text-white placeholder-zinc-500 text-sm focus:outline-none focus:border-[#00D2FF]/50 transition-colors duration-200" />
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                  className="w-full pl-10 pr-4 py-3 bg-[#011425] rounded-xl border border-[#5C7C89]/30 text-white placeholder-[#5C7C89] text-sm focus:outline-none focus:border-[#5C7C89] transition-colors duration-200" />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5C7C89]" />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] uppercase font-bold tracking-widest text-zinc-400">Password</label>
+              <label className="text-[10px] uppercase font-bold tracking-widest text-[#5C7C89]">Password</label>
               <div className="relative">
                 <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-3 bg-[#080812] rounded-xl border border-white/10 text-white placeholder-zinc-500 text-sm focus:outline-none focus:border-[#00D2FF]/50 transition-colors duration-200" />
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                  className="w-full pl-10 pr-4 py-3 bg-[#011425] rounded-xl border border-[#5C7C89]/30 text-white placeholder-[#5C7C89] text-sm focus:outline-none focus:border-[#5C7C89] transition-colors duration-200" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5C7C89]" />
               </div>
             </div>
 
             <button type="submit"
-              className="w-full py-3.5 rounded-xl bg-[#00D2FF] hover:bg-[#38BDF8] text-[#030308] font-black text-xs uppercase tracking-widest transition-all duration-300 shadow-[0_0_25px_rgba(0,210,255,0.3)] active:scale-[0.97]">
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#1F4959] to-[#5C7C89] hover:from-[#255b6f] hover:to-[#6c8f9d] text-white font-bold text-xs uppercase tracking-widest transition-all duration-300 shadow-[0_0_25px_rgba(31,73,89,0.5)] active:scale-[0.97] border border-[#5C7C89]/40 cursor-pointer">
               {authMode === 'login' ? 'Sign In' : 'Create Account'}
             </button>
           </form>
 
           <div className="text-center">
             <button onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
-              className="text-xs text-[#00D2FF] font-semibold hover:underline">
+              className="text-xs text-[#5C7C89] font-semibold hover:text-white transition-colors cursor-pointer">
               {authMode === 'login' ? "Don't have an account? Sign Up" : "Already registered? Sign In"}
             </button>
           </div>
@@ -157,22 +157,22 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 md:px-12 py-12 min-h-screen bg-[#030308] grid grid-cols-1 lg:grid-cols-4 gap-10">
+    <div className="max-w-7xl mx-auto px-6 md:px-12 py-12 min-h-screen bg-[#011425] grid grid-cols-1 lg:grid-cols-4 gap-10">
       {/* Sidebar Controls */}
       <div className="lg:col-span-1 space-y-8">
         {/* User Card */}
-        <div className="glass-panel rounded-3xl p-6 text-center space-y-4 border border-white/10">
-          <div className="w-16 h-16 rounded-2xl bg-[#00D2FF]/10 border border-[#00D2FF]/30 text-[#00D2FF] flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(0,210,255,0.2)]">
-            <ShieldCheck className="w-8 h-8" />
+        <div className="bg-[#081E30] rounded-3xl p-6 text-center space-y-4 border border-[#5C7C89]/25 shadow-xl">
+          <div className="w-16 h-16 rounded-2xl bg-[#011425] border border-[#5C7C89]/30 text-[#5C7C89] flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(31,73,89,0.3)]">
+            <ShieldCheck className="w-8 h-8 text-[#5C7C89]" />
           </div>
           <div>
             <h3 className="font-bold text-white text-sm truncate">{user.email}</h3>
-            <p className="text-[10px] text-zinc-400 font-bold tracking-widest uppercase mt-0.5">
+            <p className="text-[10px] text-[#5C7C89] font-bold tracking-widest uppercase mt-0.5">
               {user.is_admin ? 'Administrator' : 'Premium Member'}
             </p>
           </div>
           <button onClick={() => logout()}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-xs font-bold uppercase tracking-wider transition-colors duration-200 active:scale-[0.97]">
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-xs font-bold uppercase tracking-wider transition-colors duration-200 active:scale-[0.97] cursor-pointer">
             <LogOut className="w-4 h-4" /><span>Sign Out</span>
           </button>
         </div>
@@ -180,25 +180,25 @@ export default function ProfilePage() {
         {/* Profiles Selector */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-[10px] uppercase tracking-[0.2em] text-[#00D2FF] font-black">Profiles</h3>
+            <h3 className="text-[10px] uppercase tracking-[0.2em] text-[#5C7C89] font-black">Profiles</h3>
             {profiles.length < 4 && !showCreateForm && (
               <button onClick={() => setShowCreateForm(true)}
-                className="p-1.5 rounded-lg bg-white/5 hover:bg-[#00D2FF]/20 text-zinc-400 hover:text-[#00D2FF] transition-all duration-200">
+                className="p-1.5 rounded-lg bg-[#011425] hover:bg-[#1F4959]/40 text-[#5C7C89] hover:text-white transition-all duration-200 border border-[#5C7C89]/25 cursor-pointer">
                 <Plus className="w-4 h-4" />
               </button>
             )}
           </div>
 
           {showCreateForm && (
-            <form onSubmit={handleCreateProfile} className="glass-panel rounded-2xl p-4 space-y-3.5 border border-white/10">
+            <form onSubmit={handleCreateProfile} className="bg-[#081E30] rounded-2xl p-4 space-y-3.5 border border-[#5C7C89]/30 shadow-xl">
               <h4 className="text-[10px] uppercase font-bold tracking-wider text-white">New Profile</h4>
               {profileCreateError && <p className="text-[10px] text-red-400 font-semibold">{profileCreateError}</p>}
               <input type="text" placeholder="Profile Name" required value={newProfileName}
                 onChange={(e) => setNewProfileName(e.target.value)}
-                className="w-full bg-[#080812] border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#00D2FF]/50" />
+                className="w-full bg-[#011425] border border-[#5C7C89]/30 rounded-lg px-3 py-2 text-xs text-white placeholder-[#5C7C89] focus:outline-none focus:border-[#5C7C89]" />
               <div className="flex gap-2">
-                <button type="submit" className="flex-grow py-2 rounded-lg bg-[#00D2FF] text-[#030308] text-xs font-black transition-all duration-200 active:scale-95">Save</button>
-                <button type="button" onClick={() => setShowCreateForm(false)} className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-zinc-400 text-xs transition-all duration-200 active:scale-95">Cancel</button>
+                <button type="submit" className="flex-grow py-2 rounded-lg bg-[#1F4959] text-white text-xs font-bold transition-all duration-200 active:scale-95 border border-[#5C7C89]/40 cursor-pointer">Save</button>
+                <button type="button" onClick={() => setShowCreateForm(false)} className="px-3 py-2 rounded-lg bg-[#011425] hover:bg-white/10 text-[#5C7C89] text-xs transition-all duration-200 active:scale-95 border border-[#5C7C89]/20 cursor-pointer">Cancel</button>
               </div>
             </form>
           )}
@@ -207,17 +207,17 @@ export default function ProfilePage() {
             {profiles.map(p => (
               <div key={p.id} className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all duration-200 ${
                 activeProfile?.id === p.id
-                  ? 'border-[#00D2FF]/40 bg-[#00D2FF]/10 text-white shadow-[0_0_15px_rgba(0,210,255,0.15)]'
-                  : 'border-white/10 bg-[#080812] text-zinc-400 hover:text-white'
+                  ? 'border-[#5C7C89] bg-[#1F4959] text-white shadow-[0_0_15px_rgba(31,73,89,0.5)]'
+                  : 'border-[#5C7C89]/20 bg-[#081E30] text-[#5C7C89] hover:text-white'
               }`}>
-                <button onClick={() => setActiveProfile(p)} className="flex items-center gap-3 text-left focus:outline-none flex-grow">
-                  <div className="relative w-8 h-8 rounded-full overflow-hidden border border-white/10 shrink-0">
+                <button onClick={() => setActiveProfile(p)} className="flex items-center gap-3 text-left focus:outline-none flex-grow cursor-pointer">
+                  <div className="relative w-8 h-8 rounded-full overflow-hidden border border-[#5C7C89]/30 shrink-0">
                     <Image src={p.avatar_url} alt={p.name} fill sizes="32px" className="object-cover" />
                   </div>
                   <span className="text-xs font-bold">{p.name}</span>
                 </button>
                 {profiles.length > 1 && (
-                  <button onClick={() => handleDeleteProfile(p.id)} className="p-2 text-zinc-500 hover:text-red-400 transition-colors duration-200">
+                  <button onClick={() => handleDeleteProfile(p.id)} className="p-2 text-[#5C7C89] hover:text-red-400 transition-colors duration-200 cursor-pointer">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}
@@ -229,25 +229,26 @@ export default function ProfilePage() {
         {/* User Preferences */}
         {activeProfile && settings && (
           <div className="space-y-4">
-            <h3 className="text-[10px] uppercase tracking-[0.2em] text-[#00D2FF] font-black">Playback Settings</h3>
-            <div className="glass-panel rounded-3xl p-5 space-y-4 text-xs border border-white/10">
+            <h3 className="text-[10px] uppercase tracking-[0.2em] text-[#5C7C89] font-black">Playback Settings</h3>
+            <div className="bg-[#081E30] rounded-3xl p-5 space-y-4 text-xs border border-[#5C7C89]/25 shadow-xl">
               <div className="flex items-center justify-between">
-                <span className="text-zinc-300 font-bold">Autoplay Next</span>
+                <span className="text-[#5C7C89] font-bold">Autoplay Next</span>
                 <input type="checkbox" checked={settings.autoplay}
                   onChange={(e) => updateSettings({ autoplay: e.target.checked })}
-                  className="w-4 h-4 accent-[#00D2FF] rounded" />
+                  className="w-4 h-4 accent-[#1F4959] rounded cursor-pointer" />
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-zinc-300 font-bold">Subtitles Enabled</span>
+                <span className="text-[#5C7C89] font-bold">Subtitles Enabled</span>
                 <input type="checkbox" checked={settings.subtitles_enabled}
                   onChange={(e) => updateSettings({ subtitles_enabled: e.target.checked })}
-                  className="w-4 h-4 accent-[#00D2FF] rounded" />
+                  className="w-4 h-4 accent-[#1F4959] rounded cursor-pointer" />
               </div>
               <div className="space-y-1.5">
-                <span className="text-zinc-300 font-bold block">Preferred Language</span>
+                <span className="text-[#5C7C89] font-bold block">Preferred Language</span>
                 <select value={settings.preferred_language} onChange={(e) => updateSettings({ preferred_language: e.target.value })}
-                  className="w-full bg-[#080812] border border-white/10 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-[#00D2FF]/50">
+                  className="w-full bg-[#011425] border border-[#5C7C89]/30 rounded-lg px-2.5 py-2 text-white focus:outline-none focus:border-[#5C7C89] cursor-pointer">
                   <option value="en">English (US)</option>
+                  <option value="hi">Hindi</option>
                   <option value="de">Deutsch</option>
                   <option value="es">Español</option>
                   <option value="fr">Français</option>
@@ -263,7 +264,7 @@ export default function ProfilePage() {
         {/* Watchlist */}
         <div className="space-y-5">
           <div className="flex items-center gap-2.5 text-white">
-            <Bookmark className="w-5 h-5 text-[#00D2FF]" />
+            <Bookmark className="w-5 h-5 text-[#5C7C89]" />
             <h2 className="font-display text-xl font-black tracking-tight">Watchlist</h2>
           </div>
           {favorites.length > 0 ? (
@@ -273,9 +274,9 @@ export default function ProfilePage() {
               ))}
             </div>
           ) : (
-            <div className="glass-panel rounded-3xl p-10 text-center space-y-1.5 border border-white/10">
+            <div className="bg-[#081E30] rounded-3xl p-10 text-center space-y-1.5 border border-[#5C7C89]/25 shadow-xl">
               <p className="text-xs font-bold text-white">Your watchlist is currently empty</p>
-              <p className="text-[11px] text-zinc-400 max-w-xs mx-auto">Explore titles and bookmark them to build your personal streaming library.</p>
+              <p className="text-[11px] text-[#5C7C89] max-w-xs mx-auto">Explore titles and bookmark them to build your personal streaming library.</p>
             </div>
           )}
         </div>
@@ -284,12 +285,12 @@ export default function ProfilePage() {
         <div className="space-y-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5 text-white">
-              <Clock className="w-5 h-5 text-[#00D2FF]" />
+              <Clock className="w-5 h-5 text-[#5C7C89]" />
               <h2 className="font-display text-xl font-black tracking-tight">Watch History</h2>
             </div>
             {history.length > 0 && (
               <button onClick={() => clearHistoryMutation.mutate()}
-                className="text-[10px] uppercase font-bold tracking-widest text-red-400 hover:underline">
+                className="text-[10px] uppercase font-bold tracking-widest text-red-400 hover:underline cursor-pointer">
                 Clear History
               </button>
             )}
@@ -297,28 +298,28 @@ export default function ProfilePage() {
           {history.length > 0 ? (
             <div className="space-y-2">
               {history.map((h) => (
-                <div key={h.id} className="glass-card rounded-2xl p-4 flex items-center justify-between border border-white/10 hover:border-[#00D2FF]/30 transition-all duration-300">
+                <div key={h.id} className="bg-[#081E30] rounded-2xl p-4 flex items-center justify-between border border-[#5C7C89]/25 hover:border-[#5C7C89]/60 transition-all duration-300 shadow-md">
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="w-10 h-10 bg-[#080812] rounded-xl flex items-center justify-center text-[#00D2FF] shrink-0 border border-white/10">
+                    <div className="w-10 h-10 bg-[#011425] rounded-xl flex items-center justify-center text-[#5C7C89] shrink-0 border border-[#5C7C89]/30">
                       <Eye className="w-4 h-4" />
                     </div>
                     <div className="min-w-0">
                       <h4 className="text-xs font-bold text-white truncate max-w-[280px]">{h.title}</h4>
-                      <p className="text-[10px] text-zinc-400 uppercase tracking-widest font-semibold">
+                      <p className="text-[10px] text-[#5C7C89] uppercase tracking-widest font-semibold">
                         {h.media_type} &middot; {h.progress_percent.toFixed(0)}% watched
                       </p>
                     </div>
                   </div>
-                  <span className="text-[10px] text-zinc-500 font-bold">
+                  <span className="text-[10px] text-[#5C7C89] font-bold">
                     {new Date(h.watched_at).toLocaleDateString()}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="glass-panel rounded-3xl p-10 text-center space-y-1.5 border border-white/10">
+            <div className="bg-[#081E30] rounded-3xl p-10 text-center space-y-1.5 border border-[#5C7C89]/25 shadow-xl">
               <p className="text-xs font-bold text-white">No history recorded yet</p>
-              <p className="text-[11px] text-zinc-400">Stream a movie or show to track your playback resume points.</p>
+              <p className="text-[11px] text-[#5C7C89]">Stream a movie or show to track your playback resume points.</p>
             </div>
           )}
         </div>

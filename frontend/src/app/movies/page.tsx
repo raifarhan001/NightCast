@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch, MediaItem } from "../../lib/api";
 import HeroCarousel from "../../components/home/HeroCarousel";
 import MovieRow from "../../components/shared/MovieRow";
+import Top10RankedRow from "../../components/home/Top10RankedRow";
+import StudiosRow from "../../components/home/StudiosRow";
 import { HeroSkeleton, MovieRowSkeleton } from "../../components/shared/Skeletons";
 
 function MoviesPageContent() {
@@ -62,7 +64,7 @@ function MoviesPageContent() {
 
   if (trendingLoading) {
     return (
-      <div className="w-full min-h-screen bg-[#090A0F]">
+      <div className="w-full min-h-screen bg-[#011425]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />
@@ -71,11 +73,20 @@ function MoviesPageContent() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#090A0F] pb-28 space-y-4">
+    <div className="w-full min-h-screen bg-[#011425] pb-28 space-y-6">
       {/* Movies Only Hero Carousel */}
       <HeroCarousel items={heroItems} />
 
-      {/* 1. Trending Movies */}
+      {/* 1. Trending Right Now (Top 10 Ranked Movies) */}
+      <Top10RankedRow
+        title="Top 10 Movies Right Now"
+        items={trendingMovies.map(m => ({ ...m, media_type: "movie" as const }))}
+      />
+
+      {/* 2. Studios & Platforms */}
+      <StudiosRow />
+
+      {/* 3. Trending Movies */}
       <MovieRow
         title="Trending Movies"
         items={trendingMovies.map(m => ({ ...m, media_type: "movie" as const }))}
@@ -129,7 +140,7 @@ function MoviesPageContent() {
 export default function MoviesPage() {
   return (
     <Suspense fallback={
-      <div className="w-full min-h-screen bg-[#090A0F]">
+      <div className="w-full min-h-screen bg-[#011425]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />

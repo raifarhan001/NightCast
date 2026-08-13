@@ -1,112 +1,219 @@
-# Vidking: Premium Movie & TV Streaming Platform
+# 🌌 NightCast — Cinematic Movie & TV Streaming Platform
 
-An editorial, minimal, and premium movie and TV streaming experience built using Next.js 15, FastAPI, PostgreSQL (pgvector), and Redis. 
+<div align="center">
 
-The styling borrows aesthetics from Apple, Nothing, Linear, and A24 to deliver a high-typography, dark-theme layout with custom cursor interactions, smooth GSAP parallax animations, and glassmorphic overlays.
+![Next.js 15](https://img.shields.io/badge/Next.js-15.0-black?style=for-the-badge&logo=next.js)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=for-the-badge&logo=tailwind_css)
+![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python)
+
+**A modern, state-of-the-art streaming web application featuring Google TV aesthetics, high-speed multi-server streaming, direct offline downloads, and studio platform catalog discovery.**
+
+[Features](#-key-features) • [Tech Stack](#-tech-stack) • [Quick Start](#-quick-start) • [Streaming Servers](#-3-high-speed-streaming-servers) • [Screenshots](#-preview)
+
+</div>
 
 ---
 
-## Technical Stack
+## ✨ Key Features
 
-- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS, Framer Motion, GSAP, Zustand, TanStack React Query.
-- **Backend**: FastAPI (Python 3.11), SQLAlchemy, PostgreSQL + pgvector, Redis, JWT Cookies.
-- **Video Playback**: Dynamic iframe integration with Vidking player API.
-- **AI Engine**: Local semantic vocabulary vector embedding (or OpenAI `text-embedding-3-small` if configured) with Postgres vector similarity math.
+- **🎨 Deep Ocean Design System**:
+  - Immersive `#011425` midnight ocean theme with `#081E30` elevated surfaces and `#1F4959` / `#5C7C89` cyan-slate accents.
+  - Ambient backlight hero carousel with high-visibility backdrops and glassmorphism overlays.
+
+- **⚡ 3 High-Performance Streaming Servers**:
+  - **Server 1 (VidBolt)**: Primary ultra-fast 1080p full-HD multi-source stream with automatic subtitle loading.
+  - **Server 2 (VidSrc)**: High-reliability backup full-HD 1080p embed player.
+  - **Server 3 (Hindi Dubbed)**: Dedicated Bollywood, Hindi-dubbed Hollywood, and South Indian dubbed stream with Hindi audio track by default.
+
+- **📥 Direct Offline Download Engine**:
+  - Download Hub with one-click direct download links for **Server 1 (VidBolt 1080p)**, **Server 2 (VidSrc 1080p)**, and **Server 3 (Hindi Dubbed 1080p/720p)**.
+  - Supports both Movies and TV Episodes (with Season & Episode selector).
+
+- **🏆 Authentic Netflix Top 10 Ranked Row**:
+  - Giant hollow outlined rank numbers (**`1` to `10`**) crafted with crisp SVG typography.
+  - Overlapping 2:3 vertical posters with smooth zoom, play trigger, and live ratings.
+
+- **🎬 Studios & Platforms Interactive Discovery**:
+  - Direct network & provider discover filters for **Netflix**, **Amazon Prime Video**, **Apple TV+**, **Disney+**, **Hulu**, **HBO Max**, **Crunchyroll**, **Paramount+**, **MGM+**, and **Marvel Studios**.
+  - Dynamic **Platform Badges** rendered on all movie and show posters.
+
+- **🏎️ F1 Live Racing Hub**:
+  - 2026 Formula 1 season countdown, race schedule, driver & constructor standings, and weekend live telemetry tracker.
+
+- **👥 Multi-Profile Support & Local Progress Sync**:
+  - Switch between up to 4 custom user profiles with personalized continue-watching logs and bookmarks.
 
 ---
 
-## Architectural Setup & Running Locally
+## 🛠️ Tech Stack
 
-The entire stack is containerized using Docker and Docker Compose. On startup, the backend automatically registers the `pgvector` extension in PostgreSQL, runs database migrations, and pre-populates the vector search database.
+### Frontend
+- **Framework**: Next.js 15 (App Router, React 19)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS, Custom CSS Design System, Glassmorphism
+- **State & Query**: Zustand, TanStack React Query v5
+- **Icons**: Lucide React
 
-### 1. Configure Environment Variables
-Create a `.env` file in the root workspace folder:
+### Backend
+- **Framework**: FastAPI (Python 3.11+)
+- **Database**: SQLite (SQLAlchemy ORM) / PostgreSQL compatible
+- **Metadata**: TMDB v3 API Client with intelligent fallback mocking
+- **Extraction**: Direct stream extractor & download link generator
 
-```env
-# Mandatory for actual TMDB queries (falls back to mock databases automatically if omitted)
-TMDB_API_KEY=your_tmdb_api_key_here
+---
 
-# Security
-JWT_SECRET=supersecretjwtkey123!
+## 🚀 Quick Start
 
-# Optional (If omitted, system uses a local 384-dimensional vocabulary similarity model for semantic search)
-OPENAI_API_KEY=your_openai_api_key_here
-```
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18.17+ or v20+)
+- [Python](https://www.python.org/) (v3.10+)
+- [Git](https://git-scm.com/)
 
-### 2. Boot the Platform
-Execute the compose command to compile images and run services:
+---
+
+### 1. Clone the Repository
 
 ```bash
-docker-compose up --build
+git clone https://github.com/your-username/NightCast.git
+cd NightCast
 ```
 
-- **Frontend Application**: [http://localhost:3000](http://localhost:3000)
-- **FastAPI Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
+---
+
+### 2. Backend Setup (FastAPI)
+
+```bash
+# Navigate to backend
+cd backend
+
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+# On Windows:
+.\venv\Scripts\activate
+# On Linux/macOS:
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Create .env from example (optional for custom TMDB API key)
+copy .env.example .env
+
+# Run FastAPI server (runs on port 8001)
+uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+```
+
+FastAPI interactive documentation will be available at: **[http://localhost:8001/docs](http://localhost:8001/docs)**
 
 ---
 
-## Features Walkthrough
+### 3. Frontend Setup (Next.js 15)
 
-### 1. Watch Progress Resumption (PostgreSQL Sync)
-The embedded Vidking Player uses the `postMessage` protocol to communicate with Next.js:
-- As you stream, the player continuously emits progress payloads.
-- The frontend registers message listeners, throttling requests, and updates the database every 10 seconds (or on pause/exit).
-- When reopening a movie, the player reads progress records and starts the frame automatically using the `?progress={seconds}` parameters.
+In a new terminal window:
 
-### 2. AI Semantic Search
-- Switch to the **AI** search mode in the search console.
-- Enter descriptive phrases (e.g. `"space movies like Interstellar"`, `"mind bending movies"`, `"horror with good ending"`).
-- The engine maps query matrices against titles in the `semantic_metadata` database table using Postgres `pgvector` cosine similarity (`<=>`) and returns top scoring items.
+```bash
+# Navigate to frontend
+cd frontend
 
-### 3.curated Multi-Profiles
-- Signed-in users can configure up to 4 unique profiles.
-- Each profile tracks separate continue watching logs, favorite bookmarks, and custom settings (subtitles toggles, autoplay preferences, language choices).
+# Install npm dependencies
+npm install
 
----
+# Run Next.js dev server (runs on port 3000)
+npm run dev
+```
 
-## Live Player Verification IDs
-
-If you run without a TMDB API Key, the application operates in **Mock Mode**, pre-populated with actual movies and TV shows to let you test all player events, continue watching, and bookmarks immediately.
-
-Use these IDs to verify the integrated player:
-
-- **Movie ID**: `1078605` (*The Creator*) or `157336` (*Interstellar*)
-- **TV ID**: `119051` (*Wednesday* - Season 1, Episodes 1 to 8)
-- **Alternative TV ID**: `85922` (*Succession*)
+Open your browser at: **[http://localhost:3000](http://localhost:3000)**
 
 ---
 
-## Adding New Audio Language Buckets
+## 🔌 Streaming Servers
 
-The audio language detection system uses a decoupled matching utility located in `/src/utils/languageDetector.ts`. Core player and UI logic do not hardcode language matching rules.
+NightCast is configured strictly with 3 servers:
 
-### How to Add a New Language (e.g. Tamil, Telugu, Spanish)
+| Server Name | Identifier | Resolution | Audio | Description |
+|---|---|---|---|---|
+| **Server 1** | `vidbolt` | 1080p Full HD | Original (English) | Primary high-speed embed player |
+| **Server 2** | `vidsrc` | 1080p Full HD | Original (English) | Fast fallback embed player |
+| **Server 3** | `hindi` | 1080p / 720p HD | Hindi Dubbed | Bollywood & Hollywood Hindi dub stream |
 
-1. Open `/src/utils/languageDetector.ts`.
-2. Add the new language key to `LanguageType`:
-   ```ts
-   export type LanguageType = 'english' | 'hindi' | 'tamil' | 'unknown';
-   ```
-3. Add a matching pattern definition to `LANGUAGE_PATTERN_DEFINITIONS`:
-   ```ts
-   {
-     type: 'tamil',
-     label: 'Tamil Dubbed',
-     isoCode: 'ta',
-     patterns: [
-       /\b(tam|tamil|tamdub)\b/i,
-       /[?&]ds_lang=ta\b/i
-     ]
-   }
-   ```
-4. Add the property to `LanguageBucket`:
-   ```ts
-   export interface LanguageBucket {
-     english: ServerSource[];
-     hindi: ServerSource[];
-     tamil: ServerSource[];
-     unknown: ServerSource[];
-   }
-   ```
-5. Update `groupSourcesByLanguage` initial buckets and `AudioLanguageSelector.tsx` options list.
+---
 
+## 📁 Project Structure
+
+```
+NightCast/
+├── backend/
+│   ├── main.py                  # FastAPI entry point & CORS configuration
+│   ├── database.py              # SQLite / PostgreSQL engine setup
+│   ├── models.py                # User, Profile, and Progress database models
+│   ├── routers/
+│   │   ├── tmdb.py              # TMDB catalog, search, and discover routes
+│   │   ├── auth.py              # User authentication & profile routes
+│   │   └── progress.py          # Watch progress sync endpoints
+│   ├── services/
+│   │   ├── tmdb_service.py      # TMDB API client with mock fallback
+│   │   └── stream_extractor.py  # Server stream extractor & download engine
+│   ├── requirements.txt         # Python dependencies
+│   └── .env.example             # Backend environment template
+│
+├── frontend/
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── page.tsx         # Home page (Hero, Top 10, Studios, Rows)
+│   │   │   ├── search/page.tsx  # Catalog explore & studio platform search
+│   │   │   ├── movies/page.tsx  # Movies catalog page
+│   │   │   ├── shows/page.tsx   # TV shows catalog page
+│   │   │   ├── f1/page.tsx      # Formula 1 racing hub
+│   │   │   ├── watch/[type]/[id]/page.tsx # Cinematic player & download modal
+│   │   │   └── profile/page.tsx # Profile management
+│   │   ├── components/
+│   │   │   ├── home/
+│   │   │   │   ├── HeroCarousel.tsx   # Ambient backlight hero carousel
+│   │   │   │   ├── Top10RankedRow.tsx # Netflix-style Top 10 hollow row
+│   │   │   │   └── StudiosRow.tsx     # Studios & streaming brands carousel
+│   │   │   ├── shared/
+│   │   │   │   ├── MovieCard.tsx      # 16:9 card with platform badges
+│   │   │   │   └── PlatformBadge.tsx  # Netflix/Prime/Disney/Apple badges
+│   │   │   └── player/
+│   │   │       └── NightCastPlayer.tsx# Multi-server streaming player
+│   │   ├── lib/
+│   │   │   ├── api.ts           # API client and type interfaces
+│   │   │   ├── ImageService.ts  # TMDB image optimizer & fallback
+│   │   │   └── progress.ts      # LocalStorage progress manager
+│   │   └── styles/
+│   │       └── globals.css      # Deep Ocean design tokens and CSS rules
+│   ├── package.json
+│   ├── tailwind.config.js
+│   └── .env.example             # Frontend environment template
+│
+├── .gitignore                   # Clean Git ignore rules
+└── README.md                    # Project documentation
+```
+
+---
+
+## 🔒 Environment Variables
+
+### Backend (`backend/.env`)
+```env
+TMDB_API_KEY=your_tmdb_api_key
+DATABASE_URL=sqlite:///./nightcast.db
+SECRET_KEY=your_jwt_secret_key
+PORT=8001
+```
+
+### Frontend (`frontend/.env.local`)
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8001/api/v1
+NEXT_PUBLIC_APP_NAME=NightCast
+```
+
+---
+
+## 📄 License & Disclaimer
+
+This project is open-source and intended for educational and personal portfolio purposes. All media metadata and images are provided by [The Movie Database (TMDB)](https://www.themoviedb.org/).

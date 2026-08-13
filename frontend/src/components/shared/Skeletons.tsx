@@ -1,6 +1,6 @@
 import React from "react";
 
-const shimmer = "relative overflow-hidden bg-white/[0.03] border border-white/5 rounded-2xl before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent";
+const shimmer = "relative overflow-hidden bg-[#081E30]/60 border border-[#5C7C89]/15 rounded-2xl before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-[#1F4959]/20 before:to-transparent";
 
 export function PosterSkeleton() {
   return (
@@ -10,7 +10,7 @@ export function PosterSkeleton() {
 
 export function HeroSkeleton() {
   return (
-    <div className="relative w-full h-[70vh] md:h-[80vh] bg-[#030308] border-b border-white/5 flex items-end p-8 md:p-16">
+    <div className="relative w-full h-[70vh] md:h-[80vh] bg-[#011425] border-b border-[#5C7C89]/15 flex items-end p-8 md:p-16">
       <div className="space-y-5 max-w-xl w-full">
         <div className={`h-5 w-32 ${shimmer}`} />
         <div className={`h-20 w-4/5 ${shimmer}`} />
@@ -62,7 +62,7 @@ export function SearchSkeleton() {
 
 export function DetailsSkeleton() {
   return (
-    <div className="w-full min-h-screen bg-[#030308] pb-20 space-y-16">
+    <div className="w-full min-h-screen bg-[#011425] pb-20 space-y-16">
       <div className={`w-full h-[65vh] md:h-[80vh] ${shimmer} rounded-none`} />
       <div className="max-w-7xl mx-auto px-6 md:px-12 -mt-48 md:-mt-72 relative z-10 grid grid-cols-1 md:grid-cols-4 gap-10">
         <div className="space-y-5">
@@ -72,7 +72,7 @@ export function DetailsSkeleton() {
         <div className="md:col-span-3 space-y-6">
           <div className={`h-16 w-3/4 ${shimmer}`} />
           <div className={`h-4 w-1/2 ${shimmer}`} />
-          <div className="flex gap-4 pb-4 border-b border-white/10">
+          <div className="flex gap-4 pb-4 border-b border-[#5C7C89]/20">
             <div className={`h-5 w-24 ${shimmer}`} />
             <div className={`h-5 w-24 ${shimmer}`} />
             <div className={`h-5 w-24 ${shimmer}`} />
@@ -107,16 +107,16 @@ export function CastSkeleton() {
 
 export function PlayerSkeleton() {
   return (
-    <div className={`relative aspect-video w-full rounded-2xl overflow-hidden bg-[#000000] border border-white/10 flex flex-col items-center justify-center gap-4 ${shimmer}`}>
+    <div className={`relative aspect-video w-full rounded-2xl overflow-hidden bg-[#011425] border border-[#5C7C89]/25 flex flex-col items-center justify-center gap-4 ${shimmer}`}>
       <div className="relative flex items-center justify-center">
-        <div className="w-12 h-12 rounded-full border-2 border-orange-500/30 border-t-orange-500 animate-spin" />
-        <div className="absolute w-8 h-8 rounded-full bg-orange-500/20 blur-md animate-pulse" />
+        <div className="w-12 h-12 rounded-full border-2 border-[#5C7C89]/30 border-t-[#1F4959] animate-spin" />
+        <div className="absolute w-8 h-8 rounded-full bg-[#1F4959]/30 blur-md animate-pulse" />
       </div>
       <div className="space-y-1.5 text-center">
-        <p className="text-xs font-bold uppercase tracking-widest text-white/80 animate-pulse font-mono">
+        <p className="text-xs font-bold uppercase tracking-widest text-[#5C7C89] animate-pulse font-mono">
           Initializing Nightcast Stream...
         </p>
-        <p className="text-[10px] text-white/40 font-medium">Connecting to primary high-speed CDN buffer</p>
+        <p className="text-[10px] text-[#5C7C89]/60 font-medium">Connecting to primary high-speed CDN buffer</p>
       </div>
     </div>
   );

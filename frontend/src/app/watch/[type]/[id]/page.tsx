@@ -10,8 +10,6 @@ import { ImageService } from '../../../../lib/ImageService';
 import { Play, Star, Download, DownloadCloud, Languages, Globe, X, Check, Loader2, AlertTriangle, RotateCcw } from 'lucide-react';
 import { useUserStore } from '../../../../store/userStore';
 import HLSPlayer from '../../../../components/player/HLSPlayer';
-import { useLanguageSources } from '../../../../hooks/useLanguageSources';
-import AudioLanguageSelector from '../../../../components/AudioLanguageSelector';
 import NightCastPlayer from '../../../../components/player/NightCastPlayer';
 import MovieRow from '../../../../components/shared/MovieRow';
 import { PlayerSkeleton } from '../../../../components/shared/Skeletons';
@@ -30,83 +28,55 @@ export default function WatchPage() {
 
   const [meta, setMeta] = useState<any>(null);
   const [recommendations, setRecommendations] = useState<any[]>([]);
-  const [isHindiDubbed, setIsHindiDubbed] = useState(true);
 
   const [servers, setServers] = useState<any[]>(() => {
-    const pathSuffix = type === 'tv' ? `tv/${id}/${currentSeason}/${currentEpisode}` : `movie/${id}`;
     const defaultServers: any[] = [
       {
-        id: 'hls-primary',
-        name: 'Server HLS (Multi-Audio)',
-        url: `https://player.autoembed.cc/embed/${pathSuffix}`,
-        type: 'hls',
-        audio_tracks: [
-          { lang: 'en', label: 'English' },
-          { lang: 'hi', label: 'Hindi' },
-          { lang: 'ko', label: 'Korean' }
-        ],
-        headers: { Referer: 'https://player.autoembed.cc/', Origin: 'https://player.autoembed.cc' }
-      },
-      {
-        id: 'server1',
-        name: 'Server 1 (Ru)',
+        id: 'vidbolt',
+        name: 'Server 1 (VidBolt)',
         url: type === 'tv'
-          ? `https://vidsrc-embed.ru/embed/tv/${id}/${currentSeason}-${currentEpisode}`
-          : `https://vidsrc-embed.ru/embed/movie/${id}`,
+          ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}`
+          : type === 'anime'
+          ? `https://vidbolt.xyz/anime/${id}/${currentEpisode}`
+          : `https://vidbolt.xyz/movie/${id}`,
         type: 'iframe',
-        language: 'en'
+        language: 'en',
+        language_name: 'vidbolt.xyz'
       },
       {
-        id: 'server2',
-        name: 'Server 2 (Su)',
+        id: 'vidsrc',
+        name: 'Server 2 (VidSrc)',
         url: type === 'tv'
-          ? `https://vidsrc-embed.su/embed/tv/${id}/${currentSeason}-${currentEpisode}`
-          : `https://vidsrc-embed.su/embed/movie/${id}`,
+          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
+          : `https://vidsrc.me/embed/movie?tmdb=${id}`,
         type: 'iframe',
-        language: 'en'
+        language: 'en',
+        language_name: 'vidsrc.me'
       },
       {
-        id: 'server3',
-        name: 'Server 3 (Me)',
-        url: type === 'tv'
-          ? `https://vidsrcme.su/embed/tv/${id}/${currentSeason}-${currentEpisode}`
-          : `https://vidsrcme.su/embed/movie/${id}`,
-        type: 'iframe',
-        language: 'en'
-      },
-      {
-        id: 'server4',
-        name: 'Server 4 (Vsrc - Hindi)',
+        id: 'hindi-dubbed',
+        name: 'Server 3 (Hindi Dubbed)',
         url: type === 'tv'
           ? `https://vsrc.su/embed/tv/${id}/${currentSeason}-${currentEpisode}?ds_lang=hi`
           : `https://vsrc.su/embed/movie/${id}?ds_lang=hi`,
         type: 'iframe',
         language: 'hi',
+        language_name: 'vsrc.su',
         is_dub: true
       }
     ];
     return defaultServers;
   });
 
-  const [activeServerId, setActiveServerId] = useState('hls-primary');
+  const [activeServerId, setActiveServerId] = useState('vidbolt');
   const [playerUrl, setPlayerUrl] = useState("");
   const [seasonEpisodes, setSeasonEpisodes] = useState<any[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(false);
   const [resumeTime, setResumeTime] = useState(0);
-  const [hlsFailedServers, setHlsFailedServers] = useState<string[]>([]);
-  const [iframeFailedServers, setIframeFailedServers] = useState<string[]>([]);
+  const [failedServerIds, setFailedServerIds] = useState<string[]>([]);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [streamErrorMsg, setStreamErrorMsg] = useState<string | null>(null);
-
-  // Multi-Language Audio Source Management Hook
-  const languageSources = useLanguageSources(servers);
   const lastPlaybackTimeRef = useRef<number>(0);
-
-  // Sync active server when language sources hook updates selected audio source
-  useEffect(() => {
-    if (languageSources.activeSource && languageSources.activeSource.id !== activeServerId) {
-      setActiveServerId(languageSources.activeSource.id);
-    }
-  }, [languageSources.activeSource, activeServerId]);
 
   // Audio track switching state
   const [hlsAudioTracks, setHlsAudioTracks] = useState<Array<{ id: number; name: string; lang?: string }>>([
@@ -122,25 +92,29 @@ export default function WatchPage() {
   const [downloadOptions, setDownloadOptions] = useState<any[]>([]);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState<string | null>(null);
+  const [copiedDownloadId, setCopiedDownloadId] = useState<string | null>(null);
 
   useEffect(() => {
-    setHlsFailedServers([]);
-    setIframeFailedServers([]);
+    setFailedServerIds([]);
+    setToastMessage(null);
     setStreamErrorMsg(null);
   }, [id, currentSeason, currentEpisode]);
 
   const rawActiveServer = servers.find(s => s.id === activeServerId) || servers[0];
-  const isHlsFailed = rawActiveServer && hlsFailedServers.includes(rawActiveServer.id);
-  const isIframeFailed = rawActiveServer && iframeFailedServers.includes(rawActiveServer.id);
+  const isServerFailed = rawActiveServer && failedServerIds.includes(rawActiveServer.id);
 
   const activeServer = useMemo(() => {
     if (!rawActiveServer) return null;
-    if (isHlsFailed || isIframeFailed) {
+    if (isServerFailed) {
       let fallbackUrl = rawActiveServer.url;
-      if (rawActiveServer.id === 'hls-primary' || rawActiveServer.id === 'vidsrc-main') {
+      if (rawActiveServer.id === 'vidbolt') {
         fallbackUrl = type === 'tv'
           ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
           : `https://vidsrc.me/embed/movie?tmdb=${id}`;
+      } else if (rawActiveServer.id === 'vidsrc') {
+        fallbackUrl = type === 'tv'
+          ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}`
+          : `https://vidbolt.xyz/movie/${id}`;
       }
       return {
         ...rawActiveServer,
@@ -149,7 +123,7 @@ export default function WatchPage() {
       };
     }
     return rawActiveServer;
-  }, [rawActiveServer, isHlsFailed, isIframeFailed, type, id, currentSeason, currentEpisode]);
+  }, [rawActiveServer, isServerFailed, type, id, currentSeason, currentEpisode]);
 
   useEffect(() => {
     if (activeServer?.audio_tracks && activeServer.audio_tracks.length > 0) {
@@ -206,59 +180,14 @@ export default function WatchPage() {
     const fetchServers = async () => {
       try {
         if (!id || !type) return;
-        // Try provider endpoint for normalized PlaybackResponse manifest
-        try {
-          const playbackResponse = await apiFetch(`/api/streams/${type}/${id}`);
-          if (playbackResponse?.manifest_url) {
-            const providerServer = {
-              id: "provider-hls",
-              name: "Provider HLS (Multi-Audio)",
-              url: playbackResponse.manifest_url,
-              type: playbackResponse.type || "hls",
-              audio_tracks: playbackResponse.audio_tracks || []
-            };
-            setServers(prev => [providerServer, ...prev.filter(s => s.id !== "provider-hls")]);
-            setActiveServerId("provider-hls");
-            return;
-          }
-        } catch (e) {
-          console.log("Provider endpoint fallback:", e);
-        }
-
-        // Try resolve endpoint first for multi-language HLS manifest
-        try {
-          const resolved = await apiFetch(`/api/streams/resolve/${id}?season=${currentSeason}&episode=${currentEpisode}&media_type=${type}`);
-          if (resolved?.status === "success" && resolved?.data?.url) {
-            const resolvedServer = {
-              id: "hls-resolved",
-              name: "Server HLS (Direct Multi-Audio)",
-              url: resolved.data.url,
-              type: resolved.data.type || "hls",
-              headers: resolved.data.headers
-            };
-            setServers(prev => [resolvedServer, ...prev.filter(s => s.id !== "hls-resolved")]);
-            setActiveServerId("hls-resolved");
-            return;
-          }
-        } catch (e) {
-          console.log("Resolve endpoint fallback:", e);
-        }
-
-        const langParam = isHindiDubbed ? 'hi' : 'en';
         const data = await apiFetch(
-          `/api/tmdb/${type}/${id}/streams?season=${currentSeason}&episode=${currentEpisode}&language=${langParam}`
+          `/api/tmdb/${type}/${id}/streams?season=${currentSeason}&episode=${currentEpisode}`
         );
         if (data?.servers && data.servers.length > 0) {
-          const filteredServers = data.servers.filter((s: any) => s.id !== 'vidsrc-pro');
-          if (filteredServers.length > 0) {
-            setServers(filteredServers);
-            const hlsServer = filteredServers.find((s: any) => s.type === 'hls');
-            if (hlsServer && !hlsFailedServers.includes(hlsServer.id)) {
-              setActiveServerId(hlsServer.id);
-            } else if (isHindiDubbed) {
-              const hiSrv = filteredServers.find((s: any) => s.language === 'hi' || s.id === 'server4');
-              if (hiSrv) setActiveServerId(hiSrv.id);
-            }
+          setServers(data.servers);
+          const currentExists = data.servers.some((s: any) => s.id === activeServerId);
+          if (!currentExists) {
+            setActiveServerId(data.servers[0].id);
           }
         }
       } catch (err) {
@@ -266,38 +195,33 @@ export default function WatchPage() {
       }
     };
     fetchServers();
-  }, [id, type, currentSeason, currentEpisode, isHindiDubbed, hlsFailedServers]);
+  }, [id, type, currentSeason, currentEpisode]);
 
   useEffect(() => {
     if (!activeServer) return;
     let finalUrl = activeServer.url;
 
-    if (isHindiDubbed && activeServer.id === 'server4') {
-      if (!finalUrl.includes('ds_lang=hi')) {
-        finalUrl += (finalUrl.includes('?') ? '&ds_lang=hi' : '?ds_lang=hi');
-      }
-    } else if (!isHindiDubbed && activeServer.id === 'server4') {
-      finalUrl = finalUrl.replace(/[?&]ds_lang=hi/, '');
-    }
-
-    if (finalUrl.includes('vidlink.pro')) {
-      let startAtParam = "";
+    if (finalUrl.includes('vidbolt.xyz')) {
       try {
+        const urlObj = new URL(finalUrl);
+        if (!urlObj.searchParams.has('theme')) {
+          urlObj.searchParams.set('theme', '1F4959');
+        }
         if (id) {
           const seconds = getSavedTimestamp(id, currentSeason, currentEpisode);
-          if (seconds > 10) {
-            startAtParam = `&startAt=${seconds}`;
+          if (seconds > 10 && !urlObj.searchParams.has('startAt')) {
+            urlObj.searchParams.set('startAt', Math.floor(seconds).toString());
           }
         }
+        finalUrl = urlObj.toString();
       } catch (e) {
-        console.error(e);
+        console.error("VidBolt URL parameter setup error", e);
       }
-      finalUrl = `${finalUrl}?primaryColor=FFFFFF&secondaryColor=090A0F&iconColor=FFFFFF&icons=default&nextbutton=true${startAtParam}`;
     }
 
     setPlayerUrl(finalUrl);
     setIsIframeLoaded(false);
-  }, [activeServer, id, type, currentSeason, currentEpisode, isHindiDubbed]);
+  }, [activeServer, id, type, currentSeason, currentEpisode]);
 
   useEffect(() => {
     if (!id) return;
@@ -349,25 +273,17 @@ export default function WatchPage() {
 
   const handleHlsError = useCallback(() => {
     if (activeServer) {
-      console.warn(`HLS player error on server ${activeServer.id}. Falling back.`);
-      setHlsFailedServers(prev => [...prev, activeServer.id]);
-      languageSources.handleSourceError(activeServer.id);
+      console.warn(`Player error on server ${activeServer.id}. Falling back.`);
+      setFailedServerIds(prev => [...prev, activeServer.id]);
+      const nextServer = servers.find(s => s.id !== activeServer.id && !failedServerIds.includes(s.id));
+      if (nextServer) {
+        setActiveServerId(nextServer.id);
+        setToastMessage(`Server ${activeServer.name} failed. Switched to ${nextServer.name}.`);
+      } else {
+        setToastMessage("All servers unavailable for this title.");
+      }
     }
-  }, [activeServer, languageSources]);
-
-  const handleSelectLanguage = useCallback((lang: any) => {
-    if (lastPlaybackTimeRef.current > 0) {
-      setResumeTime(lastPlaybackTimeRef.current);
-    }
-    languageSources.selectLanguage(lang);
-  }, [languageSources]);
-
-  const handleAudioTracksChange = useCallback((tracks: Array<{ id: number; name: string; lang?: string }>, currentTrackId: number) => {
-    if (tracks && tracks.length > 0) {
-      setHlsAudioTracks(tracks);
-      setSelectedAudioTrack(currentTrackId);
-    }
-  }, []);
+  }, [activeServer, servers, failedServerIds]);
 
   const handleEpisodeChange = (s: number, ep: number) => {
     setCurrentSeason(s);
@@ -384,33 +300,56 @@ export default function WatchPage() {
       if (res?.downloads && res.downloads.length > 0) {
         setDownloadOptions(res.downloads);
       } else {
-        const fallbackUrl = type === 'tv'
-          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
-          : `https://vidsrc.me/embed/movie?tmdb=${id}`;
-        setDownloadOptions([{
-          label: "Primary Streaming Source",
-          url: fallbackUrl,
-          quality: "1080p",
-          format: "stream",
-          type: "stream_fallback"
-        }]);
-        setDownloadProgress("Direct download unavailable for this source, please use streaming or try another server.");
+        const fallbackOptions = [
+          {
+            id: "vidbolt-direct",
+            label: "VidBolt Ultra Fast Source (1080p Full HD)",
+            url: type === 'tv' ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}` : `https://vidbolt.xyz/movie/${id}`,
+            quality: "1080p Full HD",
+            format: "mp4/stream",
+            type: "direct_stream"
+          },
+          {
+            id: "vidsrc-direct",
+            label: "VidSrc Primary Stream (1080p)",
+            url: type === 'tv' ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}` : `https://vidsrc.me/embed/movie?tmdb=${id}`,
+            quality: "1080p",
+            format: "mp4/stream",
+            type: "direct_stream"
+          },
+          {
+            id: "hindi-direct",
+            label: "Hindi Dubbed Audio Source (720p/1080p)",
+            url: type === 'tv' ? `https://vsrc.su/embed/tv/${id}/${currentSeason}-${currentEpisode}?ds_lang=hi` : `https://vsrc.su/embed/movie/${id}?ds_lang=hi`,
+            quality: "720p / 1080p",
+            format: "mp4/stream",
+            type: "direct_stream"
+          }
+        ];
+        setDownloadOptions(fallbackOptions);
       }
     } catch (e) {
       console.error("Failed to fetch download links", e);
     }
   };
 
-  const handleSecureDownload = () => {
-    const downloadUrl = playerUrl || (activeServer ? activeServer.url : "");
-    if (!downloadUrl) return;
+  const handleDownloadStream = (url: string) => {
+    if (!url) return;
     const anchor = document.createElement('a');
-    anchor.href = downloadUrl;
+    anchor.href = url;
     anchor.target = '_blank';
     anchor.rel = 'noopener noreferrer';
     document.body.appendChild(anchor);
     anchor.click();
     document.body.removeChild(anchor);
+  };
+
+  const handleCopyLink = (url: string, optionId: string) => {
+    if (!url) return;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedDownloadId(optionId);
+      setTimeout(() => setCopiedDownloadId(null), 2000);
+    }).catch(console.error);
   };
 
   const movieTitle = meta?.title || meta?.name || "Loading Stream...";
@@ -422,10 +361,10 @@ export default function WatchPage() {
   const episodesCount = selectedSeasonData?.episode_count || 8;
 
   return (
-    <div className="min-h-screen max-w-7xl mx-auto pt-20 pb-28 px-6 md:px-12 relative select-none bg-[#090A0F] text-white">
+    <div className="min-h-screen max-w-7xl mx-auto pt-20 pb-28 px-6 md:px-12 relative select-none bg-[#011425] text-white">
       <div className="space-y-6">
         {/* Full Player Container */}
-        <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-white/10 bg-[#000000] shadow-2xl">
+        <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-[#5C7C89]/25 bg-[#011425] shadow-2xl shadow-[#011425]">
           {!isIframeLoaded && activeServer?.type !== 'hls' && (
             <div className="absolute inset-0 z-20 pointer-events-none">
               <PlayerSkeleton />
@@ -461,109 +400,55 @@ export default function WatchPage() {
         </div>
 
         {/* Source Error / Fallback Notification Toast */}
-        {languageSources.toastMessage && (
-          <div className="p-3.5 px-5 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-between text-xs text-amber-300 shadow-xl animate-in fade-in slide-in-from-top-2">
+        {toastMessage && (
+          <div className="p-3.5 px-5 bg-[#1F4959]/30 border border-[#5C7C89]/40 rounded-2xl flex items-center justify-between text-xs text-[#5C7C89] shadow-xl animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center gap-2.5">
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>{languageSources.toastMessage}</span>
+              <AlertTriangle className="w-4 h-4 text-[#5C7C89] shrink-0" />
+              <span>{toastMessage}</span>
             </div>
             <button
-              onClick={languageSources.clearToast}
-              className="text-amber-400/70 hover:text-amber-300 text-xs font-bold px-2 py-0.5 rounded-lg hover:bg-amber-500/20 transition-all"
+              onClick={() => setToastMessage(null)}
+              className="text-[#5C7C89] hover:text-white text-xs font-bold px-2 py-0.5 rounded-lg hover:bg-[#1F4959]/50 transition-all"
             >
               Dismiss
             </button>
           </div>
         )}
 
-        {/* Server & Audio Selector Bar */}
-        <div className="p-5 bg-[#12141F] border border-white/10 rounded-2xl flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+        {/* Server Selector Bar */}
+        <div className="p-5 bg-[#081E30] border border-[#5C7C89]/25 rounded-2xl flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shadow-xl">
           <div className="flex-1">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-white/60 mb-1">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#5C7C89] mb-1">
+              <span className="w-2 h-2 rounded-full bg-[#1F4959] animate-pulse" />
               <span>NIGHTCAST STREAM ENGINE</span>
             </div>
             <h1 className="text-xl md:text-2xl font-extrabold tracking-tight font-display text-white">
-              {movieTitle} <span className="text-white/50 font-normal text-base">({releaseYear})</span>
+              {movieTitle} <span className="text-[#5C7C89] font-normal text-base">({releaseYear})</span>
             </h1>
           </div>
 
           {/* Server Selection & Action Row */}
           <div className="flex flex-wrap items-center gap-3">
-            {/* Audio Language Source Selector Toggle Component */}
-            <AudioLanguageSelector
-              selectedLanguage={languageSources.selectedLanguage}
-              onSelectLanguage={handleSelectLanguage}
-              buckets={languageSources.buckets}
-            />
-
-            {/* Internal HLS Audio Track Dropdown (if active server is multi-audio HLS manifest) */}
-            {activeServer?.type === 'hls' && hlsAudioTracks.length > 0 && (
-              <div className="relative">
-                <button
-                  onClick={() => setIsAudioDropdownOpen(!isAudioDropdownOpen)}
-                  className="px-3.5 py-1.5 rounded-full font-bold transition-all text-[11px] border border-cyan-500/40 bg-cyan-950/30 text-cyan-400 hover:border-cyan-400 hover:bg-cyan-900/40 flex items-center gap-2 shadow-md active:scale-95"
-                >
-                  <Languages className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>
-                    Track: {hlsAudioTracks.find(t => t.id === selectedAudioTrack)?.name || 'English'}
-                  </span>
-                  <span className="text-[9px] opacity-60">▼</span>
-                </button>
-
-                {isAudioDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-[#12141F] border border-white/15 rounded-2xl p-2 shadow-2xl z-40 animate-in fade-in slide-in-from-top-1">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-white/50 px-2 py-1 mb-1 border-b border-white/10 flex items-center justify-between">
-                      <span>Internal HLS Tracks</span>
-                      <span className="text-[9px] text-cyan-400 font-mono">HLS.JS</span>
-                    </p>
-                    <div className="space-y-1 max-h-48 overflow-y-auto no-scrollbar">
-                      {hlsAudioTracks.map((track) => (
-                        <button
-                          key={track.id}
-                          onClick={() => {
-                            setSelectedAudioTrack(track.id);
-                            setIsAudioDropdownOpen(false);
-                          }}
-                          className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all ${
-                            selectedAudioTrack === track.id
-                              ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-400 font-bold'
-                              : 'text-white/80 hover:bg-white/10 hover:text-white'
-                          }`}
-                        >
-                          <span className="truncate">{track.name}</span>
-                          {selectedAudioTrack === track.id && (
-                            <Check className="w-3.5 h-3.5 text-cyan-400" />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* Server List Pills */}
-            <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-full bg-white/5 border border-white/10">
+            <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-full bg-[#011425]/60 border border-[#5C7C89]/25 shadow-inner">
               {servers.map((srv) => {
                 const isActive = srv.id === activeServerId;
-                const isFailed = languageSources.failedSourceIds.includes(srv.id);
+                const isFailed = failedServerIds.includes(srv.id);
                 return (
                   <button
                     key={srv.id}
                     onClick={() => {
                       if (!isFailed) {
-                        languageSources.setActiveSourceId(srv.id);
                         setActiveServerId(srv.id);
                       }
                     }}
                     disabled={isFailed}
                     className={
                       isFailed
-                        ? "px-3 py-1.5 rounded-full text-[10px] font-semibold text-white/20 line-through cursor-not-allowed"
+                        ? "px-3.5 py-1.5 rounded-full text-xs font-semibold text-[#5C7C89]/30 line-through cursor-not-allowed"
                         : isActive
-                        ? "gtv-tab-pill-active text-[10px]"
-                        : "gtv-tab-pill text-[10px]"
+                        ? "gtv-tab-pill-active text-xs font-bold"
+                        : "gtv-tab-pill text-xs font-medium"
                     }
                   >
                     {srv.name}
@@ -575,7 +460,7 @@ export default function WatchPage() {
             {/* Direct Download Button */}
             <button
               onClick={handleOpenDownloadModal}
-              className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold text-xs shadow-lg transition-all transform hover:scale-105 active:scale-95"
+              className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#1F4959] to-[#5C7C89] hover:from-[#255b6f] hover:to-[#6c8f9d] text-white font-bold text-xs shadow-lg shadow-[#1F4959]/30 transition-all transform hover:scale-105 active:scale-95 border border-[#5C7C89]/40 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Download Offline</span>
@@ -585,42 +470,74 @@ export default function WatchPage() {
 
         {/* Download Options Modal Popup */}
         {isDownloadModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="bg-[#12141F] border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl relative">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#011425]/85 backdrop-blur-md p-4 animate-in fade-in">
+            <div className="bg-[#081E30] border border-[#5C7C89]/35 rounded-2xl p-6 max-w-lg w-full shadow-2xl relative space-y-4">
               <button
                 onClick={() => setIsDownloadModalOpen(false)}
-                className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors"
+                className="absolute top-4 right-4 text-[#5C7C89] hover:text-white transition-colors"
+                aria-label="Close"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">📥</div>
-                <div>
-                  <h3 className="font-extrabold text-lg text-white font-display">Download Movie / Episode</h3>
-                  <p className="text-xs text-white/50">Save for offline viewing directly via stream source</p>
+
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-[#1F4959]/40 border border-[#5C7C89]/30 text-white rounded-xl shadow-inner">
+                  <DownloadCloud className="w-6 h-6 text-[#5C7C89]" />
                 </div>
-              </div>
-              
-              <div className="bg-black/50 p-4 rounded-xl border border-white/10 flex items-center justify-between mb-6">
                 <div>
-                  <p className="font-semibold text-sm text-white truncate max-w-[200px]">{movieTitle}</p>
-                  <p className="text-[10px] text-emerald-400 font-mono mt-0.5 uppercase tracking-wider font-bold">1080P • STREAM SOURCE</p>
+                  <h3 className="font-extrabold text-lg text-white font-display">Offline Download Hub</h3>
+                  <p className="text-xs text-[#5C7C89]">Select a direct high-speed stream to save or download</p>
                 </div>
-                <button
-                  onClick={handleSecureDownload}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Save</span>
-                </button>
               </div>
 
-              <button
-                onClick={() => setIsDownloadModalOpen(false)}
-                className="w-full py-2.5 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-xl transition-all"
-              >
-                Close
-              </button>
+              <div className="space-y-2.5 max-h-72 overflow-y-auto no-scrollbar pt-2">
+                {downloadOptions.map((opt, idx) => {
+                  const isCopied = copiedDownloadId === (opt.id || `opt-${idx}`);
+                  return (
+                    <div
+                      key={opt.id || idx}
+                      className="bg-[#011425] p-3.5 rounded-xl border border-[#5C7C89]/25 hover:border-[#5C7C89]/50 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner"
+                    >
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-[#1F4959]/60 text-white border border-[#5C7C89]/30">
+                            {opt.quality || "1080P HD"}
+                          </span>
+                          <p className="font-bold text-xs text-white truncate">{opt.label || `Option ${idx + 1}`}</p>
+                        </div>
+                        <p className="text-[10px] text-[#5C7C89] font-mono truncate">{movieTitle} • {type === 'tv' ? `S${currentSeason}E${currentEpisode}` : 'Full Movie'}</p>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => handleCopyLink(opt.url, opt.id || `opt-${idx}`)}
+                          className="px-2.5 py-1.5 rounded-lg bg-[#081E30] hover:bg-[#1F4959]/40 text-[#5C7C89] hover:text-white border border-[#5C7C89]/30 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer"
+                          title="Copy direct stream link"
+                        >
+                          {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Globe className="w-3.5 h-3.5" />}
+                          <span>{isCopied ? "Copied" : "Copy"}</span>
+                        </button>
+                        <button
+                          onClick={() => handleDownloadStream(opt.url)}
+                          className="px-3.5 py-1.5 bg-gradient-to-r from-[#1F4959] to-[#5C7C89] hover:from-[#255b6f] hover:to-[#6c8f9d] text-white text-xs font-bold rounded-lg transition-all shadow-md active:scale-95 flex items-center gap-1.5 border border-[#5C7C89]/40 cursor-pointer"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Download</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="pt-2 border-t border-[#5C7C89]/20">
+                <button
+                  onClick={() => setIsDownloadModalOpen(false)}
+                  className="w-full py-2.5 bg-[#011425] hover:bg-[#1F4959]/40 text-[#5C7C89] hover:text-white text-xs font-bold rounded-xl transition-all border border-[#5C7C89]/25 cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -628,10 +545,10 @@ export default function WatchPage() {
         {/* TV Season & Episode Selector */}
         {type === 'tv' && (
           <section className="space-y-5 pt-2">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-white/10 pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#5C7C89]/20 pb-4">
               <div>
-                <h3 className="text-lg font-extrabold font-display">Episodes</h3>
-                <p className="text-[10px] text-white/50 font-medium uppercase">Select Chapter</p>
+                <h3 className="text-lg font-extrabold font-display text-white">Episodes</h3>
+                <p className="text-[10px] text-[#5C7C89] font-medium uppercase">Select Chapter</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {seasons.map((s: any) => (
@@ -647,29 +564,29 @@ export default function WatchPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
               {episodesLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="p-3.5 rounded-2xl border border-white/10 bg-white/5 animate-pulse h-16" />
+                  <div key={i} className="p-3.5 rounded-2xl border border-[#5C7C89]/20 bg-[#081E30]/60 animate-pulse h-16" />
                 ))
               ) : seasonEpisodes.length > 0 ? (
                 seasonEpisodes.map((ep: any) => {
                   const isActive = ep.episode_number === currentEpisode;
                   return (
                     <button key={ep.episode_number} onClick={() => handleEpisodeChange(currentSeason, ep.episode_number)}
-                      className={`group text-left p-3.5 rounded-2xl border transition-all duration-200 flex items-start gap-3 ${
+                      className={`group text-left p-3.5 rounded-2xl border transition-all duration-200 flex items-start gap-3 cursor-pointer ${
                         isActive
-                          ? 'bg-white text-black font-extrabold border-white shadow-lg'
-                          : 'border-white/10 bg-[#12141F] text-white/80 hover:text-white hover:border-white/20'
+                          ? 'bg-[#1F4959] text-white font-extrabold border-[#5C7C89] shadow-[0_0_20px_rgba(31,73,89,0.6)]'
+                          : 'border-[#5C7C89]/20 bg-[#081E30] text-[#5C7C89] hover:text-white hover:border-[#5C7C89]/60 hover:bg-[#0D2A42]'
                       }`}
                     >
                       <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-                        isActive ? 'bg-black text-white' : 'bg-white/10 group-hover:bg-white group-hover:text-black text-white'
+                        isActive ? 'bg-white text-[#1F4959]' : 'bg-[#011425] group-hover:bg-[#1F4959] group-hover:text-white text-[#5C7C89]'
                       }`}>
                         <Play className="w-3 h-3 fill-current ml-0.5" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className={`text-[9px] font-bold uppercase ${isActive ? 'text-black' : 'text-white/50'}`}>
+                        <p className={`text-[9px] font-bold uppercase ${isActive ? 'text-white/80' : 'text-[#5C7C89]'}`}>
                           EPISODE {ep.episode_number}
                         </p>
-                        <h4 className="text-xs font-bold truncate">{ep.name || `Episode ${ep.episode_number}`}</h4>
+                        <h4 className="text-xs font-bold truncate text-white">{ep.name || `Episode ${ep.episode_number}`}</h4>
                       </div>
                     </button>
                   );
@@ -680,22 +597,22 @@ export default function WatchPage() {
                   const isActive = epNum === currentEpisode;
                   return (
                     <button key={epNum} onClick={() => handleEpisodeChange(currentSeason, epNum)}
-                      className={`group text-left p-3.5 rounded-2xl border transition-all duration-200 flex items-start gap-3 ${
+                      className={`group text-left p-3.5 rounded-2xl border transition-all duration-200 flex items-start gap-3 cursor-pointer ${
                         isActive
-                          ? 'bg-white text-black font-extrabold border-white shadow-lg'
-                          : 'border-white/10 bg-[#12141F] text-white/80 hover:text-white hover:border-white/20'
+                          ? 'bg-[#1F4959] text-white font-extrabold border-[#5C7C89] shadow-[0_0_20px_rgba(31,73,89,0.6)]'
+                          : 'border-[#5C7C89]/20 bg-[#081E30] text-[#5C7C89] hover:text-white hover:border-[#5C7C89]/60 hover:bg-[#0D2A42]'
                       }`}
                     >
                       <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-                        isActive ? 'bg-black text-white' : 'bg-white/10 group-hover:bg-white group-hover:text-black text-white'
+                        isActive ? 'bg-white text-[#1F4959]' : 'bg-[#011425] group-hover:bg-[#1F4959] group-hover:text-white text-[#5C7C89]'
                       }`}>
                         <Play className="w-3 h-3 fill-current ml-0.5" />
                       </div>
                       <div className="min-w-0">
-                        <p className={`text-[9px] font-bold uppercase ${isActive ? 'text-black' : 'text-white/50'}`}>
+                        <p className={`text-[9px] font-bold uppercase ${isActive ? 'text-white/80' : 'text-[#5C7C89]'}`}>
                           EPISODE {epNum}
                         </p>
-                        <h4 className="text-xs font-bold truncate">Chapter {epNum}</h4>
+                        <h4 className="text-xs font-bold truncate text-white">Chapter {epNum}</h4>
                       </div>
                     </button>
                   );
@@ -707,19 +624,19 @@ export default function WatchPage() {
 
         {/* Real Cast Member Showcase */}
         {meta?.cast && meta.cast.length > 0 && (
-          <section className="space-y-4 pt-6 border-t border-white/10">
+          <section className="space-y-4 pt-6 border-t border-[#5C7C89]/20">
             <h3 className="font-display text-lg font-extrabold text-white">Cast Showcase</h3>
             <div className="flex gap-5 overflow-x-auto no-scrollbar pb-2">
               {meta.cast.map((c: any, idx: number) => {
                 const avatar = ImageService.getProfile(c.profile_path, c.name);
                 return (
                   <div key={idx} className="flex flex-col items-center shrink-0 w-24 gap-2 text-center">
-                    <div className="relative w-14 h-14 rounded-full overflow-hidden border border-white/15">
+                    <div className="relative w-14 h-14 rounded-full overflow-hidden border border-[#5C7C89]/30 bg-[#081E30]">
                       <Image src={avatar} alt={c.name} fill sizes="56px" className="object-cover" />
                     </div>
                     <div className="space-y-0.5">
                       <p className="text-xs font-bold text-white truncate max-w-[85px]">{c.name}</p>
-                      <p className="text-[10px] text-white/50 truncate max-w-[85px]">{c.character}</p>
+                      <p className="text-[10px] text-[#5C7C89] truncate max-w-[85px]">{c.character}</p>
                     </div>
                   </div>
                 );
@@ -730,7 +647,7 @@ export default function WatchPage() {
 
         {/* Live TMDB Recommendations Row */}
         {recommendations.length > 0 && (
-          <div className="pt-6 border-t border-white/10">
+          <div className="pt-6 border-t border-[#5C7C89]/20">
             <MovieRow
               title="More Like This"
               items={recommendations.map(m => ({ ...m, media_type: type }))}

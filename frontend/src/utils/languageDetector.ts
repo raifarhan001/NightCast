@@ -51,6 +51,8 @@ export const LANGUAGE_PATTERN_DEFINITIONS: LanguagePatternDefinition[] = [
     isoCode: 'en',
     patterns: [
       /\b(eng|english|org|original|autoembed)\b/i,
+      /vidbolt/i,
+      /vidsrc/i,
       /vidsrc-embed\.ru/i,
       /vidsrc-embed\.su/i,
       /vidsrcme\.su/i

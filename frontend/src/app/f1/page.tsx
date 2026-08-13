@@ -607,13 +607,13 @@ function F1HubContent() {
   const currentStreamUrl = getStreamUrl(activeRace, activeServer.type);
 
   return (
-    <div className="min-h-screen bg-[#080A0F] text-white pt-28 pb-36 md:pb-44 px-6 md:px-12 select-none relative">
+    <div className="min-h-screen bg-[#011425] text-white pt-28 pb-36 md:pb-44 px-6 md:px-12 select-none relative">
       {/* Red Bull Red & Speed Yellow Ambient Background Overlay */}
-      <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-[#EE1240]/20 via-[#FFCC00]/5 to-transparent pointer-events-none z-0" />
+      <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-[#EE1240]/20 via-[#1F4959]/10 to-transparent pointer-events-none z-0" />
 
       <div className="max-w-7xl mx-auto space-y-8 relative z-10">
         {/* Active Grand Prix Hero Header Banner */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6 p-4 sm:p-6 md:p-8 rounded-3xl bg-[#121620]/95 backdrop-blur-sm border border-white/10 relative overflow-hidden">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6 p-4 sm:p-6 md:p-8 rounded-3xl bg-[#081E30]/95 backdrop-blur-sm border border-[#5C7C89]/25 relative overflow-hidden shadow-2xl">
           <div className="absolute -top-12 -right-12 w-64 h-64 bg-[#EE1240]/15 rounded-full blur-3xl pointer-events-none" />
 
           <div className="space-y-3 relative z-10">
@@ -921,16 +921,16 @@ function F1HubContent() {
       {/* Session Timetable Glassmorphism Modal */}
       {selectedModalRace && (
         <div 
-          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-[#011425]/85 backdrop-blur-md flex items-center justify-center p-4"
           onClick={() => setSelectedModalRace(null)}
         >
           <div 
-            className="bg-[#080A0F] border border-white/15 rounded-3xl p-6 max-w-lg w-full space-y-6 shadow-[0_0_40px_rgba(238,18,64,0.25)] relative animate-in fade-in zoom-in-95 duration-200"
+            className="bg-[#081E30] border border-[#5C7C89]/30 rounded-3xl p-6 max-w-lg w-full space-y-6 shadow-[0_0_40px_rgba(31,73,89,0.5)] relative animate-in fade-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setSelectedModalRace(null)}
-              className="absolute top-5 right-5 p-2 rounded-full bg-white/10 text-white/60 hover:text-white hover:bg-white/20 transition-colors cursor-pointer"
+              className="absolute top-5 right-5 p-2 rounded-full bg-[#011425] text-[#5C7C89] hover:text-white hover:bg-[#1F4959] transition-colors cursor-pointer border border-[#5C7C89]/25"
               title="Close (ESC)"
             >
               <X className="w-4 h-4" />
@@ -960,7 +960,7 @@ function F1HubContent() {
                 <span className="text-[#FFCC00] font-bold">UTC+5</span>
               </p>
 
-              <div className="space-y-2 text-xs divide-y divide-white/5 bg-white/5 rounded-2xl p-4 border border-white/10">
+              <div className="space-y-2 text-xs divide-y divide-white/5 bg-[#011425] rounded-2xl p-4 border border-[#5C7C89]/25">
                 <div className="flex justify-between py-1.5 font-medium">
                   <span className="text-zinc-300">Practice 1 (FP1)</span>
                   <span className="font-mono font-bold text-white">
@@ -1024,8 +1024,8 @@ function F1HubContent() {
 export default function F1Page() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#050508] pt-28 px-6 max-w-7xl mx-auto space-y-6">
-        <div className="h-64 w-full bg-white/5 rounded-3xl animate-pulse" />
+      <div className="min-h-screen bg-[#011425] pt-28 px-6 max-w-7xl mx-auto space-y-6">
+        <div className="h-64 w-full bg-[#081E30] rounded-3xl animate-pulse" />
       </div>
     }>
       <F1HubContent />

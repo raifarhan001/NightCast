@@ -3,8 +3,9 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# Runtime data
+# Runtime & Lock data
 pids
 *.pid
 *.seed
@@ -18,30 +19,47 @@ node_modules/
 .next/
 **/.next/
 out/
+build/
+dist/
+*.tsbuildinfo
+**/*.tsbuildinfo
 
-# Python Virtual Environment
+# Python Virtual Environment & Caches
 venv/
 .venv/
 ENV/
 env/
 __pycache__/
-*.pyc
+**/__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
 
-# Local env files
+# Local environment files (Do not commit secrets)
 .env
 .env.local
 .env.production
 .env.development
 .env*.local
-.env*
+!.env.example
 
-# SQLite Database
+# Database & Uploads
 *.db
+*.sqlite
+*.sqlite3
 
 # OS files
 .DS_Store
 Thumbs.db
+*.bak
+*.swp
 
-# Workspace diagnostic reports
+# IDE & Editor files
+.vscode/
+.idea/
+*.sublime-workspace
+.system_generated/
+.vercel/
+*.report.txt
 nexus_play_workspace_report.txt
-.vercel
+

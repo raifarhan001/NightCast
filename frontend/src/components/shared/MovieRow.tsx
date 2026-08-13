@@ -28,7 +28,7 @@ export default function MovieRow({ title, items }: MovieRowProps) {
   if (!items || items.length === 0) return null;
 
   return (
-    <div className="py-4 px-6 md:px-12 space-y-3 relative group select-none">
+    <div className="py-3 sm:py-4 px-4 sm:px-6 md:px-12 space-y-3 relative group select-none">
       <div className="flex items-center justify-between">
         <h2 className="text-lg md:text-xl font-bold text-white tracking-tight font-display">
           {title}
@@ -38,7 +38,7 @@ export default function MovieRow({ title, items }: MovieRowProps) {
       <div className="relative">
         <button
           onClick={() => scroll("left")}
-          className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full border border-white/20 bg-black/80 backdrop-blur-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white hover:text-black hover:scale-110 active:scale-95 shadow-2xl focus:outline-none"
+          className="absolute -left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full border border-[#5C7C89]/30 bg-[#081E30]/90 backdrop-blur-md flex items-center justify-center text-[#5C7C89] opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-[#1F4959] hover:text-white hover:border-[#5C7C89] hover:scale-110 active:scale-95 shadow-2xl focus:outline-none"
           aria-label="Scroll left"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -57,7 +57,7 @@ export default function MovieRow({ title, items }: MovieRowProps) {
 
         <button
           onClick={() => scroll("right")}
-          className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full border border-white/20 bg-black/80 backdrop-blur-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white hover:text-black hover:scale-110 active:scale-95 shadow-2xl focus:outline-none"
+          className="absolute -right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full border border-[#5C7C89]/30 bg-[#081E30]/90 backdrop-blur-md flex items-center justify-center text-[#5C7C89] opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-[#1F4959] hover:text-white hover:border-[#5C7C89] hover:scale-110 active:scale-95 shadow-2xl focus:outline-none"
           aria-label="Scroll right"
         >
           <ChevronRight className="w-5 h-5" />

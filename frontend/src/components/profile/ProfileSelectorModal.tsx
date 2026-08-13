@@ -16,17 +16,17 @@ export default function ProfileSelectorModal({ isOpen, onClose }: ProfileSelecto
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
-      <div className="relative w-full max-w-md bg-[#12141F] border border-white/15 rounded-3xl p-6 shadow-2xl space-y-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#011425]/85 backdrop-blur-md animate-fade-in select-none">
+      <div className="relative w-full max-w-md bg-[#081E30] border border-[#5C7C89]/30 rounded-3xl p-6 shadow-2xl space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/10">
+        <div className="flex items-center justify-between pb-4 border-b border-[#5C7C89]/20">
           <div className="flex items-center gap-2">
-            <User className="w-5 h-5 text-white/70" />
-            <h3 className="text-lg font-extrabold text-white font-display">User Profile</h3>
+            <User className="w-5 h-5 text-[#5C7C89]" />
+            <h3 className="text-lg font-black text-white font-display">User Profile</h3>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full bg-[#011425] hover:bg-[#1F4959] text-[#5C7C89] hover:text-white flex items-center justify-center transition-colors border border-[#5C7C89]/25 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -34,7 +34,7 @@ export default function ProfileSelectorModal({ isOpen, onClose }: ProfileSelecto
 
         {/* Profile List */}
         <div className="space-y-3">
-          <p className="text-xs font-bold text-white/50 uppercase tracking-wider font-mono">
+          <p className="text-xs font-bold text-[#5C7C89] uppercase tracking-wider font-mono">
             Select Active Profile
           </p>
           {profiles.length > 0 ? (
@@ -48,38 +48,38 @@ export default function ProfileSelectorModal({ isOpen, onClose }: ProfileSelecto
                       setActiveProfile(prof);
                       onClose();
                     }}
-                    className={`w-full p-3.5 rounded-2xl border transition-all duration-200 flex items-center justify-between ${
+                    className={`w-full p-3.5 rounded-2xl border transition-all duration-200 flex items-center justify-between cursor-pointer ${
                       isActive
-                        ? "bg-white text-black border-white shadow-lg font-extrabold"
-                        : "bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/20"
+                        ? "bg-[#1F4959] text-white border-[#5C7C89] shadow-[0_0_15px_rgba(31,73,89,0.6)] font-extrabold"
+                        : "bg-[#011425] border-[#5C7C89]/25 text-[#5C7C89] hover:text-white hover:border-[#5C7C89]/50"
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs uppercase ${
-                        isActive ? "bg-black text-white" : "bg-white/15 text-white"
+                        isActive ? "bg-white text-[#011425]" : "bg-[#081E30] text-[#5C7C89] border border-[#5C7C89]/30"
                       }`}>
                         {prof.name.slice(0, 2)}
                       </div>
                       <span className="text-sm font-bold">{prof.name}</span>
                     </div>
-                    {isActive && <Check className="w-4 h-4 text-black stroke-[3]" />}
+                    {isActive && <Check className="w-4 h-4 text-emerald-400 stroke-[3]" />}
                   </button>
                 );
               })}
             </div>
           ) : (
-            <div className="p-4 bg-white/5 rounded-2xl border border-white/10 text-center text-xs text-white/60">
+            <div className="p-4 bg-[#011425] rounded-2xl border border-[#5C7C89]/20 text-center text-xs text-[#5C7C89]">
               Default Profile Active
             </div>
           )}
         </div>
 
         {/* Action Links */}
-        <div className="pt-4 border-t border-white/10 space-y-2">
+        <div className="pt-4 border-t border-[#5C7C89]/20 space-y-2">
           <Link
             href="/profile"
             onClick={onClose}
-            className="w-full p-3 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-white flex items-center justify-center gap-2 transition-all"
+            className="w-full p-3 rounded-2xl bg-[#011425] hover:bg-[#1F4959]/50 border border-[#5C7C89]/25 text-xs font-bold text-[#5C7C89] hover:text-white flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
             <Settings className="w-4 h-4" />
             <span>Manage Profile Settings</span>
@@ -90,7 +90,7 @@ export default function ProfileSelectorModal({ isOpen, onClose }: ProfileSelecto
               logout();
               onClose();
             }}
-            className="w-full p-3 rounded-2xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-xs font-bold text-red-400 flex items-center justify-center gap-2 transition-all"
+            className="w-full p-3 rounded-2xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-xs font-bold text-red-400 flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
             <span>Sign Out</span>

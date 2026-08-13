@@ -79,9 +79,9 @@ function MovieDetailsPage() {
   const trailerKey = movie.videos?.results?.find((v: TrailerVideo) => v.type === "Trailer" && v.site === "YouTube")?.key;
 
   return (
-    <div className="w-full min-h-screen bg-[#000000] pb-28">
-      {/* Immersive Apple TV Backdrop Banner */}
-      <div className="relative w-full h-[68vh] md:h-[82vh] select-none border-b border-white/10">
+    <div className="w-full min-h-screen bg-[#011425] pb-28">
+      {/* Immersive Ocean Backdrop Banner */}
+      <div className="relative w-full h-[68vh] md:h-[82vh] select-none border-b border-[#5C7C89]/20">
         <Image
           src={backdropUrl}
           alt={movie.title}
@@ -91,14 +91,14 @@ function MovieDetailsPage() {
           blurDataURL={ImageService.getBlurHash()}
           className="object-cover object-top opacity-55"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#000000] via-[#000000]/40 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#000000] via-transparent to-[#000000]/70" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#011425] via-[#011425]/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#011425] via-transparent to-[#011425]/70" />
       </div>
 
       {/* Main Movie Card & Info Content */}
       <div className="max-w-7xl mx-auto px-6 sm:px-8 md:px-12 -mt-48 md:-mt-72 relative z-10 grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
         <div className="space-y-5 flex flex-col items-center md:items-stretch">
-          <div className="relative w-56 md:w-full aspect-[2/3] rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.9)] border border-white/15 bg-[#0A0A0C]">
+          <div className="relative w-56 md:w-full aspect-[2/3] rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(1,20,37,0.9)] border border-[#5C7C89]/30 bg-[#081E30]">
             <Image
               src={posterUrl}
               alt={movie.title}
@@ -119,11 +119,15 @@ function MovieDetailsPage() {
               toggleFavoriteMutation.mutate();
             }}
             disabled={toggleFavoriteMutation.isPending}
-            className={`w-full apple-btn-secondary ${isFavorite ? "bg-white text-black font-extrabold hover:bg-white/90" : ""}`}
+            className={`w-full py-3.5 px-6 rounded-2xl border font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              isFavorite
+                ? "bg-[#1F4959] text-white border-[#5C7C89] shadow-[0_0_20px_rgba(31,73,89,0.7)]"
+                : "bg-[#081E30] text-[#5C7C89] border-[#5C7C89]/35 hover:text-white hover:bg-[#1F4959]/50 hover:border-[#5C7C89]"
+            }`}
           >
             {isFavorite ? (
               <>
-                <BookmarkCheck className="w-4 h-4" />
+                <BookmarkCheck className="w-4 h-4 text-emerald-400" />
                 <span>In Watchlist</span>
               </>
             ) : (
@@ -136,12 +140,12 @@ function MovieDetailsPage() {
         </div>
 
         <div className="md:col-span-3 space-y-6">
-          {/* Apple TV Metadata Chips */}
+          {/* Ocean Metadata Chips */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-md bg-white/20 backdrop-blur-md border border-white/20 text-[10px] font-extrabold tracking-widest text-white uppercase">
-              APPLE TV+ EXCLUSIVE
+            <span className="px-3 py-1 rounded-full bg-[#1F4959]/60 backdrop-blur-md border border-[#5C7C89]/40 text-[10px] font-extrabold tracking-widest text-white uppercase shadow-inner">
+              NIGHTCAST EXCLUSIVE
             </span>
-            <span className="px-2 py-0.5 rounded-md bg-white/10 backdrop-blur-md border border-white/15 text-[10px] font-bold tracking-wider text-white">
+            <span className="px-3 py-1 rounded-full bg-[#081E30]/80 backdrop-blur-md border border-[#5C7C89]/30 text-[10px] font-bold tracking-wider text-[#5C7C89]">
               4K HDR
             </span>
           </div>
@@ -151,39 +155,39 @@ function MovieDetailsPage() {
               {movie.title}
             </h1>
             {movie.tagline && (
-              <p className="text-sm italic text-white/60 font-light">"{movie.tagline}"</p>
+              <p className="text-sm italic text-[#5C7C89] font-light">"{movie.tagline}"</p>
             )}
           </div>
 
-          <div className="flex flex-wrap gap-4 text-xs font-bold text-white/70 items-center pb-4 border-b border-white/10">
+          <div className="flex flex-wrap gap-4 text-xs font-bold text-[#5C7C89] items-center pb-4 border-b border-[#5C7C89]/20">
             <div className="flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-white" />
+              <Calendar className="w-4 h-4 text-[#5C7C89]" />
               <span>{releaseYear}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-white" />
+              <Clock className="w-4 h-4 text-[#5C7C89]" />
               <span>{duration}</span>
             </div>
             <div className="flex items-center gap-1.5 text-white">
-              <Star className="w-4 h-4 fill-current" />
+              <Star className="w-4 h-4 fill-current text-yellow-400" />
               <span>{rating} / 10</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Languages className="w-4 h-4 text-white" />
+              <Languages className="w-4 h-4 text-[#5C7C89]" />
               <span>English, Dual Audio</span>
             </div>
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-[10px] uppercase tracking-[0.2em] text-white/60 font-black">Synopsis</h3>
-            <p className="text-sm md:text-base font-normal text-white/80 leading-relaxed">
+            <h3 className="text-[10px] uppercase tracking-[0.2em] text-[#5C7C89] font-black">Synopsis</h3>
+            <p className="text-sm md:text-base font-normal text-white/90 leading-relaxed">
               {movie.overview}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
             {movie.genres?.map((g: any) => (
-              <span key={g.id} className="px-4 py-1.5 rounded-full border border-white/15 bg-white/5 text-[11px] font-bold text-white tracking-wide">
+              <span key={g.id} className="px-4 py-1.5 rounded-full border border-[#5C7C89]/30 bg-[#081E30] text-[11px] font-bold text-[#5C7C89] tracking-wide hover:text-white hover:border-[#5C7C89] transition-colors">
                 {g.name}
               </span>
             ))}
@@ -192,7 +196,7 @@ function MovieDetailsPage() {
           <div className="pt-2">
             <Link
               href={`/watch/movie/${id}`}
-              className="apple-btn-primary inline-flex"
+              className="gtv-btn-primary inline-flex"
             >
               <Play className="w-4 h-4 fill-current ml-0.5" aria-hidden="true" />
               <span>Stream in 4K</span>
@@ -205,10 +209,10 @@ function MovieDetailsPage() {
       {movie.cast && movie.cast.length > 0 && (
         <section className="max-w-7xl mx-auto px-6 sm:px-8 md:px-12 mt-20">
           <div className="flex items-center gap-3 mb-8">
-            <div className="h-6 w-1 rounded-full bg-white shadow-[0_0_10px_#FFF]" />
+            <div className="h-6 w-1 rounded-full bg-[#1F4959] shadow-[0_0_10px_#5C7C89]" />
             <div>
               <h3 className="font-display text-xl font-black tracking-tight text-white">Starring Cast</h3>
-              <p className="text-[10px] text-white/50 font-bold tracking-widest uppercase mt-0.5">Key Performers</p>
+              <p className="text-[10px] text-[#5C7C89] font-bold tracking-widest uppercase mt-0.5">Key Performers</p>
             </div>
           </div>
           <div className="flex gap-6 overflow-x-auto no-scrollbar pb-2">
@@ -216,12 +220,12 @@ function MovieDetailsPage() {
               const avatar = ImageService.getProfile(c.profile_path, c.name);
               return (
                 <div key={idx} className="flex flex-col items-center shrink-0 w-24 gap-2.5 text-center">
-                  <div className="relative w-16 h-16 rounded-full overflow-hidden border border-white/15 ring-2 ring-white/20">
+                  <div className="relative w-16 h-16 rounded-full overflow-hidden border border-[#5C7C89]/30 ring-2 ring-[#1F4959]/40 bg-[#081E30]">
                     <Image src={avatar} alt={c.name} fill sizes="64px" className="object-cover" />
                   </div>
                   <div className="space-y-0.5">
                     <p className="text-xs font-bold text-white truncate max-w-[90px]">{c.name}</p>
-                    <p className="text-[10px] text-white/60 truncate max-w-[90px]">{c.character}</p>
+                    <p className="text-[10px] text-[#5C7C89] truncate max-w-[90px]">{c.character}</p>
                   </div>
                 </div>
               );
@@ -234,13 +238,13 @@ function MovieDetailsPage() {
       {trailerKey && (
         <section className="max-w-7xl mx-auto px-6 sm:px-8 md:px-12 mt-20">
           <div className="flex items-center gap-3 mb-8">
-            <div className="h-6 w-1 rounded-full bg-white shadow-[0_0_10px_#FFF]" />
+            <div className="h-6 w-1 rounded-full bg-[#1F4959] shadow-[0_0_10px_#5C7C89]" />
             <div>
               <h3 className="font-display text-xl font-black tracking-tight text-white">Official Trailer</h3>
-              <p className="text-[10px] text-white/50 font-bold tracking-widest uppercase mt-0.5">4K Preview</p>
+              <p className="text-[10px] text-[#5C7C89] font-bold tracking-widest uppercase mt-0.5">4K Preview</p>
             </div>
           </div>
-          <div className="relative w-full aspect-video rounded-3xl overflow-hidden border border-white/15 bg-[#000000] shadow-[0_25px_60px_rgba(0,0,0,0.9)]">
+          <div className="relative w-full aspect-video rounded-3xl overflow-hidden border border-[#5C7C89]/30 bg-[#011425] shadow-[0_25px_60px_rgba(1,20,37,0.9)]">
             <iframe
               src={`https://www.youtube.com/embed/${trailerKey}?autoplay=0&mute=1&controls=1`}
               title="Official Trailer"

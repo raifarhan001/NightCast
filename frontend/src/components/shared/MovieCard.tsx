@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Play, Star } from "lucide-react";
 import { ImageService } from "../../lib/ImageService";
+import PlatformBadge from "./PlatformBadge";
 
 interface MovieCardProps {
   item: {
@@ -47,37 +48,42 @@ export default function MovieCard({ item, subtitle }: MovieCardProps) {
       className="group min-w-[220px] sm:min-w-[260px] md:min-w-[290px] shrink-0 block select-none snap-start cursor-pointer"
     >
       {/* 16:9 Google TV Landscape Poster Card with Ambient Glow */}
-      <div className="gtv-card-landscape group-hover:shadow-[0_10px_35px_-5px_rgba(99,102,241,0.35),0_0_25px_rgba(249,115,22,0.25)]">
+      <div className="gtv-card-landscape group-hover:shadow-[0_10px_35px_-5px_rgba(31,73,89,0.5),0_0_25px_rgba(92,124,137,0.3)]">
         {imageUrl ? (
           <Image
             src={imageUrl}
             alt={title}
             fill
             sizes="(max-width: 768px) 260px, 290px"
-            className="object-cover transition-transform duration-500 ease-out group-hover:scale-105 opacity-90"
+            className="object-cover transition-transform duration-500 ease-out group-hover:scale-105 opacity-100 brightness-[1.03]"
             loading="lazy"
             placeholder="blur"
             blurDataURL={ImageService.getBlurHash()}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-white/50 text-xs font-bold p-3 text-center bg-gradient-to-br from-[#12141F] to-[#1A1D2D]">
+          <div className="w-full h-full flex items-center justify-center text-[#5C7C89] text-xs font-bold p-3 text-center bg-gradient-to-br from-[#081E30] to-[#0D2A42]">
             {title}
           </div>
         )}
 
         {/* Ambient Soft Backlight Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#011425]/90 via-[#011425]/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
         {/* Hover Play Trigger */}
         <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-          <div className="w-11 h-11 rounded-full bg-white text-black flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.4)] transform group-hover:scale-110 transition-transform duration-300">
+          <div className="w-11 h-11 rounded-full bg-[#1F4959] text-white border border-[#5C7C89]/60 flex items-center justify-center shadow-[0_0_20px_rgba(31,73,89,0.8)] transform group-hover:scale-110 transition-transform duration-300">
             <Play className="w-4 h-4 fill-current ml-0.5" />
           </div>
         </div>
 
+        {/* Studio / Platform Brand Logo Badge Top Left */}
+        <div className="absolute top-2.5 left-2.5 z-20 pointer-events-none">
+          <PlatformBadge item={item} />
+        </div>
+
         {/* Rating Pill Top Right */}
         {rating && (
-          <div className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full bg-black/70 backdrop-blur-md border border-white/15 text-[9px] font-bold text-white flex items-center gap-1">
+          <div className="absolute top-2.5 right-2.5 z-20 px-2 py-0.5 rounded-full bg-[#011425]/85 backdrop-blur-md border border-[#5C7C89]/30 text-[9px] font-bold text-white flex items-center gap-1">
             <Star className="w-2.5 h-2.5 fill-current text-yellow-400" />
             <span>{rating}</span>
           </div>
@@ -85,9 +91,9 @@ export default function MovieCard({ item, subtitle }: MovieCardProps) {
 
         {/* Progress Bar overlay if continuing */}
         {progress > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#011425]/60">
             <div
-              className="h-full bg-white shadow-[0_0_8px_#FFF] transition-all duration-500"
+              className="h-full bg-gradient-to-r from-[#1F4959] to-[#5C7C89] shadow-[0_0_8px_#5C7C89] transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -96,10 +102,10 @@ export default function MovieCard({ item, subtitle }: MovieCardProps) {
 
       {/* Title & Subtitle */}
       <div className="pt-2 px-0.5 space-y-0.5">
-        <h4 className="text-xs sm:text-sm font-bold text-white truncate group-hover:text-white/90 transition-colors font-display">
+        <h4 className="text-xs sm:text-sm font-bold text-white truncate group-hover:text-[#5C7C89] transition-colors font-display">
           {title}
         </h4>
-        <p className="text-[11px] text-white/50 font-medium truncate">{defaultSubtitle}</p>
+        <p className="text-[11px] text-[#5C7C89] font-medium truncate">{defaultSubtitle}</p>
       </div>
     </Link>
   );
