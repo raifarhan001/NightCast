@@ -5,35 +5,55 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="w-full bg-[#090A0F] border-t border-white/10 pt-12 pb-8 px-6 md:px-12 select-none">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="space-y-1 text-center sm:text-left">
-            <Link href="/" className="font-extrabold text-lg text-white font-display uppercase tracking-tight">
+    <footer className="w-full bg-[#0B1120] border-t border-[#8197A4]/15 pt-12 pb-10 px-6 md:px-12 select-none text-center">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Nightcast Branded Logo Footer Header */}
+        <div className="flex flex-col items-center justify-center space-y-3">
+          <Link href="/" className="inline-flex flex-col items-center">
+            <span className="text-white font-black text-2xl tracking-tight uppercase font-display">
               Nightcast
-            </Link>
-            <p className="text-xs text-white/50">Next-Generation Cinematic Streaming Experience.</p>
-          </div>
-
-          <div className="flex items-center gap-6 text-xs text-white/70 font-medium">
-            <Link href="/" className="hover:text-white transition-colors">For you</Link>
-            <Link href="/movies" className="hover:text-white transition-colors">Movies</Link>
-            <Link href="/shows" className="hover:text-white transition-colors">Shows</Link>
-            <Link href="/f1" className="hover:text-white transition-colors flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#E10600]" />
-              <span>F1 Live</span>
-            </Link>
-          </div>
+            </span>
+            <svg
+              className="w-24 h-3 text-[#00A8E1] -mt-1"
+              viewBox="0 0 100 20"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M 5 5 Q 50 22 92 6"
+                stroke="currentColor"
+                strokeWidth="4"
+                strokeLinecap="round"
+              />
+              <path
+                d="M 86 2 L 95 7 L 90 14"
+                fill="currentColor"
+              />
+            </svg>
+          </Link>
         </div>
 
-        <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-white/50">
-          <p>© 2026 Nightcast. Designed & Developed by Farhan. All rights reserved.</p>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-[10px] font-bold text-white">
+        {/* Footer Navigation Links */}
+        <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-[#00A8E1] font-semibold">
+          <Link href="/" className="hover:underline hover:text-white transition-colors">Terms and Privacy Notice</Link>
+          <Link href="/" className="hover:underline hover:text-white transition-colors">Send Us Feedback</Link>
+          <Link href="/" className="hover:underline hover:text-white transition-colors">Help</Link>
+          <Link href="/movies" className="hover:underline hover:text-white transition-colors">Movies</Link>
+          <Link href="/shows" className="hover:underline hover:text-white transition-colors">TV Shows</Link>
+        </div>
+
+        {/* Copyright and TMDB Attribution */}
+        <div className="space-y-2 pt-2 border-t border-[#8197A4]/10 text-[11px] text-[#8197A4]">
+          <p>© 2026 Nightcast. All rights reserved.</p>
+          <div className="flex items-center justify-center gap-2 pt-1">
+            <span className="px-2.5 py-0.5 rounded bg-[#192231] text-[10px] font-bold text-[#00A8E1] border border-[#00A8E1]/30">
+              PRIME VIDEO EXPERIENCE
+            </span>
+            <span className="px-2.5 py-0.5 rounded bg-[#192231] text-[10px] font-bold text-[#8197A4] border border-[#8197A4]/20">
               TMDB API
             </span>
-            <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-[10px] font-bold text-white">
-              4K HDR
+            <span className="px-2.5 py-0.5 rounded bg-[#192231] text-[10px] font-bold text-[#8197A4] border border-[#8197A4]/20">
+              4K UHD HDR
             </span>
           </div>
         </div>

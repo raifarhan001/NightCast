@@ -64,7 +64,7 @@ function ShowsPageContent() {
 
   if (trendingLoading) {
     return (
-      <div className="w-full min-h-screen bg-[#011425]">
+      <div className="w-full min-h-screen bg-[#0B1120]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />
@@ -73,13 +73,13 @@ function ShowsPageContent() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#011425] pb-28 space-y-6">
+    <div className="w-full min-h-screen bg-[#0B1120] pb-28 space-y-6">
       {/* TV Shows Only Hero Carousel */}
       <HeroCarousel items={heroItems} />
 
-      {/* 1. Trending Right Now (Top 10 Ranked TV Shows) */}
+      {/* 1. Top 10 Shows Right Now */}
       <Top10RankedRow
-        title="Top 10 Shows Right Now"
+        title="Top 10 TV Series on Prime"
         items={trendingShows.map(t => ({ ...t, media_type: "tv" as const }))}
       />
 
@@ -92,43 +92,43 @@ function ShowsPageContent() {
         items={trendingShows.map(t => ({ ...t, media_type: "tv" as const }))}
       />
 
-      {/* 2. Popular TV Shows */}
+      {/* 4. Popular TV Shows */}
       <MovieRow
-        title="Popular TV Shows"
+        title="Popular TV Series"
         items={popularShows.map(t => ({ ...t, media_type: "tv" as const }))}
       />
 
-      {/* 3. Top Rated Series */}
+      {/* 5. Top Rated Series */}
       <MovieRow
         title="Top Rated Series"
         items={topRatedShows.map(t => ({ ...t, media_type: "tv" as const }))}
       />
 
-      {/* 4. Sci-Fi & Fantasy Series */}
+      {/* 6. Sci-Fi & Fantasy Series */}
       <MovieRow
         title="Sci-Fi & Fantasy Series"
         items={sciFiShows.map(t => ({ ...t, media_type: "tv" as const }))}
       />
 
-      {/* 5. Drama Series */}
+      {/* 7. Drama Series */}
       <MovieRow
         title="Drama & Emotion"
         items={dramaShows.map(t => ({ ...t, media_type: "tv" as const }))}
       />
 
-      {/* 6. Action & Adventure */}
+      {/* 8. Action & Thrills */}
       <MovieRow
         title="Action & Thrills"
         items={actionShows.map(t => ({ ...t, media_type: "tv" as const }))}
       />
 
-      {/* 7. Crime & Mystery */}
+      {/* 9. Crime & Mystery */}
       <MovieRow
         title="Crime & Mystery"
         items={mysteryShows.map(t => ({ ...t, media_type: "tv" as const }))}
       />
 
-      {/* 8. Comedy Series */}
+      {/* 10. Comedy Series */}
       <MovieRow
         title="Comedy Series"
         items={comedyShows.map(t => ({ ...t, media_type: "tv" as const }))}
@@ -140,7 +140,7 @@ function ShowsPageContent() {
 export default function ShowsPage() {
   return (
     <Suspense fallback={
-      <div className="w-full min-h-screen bg-[#011425]">
+      <div className="w-full min-h-screen bg-[#0B1120]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />

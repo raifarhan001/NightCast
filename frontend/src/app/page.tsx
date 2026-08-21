@@ -127,7 +127,7 @@ function HomePageContent() {
 
   if (topPicksLoading) {
     return (
-      <div className="w-full min-h-screen bg-[#011425]">
+      <div className="w-full min-h-screen bg-[#0B1120]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />
@@ -136,8 +136,8 @@ function HomePageContent() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#011425] pb-28 space-y-6">
-      {/* Immersive Google TV Hero Banner with Ambient Backlight Glow */}
+    <div className="w-full min-h-screen bg-[#0B1120] pb-28 space-y-6">
+      {/* Immersive Amazon Prime Video Hero Banner Showcase */}
       <HeroCarousel items={heroItems} />
 
       {/* Continue Watching (Merged Local + Synced Backend) */}
@@ -148,60 +148,60 @@ function HomePageContent() {
         />
       )}
 
-      {/* 1. Trending Right Now (Top 10 Ranked with Big Numbers) */}
+      {/* 1. Top 10 Movies & Shows on Prime */}
       <Top10RankedRow
-        title="Trending Right Now"
+        title="Top 10 Movies & Shows on Prime"
         items={topPicks.length > 0 ? topPicks : trendingMovies}
       />
 
-      {/* 2. Studios & Platforms Branding Bar */}
+      {/* 2. Studios & Channels Row */}
       <StudiosRow />
 
-      {/* 3. Top Picks For You */}
+      {/* 3. Recommended Movies & Shows */}
       <MovieRow
-        title="Top Picks For You"
+        title="Recommended Movies & Shows"
         items={topPicks}
       />
 
-      {/* 4. Trending Movies */}
+      {/* 4. Popular Movies */}
       <MovieRow
-        title="Trending Movies"
+        title="Popular Movies"
         items={trendingMovies.map((m) => ({ ...m, media_type: "movie" }))}
       />
 
-      {/* 3. Popular TV Shows */}
+      {/* 5. Binge-Worthy TV Series */}
       <MovieRow
-        title="Popular TV Shows"
+        title="Binge-Worthy TV Series"
         items={popularTvShows.map((t) => ({ ...t, media_type: "tv" }))}
       />
 
-      {/* 4. Action & Adventure */}
+      {/* 6. Action & Thrillers */}
       <MovieRow
-        title="Action & Adventure"
+        title="Action & Thrillers"
         items={actionMovies.map((m) => ({ ...m, media_type: "movie" }))}
       />
 
-      {/* 5. Sci-Fi & Fantasy */}
+      {/* 7. Sci-Fi & Speculative Cinema */}
       <MovieRow
-        title="Sci-Fi & Fantasy"
+        title="Sci-Fi & Speculative Cinema"
         items={sciFiMovies.map((m) => ({ ...m, media_type: "movie" }))}
       />
 
-      {/* 6. Top Rated */}
+      {/* 8. Highly Rated Masterpieces */}
       <MovieRow
-        title="Top Rated"
+        title="Highly Rated Masterpieces"
         items={topRated.map((m) => ({ ...m, media_type: "movie" }))}
       />
 
-      {/* 7. Hindi & Asian Hits */}
+      {/* 9. International & Regional Cinema */}
       <MovieRow
-        title="Hindi & Asian Hits"
+        title="International & Regional Cinema"
         items={asianHits.map((m) => ({ ...m, media_type: "movie" }))}
       />
 
-      {/* 8. Comedies */}
+      {/* 10. Hilarious Comedies */}
       <MovieRow
-        title="Comedies"
+        title="Hilarious Comedies"
         items={comedyMovies.map((m) => ({ ...m, media_type: "movie" }))}
       />
     </div>
@@ -211,7 +211,7 @@ function HomePageContent() {
 export default function HomePage() {
   return (
     <Suspense fallback={
-      <div className="w-full min-h-screen bg-[#011425]">
+      <div className="w-full min-h-screen bg-[#0B1120]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />

@@ -361,10 +361,10 @@ export default function WatchPage() {
   const episodesCount = selectedSeasonData?.episode_count || 8;
 
   return (
-    <div className="min-h-screen max-w-7xl mx-auto pt-20 pb-28 px-6 md:px-12 relative select-none bg-[#011425] text-white">
+    <div className="min-h-screen max-w-7xl mx-auto pt-20 pb-28 px-6 md:px-12 relative select-none bg-[#0B1120] text-white">
       <div className="space-y-6">
         {/* Full Player Container */}
-        <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-[#5C7C89]/25 bg-[#011425] shadow-2xl shadow-[#011425]">
+        <div className="relative aspect-video w-full rounded-2xl overflow-hidden border border-[#8197A4]/25 bg-[#0B1120] shadow-2xl shadow-[#0B1120]">
           {!isIframeLoaded && activeServer?.type !== 'hls' && (
             <div className="absolute inset-0 z-20 pointer-events-none">
               <PlayerSkeleton />
@@ -401,14 +401,14 @@ export default function WatchPage() {
 
         {/* Source Error / Fallback Notification Toast */}
         {toastMessage && (
-          <div className="p-3.5 px-5 bg-[#1F4959]/30 border border-[#5C7C89]/40 rounded-2xl flex items-center justify-between text-xs text-[#5C7C89] shadow-xl animate-in fade-in slide-in-from-top-2">
+          <div className="p-3.5 px-5 bg-[#00A8E1]/20 border border-[#00A8E1]/40 rounded-xl flex items-center justify-between text-xs text-[#00A8E1] shadow-xl animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center gap-2.5">
-              <AlertTriangle className="w-4 h-4 text-[#5C7C89] shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-[#00A8E1] shrink-0" />
               <span>{toastMessage}</span>
             </div>
             <button
               onClick={() => setToastMessage(null)}
-              className="text-[#5C7C89] hover:text-white text-xs font-bold px-2 py-0.5 rounded-lg hover:bg-[#1F4959]/50 transition-all"
+              className="text-[#00A8E1] hover:text-white text-xs font-bold px-2 py-0.5 rounded-lg hover:bg-[#00A8E1]/30 transition-all"
             >
               Dismiss
             </button>
@@ -416,7 +416,7 @@ export default function WatchPage() {
         )}
 
         {/* Server Selector Bar */}
-        <div className="p-5 bg-[#081E30] border border-[#5C7C89]/25 rounded-2xl flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shadow-xl">
+        <div className="p-5 bg-[#192231] border border-[#8197A4]/25 rounded-xl flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shadow-xl">
           <div className="flex-1">
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#5C7C89] mb-1">
               <span className="w-2 h-2 rounded-full bg-[#1F4959] animate-pulse" />

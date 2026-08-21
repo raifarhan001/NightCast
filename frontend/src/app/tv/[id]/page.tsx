@@ -112,15 +112,15 @@ function TvDetailsPage() {
   }));
 
   return (
-    <div className="w-full min-h-screen bg-[#011425] pb-20">
-      <div className="relative w-full h-[65vh] md:h-[80vh] select-none border-b border-[#5C7C89]/20">
+    <div className="w-full min-h-screen bg-[#0B1120] pb-20">
+      <div className="relative w-full h-[65vh] md:h-[80vh] select-none border-b border-[#8197A4]/20">
         <Image
           src={backdropUrl} alt={tv.name} fill priority placeholder="blur"
           blurDataURL={ImageService.getBlurHash()}
           className="object-cover object-top opacity-40"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#011425] via-[#011425]/50 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#011425] via-transparent to-[#011425]/70" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0B1120] via-transparent to-[#0B1120]/70" />
       </div>
 
       <div className="max-w-7xl mx-auto px-6 md:px-10 -mt-48 md:-mt-72 relative z-10 grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">

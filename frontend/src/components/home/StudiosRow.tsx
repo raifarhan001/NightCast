@@ -14,17 +14,6 @@ interface Studio {
 
 const STUDIOS: Studio[] = [
   {
-    id: "netflix",
-    name: "Netflix",
-    href: "/search?studio=netflix&name=Netflix&provider=8&network=213",
-    color: "#E50914",
-    logo: (
-      <span className="font-black text-xl sm:text-2xl tracking-tighter text-[#E50914] font-display uppercase drop-shadow-[0_0_12px_rgba(229,9,20,0.5)]">
-        NETFLIX
-      </span>
-    ),
-  },
-  {
     id: "prime",
     name: "Amazon Prime Video",
     href: "/search?studio=prime&name=Amazon%20Prime%20Video&provider=9|119&network=1024",
@@ -34,11 +23,22 @@ const STUDIOS: Studio[] = [
         <span className="font-extrabold text-base sm:text-lg tracking-tight text-[#00A8E1] lowercase font-sans">
           prime video
         </span>
-        <svg className="w-12 h-2.5 text-[#00A8E1] fill-current -mt-0.5" viewBox="0 0 100 20">
+        <svg className="w-14 h-3 text-[#00A8E1] fill-current -mt-0.5" viewBox="0 0 100 20">
           <path d="M5 5 Q50 22 95 8 Q55 14 5 5 Z" />
           <polygon points="90,4 98,8 91,12" />
         </svg>
       </div>
+    ),
+  },
+  {
+    id: "netflix",
+    name: "Netflix",
+    href: "/search?studio=netflix&name=Netflix&provider=8&network=213",
+    color: "#E50914",
+    logo: (
+      <span className="font-black text-xl sm:text-2xl tracking-tighter text-[#E50914] font-sans uppercase drop-shadow-[0_0_12px_rgba(229,9,20,0.5)]">
+        NETFLIX
+      </span>
     ),
   },
   {
@@ -78,7 +78,7 @@ const STUDIOS: Studio[] = [
     color: "#00D2FF",
     logo: (
       <div className="flex items-center text-[#00D2FF] font-serif">
-        <span className="font-black text-xl sm:text-2xl italic tracking-tight font-display">
+        <span className="font-black text-xl sm:text-2xl italic tracking-tight font-sans">
           Disney
         </span>
         <span className="text-xl sm:text-2xl font-bold -ml-0.5 text-white">+</span>
@@ -119,7 +119,7 @@ const STUDIOS: Studio[] = [
     color: "#D4AF37",
     logo: (
       <div className="flex items-center text-[#D4AF37] font-serif">
-        <span className="font-black text-lg sm:text-xl tracking-wider font-display">
+        <span className="font-black text-lg sm:text-xl tracking-wider font-sans">
           MGM
         </span>
         <span className="text-lg font-bold text-white ml-0.5">+</span>
@@ -146,7 +146,7 @@ const STUDIOS: Studio[] = [
     href: "/search?studio=marvel&name=Marvel%20Studios&company=420",
     color: "#E23636",
     logo: (
-      <div className="px-2 py-0.5 bg-[#E23636] text-white font-black text-[11px] sm:text-xs tracking-widest uppercase font-display border border-white/30 rounded">
+      <div className="px-2 py-0.5 bg-[#E23636] text-white font-black text-[11px] sm:text-xs tracking-widest uppercase font-sans border border-white/30 rounded">
         MARVEL
       </div>
     ),
@@ -181,8 +181,8 @@ export default function StudiosRow() {
     <section className="space-y-3 px-4 sm:px-6 md:px-12 select-none relative group/row">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl sm:text-2xl font-black text-white font-display tracking-tight">
-          Studios & Platforms
+        <h2 className="text-xl sm:text-2xl font-black text-white font-sans tracking-tight flex items-center gap-2">
+          <span className="text-[#00A8E1]">Channels & Studios</span>
         </h2>
 
         {/* Desktop Navigation Arrows */}
@@ -190,8 +190,8 @@ export default function StudiosRow() {
           <button
             onClick={() => handleScroll("left")}
             disabled={!showLeftArrow}
-            className={`w-8 h-8 rounded-full bg-[#081E30] border border-[#5C7C89]/30 text-[#5C7C89] hover:text-white hover:bg-[#1F4959] flex items-center justify-center transition-all cursor-pointer ${
-              !showLeftArrow ? "opacity-30 cursor-not-allowed" : "hover:border-[#5C7C89]"
+            className={`w-8 h-8 rounded-full bg-[#192231] border border-[#8197A4]/30 text-[#8197A4] hover:text-white hover:bg-[#00A8E1] hover:border-[#00A8E1] flex items-center justify-center transition-all cursor-pointer ${
+              !showLeftArrow ? "opacity-30 cursor-not-allowed" : ""
             }`}
             aria-label="Scroll left"
           >
@@ -200,8 +200,8 @@ export default function StudiosRow() {
           <button
             onClick={() => handleScroll("right")}
             disabled={!showRightArrow}
-            className={`w-8 h-8 rounded-full bg-[#081E30] border border-[#5C7C89]/30 text-[#5C7C89] hover:text-white hover:bg-[#1F4959] flex items-center justify-center transition-all cursor-pointer ${
-              !showRightArrow ? "opacity-30 cursor-not-allowed" : "hover:border-[#5C7C89]"
+            className={`w-8 h-8 rounded-full bg-[#192231] border border-[#8197A4]/30 text-[#8197A4] hover:text-white hover:bg-[#00A8E1] hover:border-[#00A8E1] flex items-center justify-center transition-all cursor-pointer ${
+              !showRightArrow ? "opacity-30 cursor-not-allowed" : ""
             }`}
             aria-label="Scroll right"
           >
@@ -223,14 +223,14 @@ export default function StudiosRow() {
             className="group/studio flex flex-col items-center gap-2 shrink-0 snap-start select-none cursor-pointer"
           >
             {/* Studio Capsule Card */}
-            <div className="w-36 sm:w-44 md:w-48 h-20 sm:h-24 rounded-2xl bg-[#081E30] border border-[#5C7C89]/25 flex items-center justify-center p-4 transition-all duration-300 group-hover/studio:scale-105 group-hover/studio:border-[#5C7C89] group-hover/studio:bg-[#0D2A42] group-hover/studio:shadow-[0_10px_25px_-5px_rgba(31,73,89,0.5),0_0_15px_rgba(92,124,137,0.3)] shadow-md">
+            <div className="w-36 sm:w-44 md:w-48 h-20 sm:h-24 rounded-xl bg-[#192231] border border-[#8197A4]/25 flex items-center justify-center p-4 transition-all duration-300 group-hover/studio:scale-105 group-hover/studio:border-[#00A8E1] group-hover/studio:bg-[#232E42] group-hover/studio:shadow-[0_8px_25px_rgba(0,168,225,0.3)] shadow-md">
               <div className="transition-transform duration-300 group-hover/studio:scale-110">
                 {studio.logo}
               </div>
             </div>
 
             {/* Label */}
-            <span className="text-[11px] sm:text-xs font-semibold text-[#5C7C89] group-hover/studio:text-white transition-colors truncate max-w-[140px] text-center">
+            <span className="text-[11px] sm:text-xs font-semibold text-[#8197A4] group-hover/studio:text-white transition-colors truncate max-w-[140px] text-center">
               {studio.name}
             </span>
           </Link>

@@ -9,16 +9,16 @@
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-display: 'Outfit', 'Inter', sans-serif;
 
-    --color-bg: #011425;
-    --color-surface: #081E30;
-    --color-surface-hover: #0D2A42;
-    --color-primary: #1F4959;
-    --color-steel: #5C7C89;
-    --color-charcoal: #242424;
-    --color-border: rgba(92, 124, 137, 0.22);
-    --color-border-hover: rgba(92, 124, 137, 0.45);
+    --color-bg: #0B1120;
+    --color-surface: #192231;
+    --color-surface-hover: #232E42;
+    --color-primary: #00A8E1;
+    --color-steel: #8197A4;
+    --color-charcoal: #0F172A;
+    --color-border: rgba(129, 151, 164, 0.2);
+    --color-border-hover: rgba(0, 168, 225, 0.5);
     --color-text-primary: #FFFFFF;
-    --color-text-secondary: #5C7C89;
+    --color-text-secondary: #8197A4;
   }
 
   * {
@@ -26,13 +26,13 @@
   }
 
   body {
-    @apply text-white antialiased selection:bg-[#1F4959] selection:text-white overflow-x-hidden;
+    @apply text-white antialiased selection:bg-[#00A8E1] selection:text-white overflow-x-hidden;
     font-family: var(--font-sans);
-    background-color: #011425;
+    background-color: #0B1120;
   }
 
   *:focus-visible {
-    @apply outline-none ring-2 ring-[#5C7C89] ring-offset-2 ring-offset-[#011425];
+    @apply outline-none ring-2 ring-[#00A8E1] ring-offset-2 ring-offset-[#0B1120];
   }
 }
 
@@ -41,7 +41,7 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  background-color: #011425;
+  background-color: #0B1120;
 }
 
 ::-webkit-scrollbar {
@@ -49,34 +49,44 @@ html, body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #011425;
+  background: #0B1120;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1F4959;
+  background: #192231;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #5C7C89;
+  background: #00A8E1;
 }
 
 @layer components {
-  /* Ocean Pill Navigation Pill */
+  /* Prime Video Hardware Accelerated Pill Navigation */
   .gtv-tab-pill {
-    @apply px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all duration-300 ease-out select-none cursor-pointer text-[#5C7C89] hover:text-white hover:bg-[#1F4959]/40 border border-transparent hover:border-[#5C7C89]/30 whitespace-nowrap shrink-0;
+    @apply px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transform-gpu will-change-transform transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] select-none cursor-pointer text-[#8197A4] hover:text-white hover:bg-[#192231] border border-transparent hover:border-[#8197A4]/30 whitespace-nowrap shrink-0 hover:scale-105 active:scale-95;
   }
 
   .gtv-tab-pill-active {
-    @apply px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-bold tracking-wide transition-all duration-300 ease-out select-none cursor-pointer bg-[#1F4959] text-white border border-[#5C7C89]/60 shadow-[0_0_20px_rgba(31,73,89,0.5)] scale-105 whitespace-nowrap shrink-0;
+    @apply px-4 py-1.5 rounded-full text-xs font-bold tracking-wide transform-gpu will-change-transform transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] select-none cursor-pointer bg-[#00A8E1] text-white border border-[#00A8E1] shadow-[0_0_15px_rgba(0,168,225,0.5)] whitespace-nowrap shrink-0 scale-105;
   }
 
-  /* Ocean Primary Action Button */
+  /* Prime Video Primary Action Button (White/Cyan Glow) */
   .gtv-btn-primary {
-    @apply px-7 py-3 rounded-full bg-gradient-to-r from-[#1F4959] to-[#5C7C89] text-white font-extrabold text-xs tracking-wider uppercase flex items-center gap-2 hover:from-[#255b6f] hover:to-[#6c8f9d] hover:scale-105 hover:shadow-[0_10px_30px_-5px_rgba(31,73,89,0.6),0_0_25px_rgba(92,124,137,0.4)] active:scale-95 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-xl cursor-pointer border border-[#5C7C89]/30;
+    @apply px-6 py-3 rounded-full bg-white text-black font-bold text-xs tracking-wider uppercase flex items-center gap-2 transform-gpu will-change-transform hover:bg-[#00A8E1] hover:text-white hover:scale-105 hover:shadow-[0_0_25px_rgba(0,168,225,0.7)] active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] shadow-xl cursor-pointer border border-white/20;
   }
 
-  /* 16:9 Landscape Card with Ocean Ambient Glow */
+  /* Prime Video Secondary Circle / Pill Button */
+  .gtv-btn-secondary {
+    @apply px-5 py-3 rounded-full bg-[#192231] text-white font-bold text-xs tracking-wider flex items-center gap-2 transform-gpu will-change-transform hover:bg-[#232E42] hover:border-[#00A8E1] hover:scale-105 active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] shadow-md cursor-pointer border border-[#8197A4]/30;
+  }
+
+  /* 16:9 Hardware-Accelerated Amazon Prime Widescreen Card */
   .gtv-card-landscape {
-    @apply relative aspect-video w-full rounded-2xl overflow-hidden bg-[#081E30] border border-[#5C7C89]/20 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105 group-hover:border-[#5C7C89]/60 group-hover:shadow-[0_10px_35px_-5px_rgba(31,73,89,0.5),0_0_25px_rgba(92,124,137,0.3),0_20px_45px_rgba(1,20,37,0.95)];
+    @apply relative aspect-video w-full rounded-xl overflow-hidden bg-[#192231] border border-[#8197A4]/20 transform-gpu will-change-transform transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] group-hover:scale-[1.05] group-hover:-translate-y-1 group-hover:border-[#00A8E1] group-hover:shadow-[0_10px_30px_rgba(0,168,225,0.4),0_15px_40px_rgba(11,17,32,0.9)];
+  }
+
+  /* Prime Badge Tag */
+  .prime-badge-cyan {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-[#00A8E1] text-white shadow-[0_0_10px_rgba(0,168,225,0.6)];
   }
 
   .no-scrollbar::-webkit-scrollbar,
@@ -115,23 +125,4 @@ html, body {
 
 .animate-shimmer {
   animation: shimmer 1.8s infinite ease-in-out;
-}
-
-@keyframes topProgress {
-  0% {
-    width: 0%;
-    opacity: 1;
-  }
-  50% {
-    width: 70%;
-    opacity: 1;
-  }
-  100% {
-    width: 100%;
-    opacity: 0.9;
-  }
-}
-
-.animate-top-progress {
-  animation: topProgress 0.8s ease-out forwards;
 }

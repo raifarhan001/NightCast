@@ -79,9 +79,9 @@ function MovieDetailsPage() {
   const trailerKey = movie.videos?.results?.find((v: TrailerVideo) => v.type === "Trailer" && v.site === "YouTube")?.key;
 
   return (
-    <div className="w-full min-h-screen bg-[#011425] pb-28">
-      {/* Immersive Ocean Backdrop Banner */}
-      <div className="relative w-full h-[68vh] md:h-[82vh] select-none border-b border-[#5C7C89]/20">
+    <div className="w-full min-h-screen bg-[#0B1120] pb-28">
+      {/* Immersive Backdrop Banner */}
+      <div className="relative w-full h-[68vh] md:h-[82vh] select-none border-b border-[#8197A4]/20">
         <Image
           src={backdropUrl}
           alt={movie.title}
@@ -91,8 +91,8 @@ function MovieDetailsPage() {
           blurDataURL={ImageService.getBlurHash()}
           className="object-cover object-top opacity-55"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#011425] via-[#011425]/50 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#011425] via-transparent to-[#011425]/70" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0B1120] via-transparent to-[#0B1120]/70" />
       </div>
 
       {/* Main Movie Card & Info Content */}

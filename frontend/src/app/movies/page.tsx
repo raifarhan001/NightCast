@@ -64,7 +64,7 @@ function MoviesPageContent() {
 
   if (trendingLoading) {
     return (
-      <div className="w-full min-h-screen bg-[#011425]">
+      <div className="w-full min-h-screen bg-[#0B1120]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />
@@ -73,13 +73,13 @@ function MoviesPageContent() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#011425] pb-28 space-y-6">
+    <div className="w-full min-h-screen bg-[#0B1120] pb-28 space-y-6">
       {/* Movies Only Hero Carousel */}
       <HeroCarousel items={heroItems} />
 
-      {/* 1. Trending Right Now (Top 10 Ranked Movies) */}
+      {/* 1. Top 10 Movies Right Now */}
       <Top10RankedRow
-        title="Top 10 Movies Right Now"
+        title="Top 10 Movies on Prime"
         items={trendingMovies.map(m => ({ ...m, media_type: "movie" as const }))}
       />
 
@@ -92,43 +92,43 @@ function MoviesPageContent() {
         items={trendingMovies.map(m => ({ ...m, media_type: "movie" as const }))}
       />
 
-      {/* 2. Popular Movies */}
+      {/* 4. Popular Movies */}
       <MovieRow
         title="Popular Movies"
         items={popularMovies.map(m => ({ ...m, media_type: "movie" as const }))}
       />
 
-      {/* 3. Top Rated Movies */}
+      {/* 5. Top Rated Movies */}
       <MovieRow
         title="Top Rated Movies"
         items={topRatedMovies.map(m => ({ ...m, media_type: "movie" as const }))}
       />
 
-      {/* 4. Action Blockbusters */}
+      {/* 6. Action Blockbusters */}
       <MovieRow
         title="Action Blockbusters"
         items={actionMovies.map(m => ({ ...m, media_type: "movie" as const }))}
       />
 
-      {/* 5. Sci-Fi & Speculative */}
+      {/* 7. Sci-Fi & Speculative */}
       <MovieRow
         title="Sci-Fi & Speculative"
         items={sciFiMovies.map(m => ({ ...m, media_type: "movie" as const }))}
       />
 
-      {/* 6. Comedy Hits */}
+      {/* 8. Comedy Hits */}
       <MovieRow
         title="Comedy Hits"
         items={comedyMovies.map(m => ({ ...m, media_type: "movie" as const }))}
       />
 
-      {/* 7. Thriller & Suspense */}
+      {/* 9. Thriller & Suspense */}
       <MovieRow
         title="Thriller & Suspense"
         items={thrillerMovies.map(m => ({ ...m, media_type: "movie" as const }))}
       />
 
-      {/* 8. Horror & Supernatural */}
+      {/* 10. Horror & Supernatural */}
       <MovieRow
         title="Horror & Supernatural"
         items={horrorMovies.map(m => ({ ...m, media_type: "movie" as const }))}
@@ -140,7 +140,7 @@ function MoviesPageContent() {
 export default function MoviesPage() {
   return (
     <Suspense fallback={
-      <div className="w-full min-h-screen bg-[#011425]">
+      <div className="w-full min-h-screen bg-[#0B1120]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />
