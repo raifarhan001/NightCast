@@ -195,7 +195,7 @@ function HeaderContent() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0B1120]/95 via-[#0B1120]/90 to-transparent backdrop-blur-md transition-all duration-300 border-b border-[#8197A4]/15 select-none">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#050811]/80 backdrop-blur-2xl transition-all duration-300 border-b border-white/10 shadow-[0_12px_36px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.15)] select-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 h-16 sm:h-18 flex items-center justify-between gap-3 sm:gap-6 min-w-0">
           {/* Brand Logo & Desktop Navigation */}
           <div className="flex items-center gap-4 sm:gap-6 md:gap-8 shrink-0">
@@ -267,8 +267,8 @@ function HeaderContent() {
 
                 {/* Categories Grid Dropdown Menu */}
                 {isCategoriesOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-64 bg-[#192231]/98 backdrop-blur-xl border border-[#00A8E1]/40 rounded-xl shadow-[0_15px_40px_rgba(0,0,0,0.9)] p-2.5 z-50 space-y-1 animate-in fade-in slide-in-from-top-2">
-                    <div className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#00A8E1] border-b border-[#8197A4]/20 mb-1 flex items-center gap-1.5">
+                  <div className="absolute top-full left-0 mt-2 w-64 bg-[#050811]/95 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.2)] p-3 z-50 space-y-1 animate-in fade-in slide-in-from-top-2">
+                    <div className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#00A8E1] border-b border-white/10 mb-1 flex items-center gap-1.5">
                       <Grid className="w-3 h-3" />
                       <span>Browse Categories</span>
                     </div>
@@ -278,7 +278,7 @@ function HeaderContent() {
                           key={cat.id}
                           href={cat.href}
                           onClick={() => setIsCategoriesOpen(false)}
-                          className="px-3 py-2 rounded-lg text-xs font-semibold text-white/90 hover:text-white hover:bg-[#232E42] hover:pl-4 transition-all duration-200 flex items-center justify-between group"
+                          className="px-3 py-2 rounded-xl text-xs font-semibold text-white/90 hover:text-white hover:bg-[#141C2E] hover:pl-4 transition-all duration-200 flex items-center justify-between group"
                         >
                           <span>{cat.name}</span>
                           <span className="text-[#00A8E1] opacity-0 group-hover:opacity-100 transition-opacity">→</span>

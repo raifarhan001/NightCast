@@ -1,7 +1,7 @@
 import { ZodMovieDetailSchema, ZodTvDetailSchema, ZodMediaListSchema } from './validation';
 const IS_SERVER = typeof window === 'undefined';
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001';
 
 export interface MediaItem {
   id: string | number;

@@ -58,6 +58,18 @@ function MoviesPageContent() {
     queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=27"),
   });
 
+  // 9. Romance Movies (Genre 10749)
+  const { data: romanceMovies = [] } = useQuery<MediaItem[]>({
+    queryKey: ["movies-page-romance"],
+    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=10749"),
+  });
+
+  // 10. Animation & Family (Genres 16, 10751)
+  const { data: animationMovies = [] } = useQuery<MediaItem[]>({
+    queryKey: ["movies-page-animation"],
+    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=16,10751"),
+  });
+
   const heroItems = trendingMovies.length > 0
     ? trendingMovies.slice(0, 7).map(m => ({ ...m, media_type: "movie" as const }))
     : popularMovies.slice(0, 7).map(m => ({ ...m, media_type: "movie" as const }));
@@ -79,7 +91,7 @@ function MoviesPageContent() {
 
       {/* 1. Top 10 Movies Right Now */}
       <Top10RankedRow
-        title="Top 10 Movies on Prime"
+        title="Top 10 Movies"
         items={trendingMovies.map(m => ({ ...m, media_type: "movie" as const }))}
       />
 
@@ -116,22 +128,34 @@ function MoviesPageContent() {
         items={sciFiMovies.map(m => ({ ...m, media_type: "movie" as const }))}
       />
 
-      {/* 8. Comedy Hits */}
+      {/* 8. Animated & Family Blockbusters */}
+      <MovieRow
+        title="Animated & Family Blockbusters"
+        items={animationMovies.map(m => ({ ...m, media_type: "movie" as const }))}
+      />
+
+      {/* 9. Comedy Hits */}
       <MovieRow
         title="Comedy Hits"
         items={comedyMovies.map(m => ({ ...m, media_type: "movie" as const }))}
       />
 
-      {/* 9. Thriller & Suspense */}
+      {/* 10. Thriller & Suspense */}
       <MovieRow
         title="Thriller & Suspense"
         items={thrillerMovies.map(m => ({ ...m, media_type: "movie" as const }))}
       />
 
-      {/* 10. Horror & Supernatural */}
+      {/* 11. Horror & Supernatural */}
       <MovieRow
         title="Horror & Supernatural"
         items={horrorMovies.map(m => ({ ...m, media_type: "movie" as const }))}
+      />
+
+      {/* 12. Romantic Movies & Romance (At the Very Bottom) */}
+      <MovieRow
+        title="Romantic Movies & Romance"
+        items={romanceMovies.map(m => ({ ...m, media_type: "movie" as const }))}
       />
     </div>
   );

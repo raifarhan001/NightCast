@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="w-full bg-[#0B1120] border-t border-[#8197A4]/15 pt-12 pb-10 px-6 md:px-12 select-none text-center">
+    <footer className="w-full bg-[#050811] border-t border-white/10 pt-14 pb-12 px-6 md:px-12 select-none text-center relative z-10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Nightcast Branded Logo Footer Header */}
         <div className="flex flex-col items-center justify-center space-y-3">
@@ -34,7 +34,7 @@ export default function Footer() {
         </div>
 
         {/* Footer Navigation Links */}
-        <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-[#00A8E1] font-semibold">
+        <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-[#00A8E1] font-bold">
           <Link href="/" className="hover:underline hover:text-white transition-colors">Terms and Privacy Notice</Link>
           <Link href="/" className="hover:underline hover:text-white transition-colors">Send Us Feedback</Link>
           <Link href="/" className="hover:underline hover:text-white transition-colors">Help</Link>
@@ -43,16 +43,16 @@ export default function Footer() {
         </div>
 
         {/* Copyright and TMDB Attribution */}
-        <div className="space-y-2 pt-2 border-t border-[#8197A4]/10 text-[11px] text-[#8197A4]">
-          <p>© 2026 Nightcast. All rights reserved.</p>
+        <div className="space-y-3 pt-3 border-t border-white/10 text-[11px] text-[#8197A4]">
+          <p>© 2026 Nightcast. All rights reserved. Grounded in Apple HIG Principles.</p>
           <div className="flex items-center justify-center gap-2 pt-1">
-            <span className="px-2.5 py-0.5 rounded bg-[#192231] text-[10px] font-bold text-[#00A8E1] border border-[#00A8E1]/30">
-              PRIME VIDEO EXPERIENCE
+            <span className="px-3 py-1 rounded-md bg-[#00A8E1]/20 backdrop-blur-md text-[10px] font-extrabold text-[#00D2FF] border border-[#00A8E1]/50 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)]">
+              APPLE HIG DESIGN
             </span>
-            <span className="px-2.5 py-0.5 rounded bg-[#192231] text-[10px] font-bold text-[#8197A4] border border-[#8197A4]/20">
+            <span className="px-3 py-1 rounded-md bg-[#141C2E]/80 backdrop-blur-md text-[10px] font-bold text-[#8197A4] border border-white/15 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.15)]">
               TMDB API
             </span>
-            <span className="px-2.5 py-0.5 rounded bg-[#192231] text-[10px] font-bold text-[#8197A4] border border-[#8197A4]/20">
+            <span className="px-3 py-1 rounded-md bg-[#141C2E]/80 backdrop-blur-md text-[10px] font-bold text-[#8197A4] border border-white/15 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.15)]">
               4K UHD HDR
             </span>
           </div>

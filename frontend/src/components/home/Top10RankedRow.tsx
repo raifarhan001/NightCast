@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { ImageService } from "../../lib/ImageService";
+import PlatformBadge from "../shared/PlatformBadge";
 
 interface RankedItem {
   id: string | number;
@@ -24,7 +25,7 @@ interface Top10RankedRowProps {
 }
 
 export default function Top10RankedRow({
-  title = "Top 10 Movies & Shows on Prime",
+  title = "Top 10 Movies & Shows",
   items = [],
 }: Top10RankedRowProps) {
   const rowRef = useRef<HTMLDivElement>(null);
@@ -141,26 +142,26 @@ export default function Top10RankedRow({
               </div>
 
               {/* Vertical Poster Card */}
-              <div className="relative z-10 -ml-7 sm:-ml-9 md:-ml-12 w-28 sm:w-36 md:w-40 aspect-[2/3] rounded-xl overflow-hidden bg-[#192231] border border-[#8197A4]/30 shadow-[0_10px_30px_rgba(0,0,0,0.9)] transform-gpu will-change-transform transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] group-hover/item:scale-[1.05] group-hover/item:border-[#00A8E1] group-hover/item:shadow-[0_12px_32px_rgba(0,168,225,0.4)]">
+              <div className="relative z-10 -ml-7 sm:-ml-9 md:-ml-12 w-28 sm:w-36 md:w-40 aspect-[2/3] rounded-2xl overflow-hidden bg-[#141C2E]/80 backdrop-blur-xl border border-white/15 shadow-[0_12px_36px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.2)] transform-gpu will-change-transform transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/item:scale-[1.05] group-hover/item:border-[#00A8E1]/80 group-hover/item:shadow-[0_16px_40px_rgba(0,168,225,0.4),inset_0_1px_0_0_rgba(255,255,255,0.3)]">
                 <Image
                   src={posterUrl}
                   alt={displayTitle}
                   fill
                   sizes="(max-width: 768px) 144px, 160px"
-                  className="object-cover transform-gpu will-change-transform transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)] group-hover/item:scale-105 opacity-100 brightness-[1.02]"
+                  className="object-cover transform-gpu will-change-transform transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/item:scale-105 opacity-100 brightness-[1.02]"
                   loading="lazy"
                   placeholder="blur"
                   blurDataURL={ImageService.getBlurHash()}
                 />
 
-                {/* Top-Left Prime Badge */}
+                {/* Top-Left Platform Badge */}
                 <div className="absolute top-2 left-2 z-20 pointer-events-none">
-                  <span className="prime-badge-cyan text-[8px] shadow-md">prime</span>
+                  <PlatformBadge item={item} />
                 </div>
 
                 {/* Play Icon on Hover */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0B1120]/90 via-transparent to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                  <div className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center shadow-[0_0_20px_rgba(0,168,225,0.8)] transform-gpu will-change-transform group-hover/item:scale-110 transition-transform duration-200">
+                <div className="absolute inset-0 bg-gradient-to-t from-[#050811]/90 via-[#050811]/40 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                  <div className="w-11 h-11 rounded-full bg-white text-black flex items-center justify-center shadow-[0_0_25px_rgba(0,168,225,0.8),inset_0_1px_0_0_rgba(255,255,255,0.8)] transform-gpu will-change-transform group-hover/item:scale-110 transition-transform duration-200">
                     <Play className="w-4 h-4 fill-current ml-0.5" />
                   </div>
                 </div>

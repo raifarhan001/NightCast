@@ -201,11 +201,15 @@ async def get_download_streams(
     except Exception as e:
         return {"downloads": [], "error": str(e)}
 
+from fastapi.responses import RedirectResponse
+
 @router.get("/download-proxy")
 async def download_proxy(url: str, filename: str = Query("nightcast_video.mp4")):
     """Proxies and streams video binary data with attachment disposition for offline saving."""
+    if not url or not url.startswith("http"):
+        raise HTTPException(status_code=400, detail="Invalid URL specified")
     try:
-        client = httpx.AsyncClient(follow_redirects=True, verify=False, timeout=5.0)
+        client = httpx.AsyncClient(follow_redirects=True, verify=False, timeout=6.0)
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Accept": "*/*",
@@ -214,11 +218,12 @@ async def download_proxy(url: str, filename: str = Query("nightcast_video.mp4"))
         req = client.build_request("GET", url, headers=headers)
         res = await client.send(req, stream=True)
 
-        if res.status_code >= 400:
-            return JSONResponse(
-                status_code=200,
-                content={"status": "error", "message": f"Direct stream download returned status {res.status_code}. Opening stream...", "redirect_url": url}
-            )
+        content_type = res.headers.get("content-type", "").lower()
+
+        if res.status_code >= 400 or "text/html" in content_type:
+            await res.aclose()
+            await client.aclose()
+            return RedirectResponse(url=url, status_code=307)
 
         safe_filename = filename.replace('"', '').replace("'", "")
         if not safe_filename.endswith(".mp4"):
@@ -226,7 +231,7 @@ async def download_proxy(url: str, filename: str = Query("nightcast_video.mp4"))
 
         headers_out = {
             "Content-Disposition": f'attachment; filename="{safe_filename}"',
-            "Content-Type": res.headers.get("content-type", "video/mp4"),
+            "Content-Type": content_type or "video/mp4",
         }
 
         async def stream_generator():
@@ -238,11 +243,8 @@ async def download_proxy(url: str, filename: str = Query("nightcast_video.mp4"))
                 await client.aclose()
 
         return StreamingResponse(stream_generator(), headers=headers_out, status_code=200)
-    except Exception as e:
-        return JSONResponse(
-            status_code=200,
-            content={"status": "error", "message": f"Direct download connection timed out. Opening stream directly...", "redirect_url": url}
-        )
+    except Exception:
+        return RedirectResponse(url=url, status_code=307)
 
 @router.get("/proxy-stream")
 async def proxy_stream(url: str):

@@ -79,7 +79,7 @@ function ShowsPageContent() {
 
       {/* 1. Top 10 Shows Right Now */}
       <Top10RankedRow
-        title="Top 10 TV Series on Prime"
+        title="Top 10 TV Series"
         items={trendingShows.map(t => ({ ...t, media_type: "tv" as const }))}
       />
 

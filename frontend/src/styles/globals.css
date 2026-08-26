@@ -60,33 +60,43 @@ html, body {
 }
 
 @layer components {
-  /* Prime Video Hardware Accelerated Pill Navigation */
+  /* Apple HIG Liquid Glass Floating Navigation Pill */
   .gtv-tab-pill {
-    @apply px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transform-gpu will-change-transform transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] select-none cursor-pointer text-[#8197A4] hover:text-white hover:bg-[#192231] border border-transparent hover:border-[#8197A4]/30 whitespace-nowrap shrink-0 hover:scale-105 active:scale-95;
+    @apply px-4 py-1.5 rounded-full text-xs font-semibold tracking-wide transform-gpu will-change-transform transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] select-none cursor-pointer text-[#8197A4] hover:text-white bg-[#141C2E]/50 hover:bg-[#1A253C]/80 border border-white/10 backdrop-blur-md whitespace-nowrap shrink-0 hover:scale-105 active:scale-95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)];
   }
 
   .gtv-tab-pill-active {
-    @apply px-4 py-1.5 rounded-full text-xs font-bold tracking-wide transform-gpu will-change-transform transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] select-none cursor-pointer bg-[#00A8E1] text-white border border-[#00A8E1] shadow-[0_0_15px_rgba(0,168,225,0.5)] whitespace-nowrap shrink-0 scale-105;
+    @apply px-4 py-1.5 rounded-full text-xs font-bold tracking-wide transform-gpu will-change-transform transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] select-none cursor-pointer bg-[#00A8E1] text-white border border-[#00A8E1]/80 shadow-[0_0_20px_rgba(0,168,225,0.6),inset_0_1px_0_0_rgba(255,255,255,0.3)] whitespace-nowrap shrink-0 scale-105;
   }
 
-  /* Prime Video Primary Action Button (White/Cyan Glow) */
+  /* Apple HIG Primary Liquid Glass CTA Button */
   .gtv-btn-primary {
-    @apply px-6 py-3 rounded-full bg-white text-black font-bold text-xs tracking-wider uppercase flex items-center gap-2 transform-gpu will-change-transform hover:bg-[#00A8E1] hover:text-white hover:scale-105 hover:shadow-[0_0_25px_rgba(0,168,225,0.7)] active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] shadow-xl cursor-pointer border border-white/20;
+    @apply px-6 py-3 rounded-full bg-white text-black font-extrabold text-xs tracking-wider uppercase flex items-center gap-2 transform-gpu will-change-transform hover:bg-[#00A8E1] hover:text-white hover:scale-105 hover:shadow-[0_0_30px_rgba(0,168,225,0.7)] active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-2xl cursor-pointer border border-white/40;
   }
 
-  /* Prime Video Secondary Circle / Pill Button */
+  /* Apple HIG Secondary Liquid Glass Button */
   .gtv-btn-secondary {
-    @apply px-5 py-3 rounded-full bg-[#192231] text-white font-bold text-xs tracking-wider flex items-center gap-2 transform-gpu will-change-transform hover:bg-[#232E42] hover:border-[#00A8E1] hover:scale-105 active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] shadow-md cursor-pointer border border-[#8197A4]/30;
+    @apply px-5 py-3 rounded-full bg-[#141C2E]/80 backdrop-blur-xl text-white font-bold text-xs tracking-wider flex items-center gap-2 transform-gpu will-change-transform hover:bg-[#1A253C] hover:border-[#00A8E1]/60 hover:scale-105 active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-lg cursor-pointer border border-white/10 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.15)];
   }
 
-  /* 16:9 Hardware-Accelerated Amazon Prime Widescreen Card */
+  /* Apple HIG Liquid Glass 16:9 Landscape Card */
   .gtv-card-landscape {
-    @apply relative aspect-video w-full rounded-xl overflow-hidden bg-[#192231] border border-[#8197A4]/20 transform-gpu will-change-transform transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] group-hover:scale-[1.05] group-hover:-translate-y-1 group-hover:border-[#00A8E1] group-hover:shadow-[0_10px_30px_rgba(0,168,225,0.4),0_15px_40px_rgba(11,17,32,0.9)];
+    @apply relative aspect-video w-full rounded-2xl overflow-hidden bg-[#141C2E]/80 backdrop-blur-md border border-white/10 transform-gpu will-change-transform transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.04] group-hover:-translate-y-1 group-hover:border-[#00A8E1]/60 group-hover:shadow-[0_12px_36px_rgba(0,168,225,0.35),inset_0_1px_0_0_rgba(255,255,255,0.25)];
   }
 
-  /* Prime Badge Tag */
+  /* Apple HIG Liquid Glass Badge Tag */
   .prime-badge-cyan {
-    @apply inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-[#00A8E1] text-white shadow-[0_0_10px_rgba(0,168,225,0.6)];
+    @apply inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-[#00A8E1]/90 backdrop-blur-md text-white border border-white/20 shadow-[0_0_12px_rgba(0,168,225,0.5),inset_0_1px_0_0_rgba(255,255,255,0.3)];
+  }
+
+  /* Liquid Glass Panel Container */
+  .apple-glass-panel {
+    @apply bg-[#0B1120]/80 backdrop-blur-2xl border border-white/10 shadow-[0_16px_40px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.15)];
+  }
+
+  /* Liquid Glass Card Container */
+  .apple-glass-card {
+    @apply bg-[#141C2E]/70 backdrop-blur-xl border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.6),inset_0_1px_0_0_rgba(255,255,255,0.12)];
   }
 
   .no-scrollbar::-webkit-scrollbar,
@@ -123,6 +133,25 @@ html, body {
   }
 }
 
+@keyframes topProgress {
+  0% {
+    width: 0%;
+    opacity: 0.8;
+  }
+  50% {
+    width: 75%;
+    opacity: 1;
+  }
+  100% {
+    width: 100%;
+    opacity: 0.9;
+  }
+}
+
 .animate-shimmer {
   animation: shimmer 1.8s infinite ease-in-out;
+}
+
+.animate-top-progress {
+  animation: topProgress 1.2s infinite cubic-bezier(0.4, 0, 0.2, 1);
 }

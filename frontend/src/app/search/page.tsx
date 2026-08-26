@@ -172,7 +172,7 @@ function SearchPageContent() {
     if (sortParam === "trending") return "Trending Now";
     if (selectedType === "movie") return "Movies Catalog";
     if (selectedType === "tv") return "Shows Catalog";
-    return "Explore Prime Video";
+    return "Explore NightCast";
   };
 
   return (
@@ -183,7 +183,7 @@ function SearchPageContent() {
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold uppercase tracking-widest text-[#00A8E1] font-sans flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#00A8E1] animate-pulse" />
-              <span>{isStudioFilterActive ? "CHANNEL CATALOG" : "PRIME VIDEO CATALOG"}</span>
+              <span>{isStudioFilterActive ? "CHANNEL CATALOG" : "NIGHTCAST CATALOG"}</span>
             </p>
 
             {/* Active Studio Filter Pill */}

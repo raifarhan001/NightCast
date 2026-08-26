@@ -71,6 +71,36 @@ function HomePageContent() {
     queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=35"),
   });
 
+  // 9. Romantic Movies (Genre 10749)
+  const { data: romanceMovies = [] } = useQuery<MediaItem[]>({
+    queryKey: ["romance-movies"],
+    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=10749"),
+  });
+
+  // 10. Animation & Family (Genres 16, 10751)
+  const { data: animationMovies = [] } = useQuery<MediaItem[]>({
+    queryKey: ["animation-family-movies"],
+    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=16,10751"),
+  });
+
+  // 11. Crime & Mystery (Genres 80, 9648)
+  const { data: crimeMovies = [] } = useQuery<MediaItem[]>({
+    queryKey: ["crime-mystery-movies"],
+    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=80,9648"),
+  });
+
+  // 12. Horror & Supernatural (Genre 27)
+  const { data: horrorMovies = [] } = useQuery<MediaItem[]>({
+    queryKey: ["horror-movies"],
+    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=27"),
+  });
+
+  // 13. Drama & Emotional Stories (Genre 18)
+  const { data: dramaMovies = [] } = useQuery<MediaItem[]>({
+    queryKey: ["drama-movies"],
+    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=18"),
+  });
+
   // Backend Continue Watching History
   const { data: continueWatching = [] } = useQuery<ContinueWatchingItem[]>({
     queryKey: ["continue-watching", activeProfile?.id],
@@ -148,9 +178,9 @@ function HomePageContent() {
         />
       )}
 
-      {/* 1. Top 10 Movies & Shows on Prime */}
+      {/* 1. Top 10 Movies & Shows */}
       <Top10RankedRow
-        title="Top 10 Movies & Shows on Prime"
+        title="Top 10 Movies & Shows"
         items={topPicks.length > 0 ? topPicks : trendingMovies}
       />
 
@@ -187,22 +217,52 @@ function HomePageContent() {
         items={sciFiMovies.map((m) => ({ ...m, media_type: "movie" }))}
       />
 
-      {/* 8. Highly Rated Masterpieces */}
+      {/* 8. Animated & Family Hits */}
+      <MovieRow
+        title="Animated & Family Hits"
+        items={animationMovies.map((m) => ({ ...m, media_type: "movie" }))}
+      />
+
+      {/* 9. Crime & Mystery Thrillers */}
+      <MovieRow
+        title="Crime & Mystery Thrillers"
+        items={crimeMovies.map((m) => ({ ...m, media_type: "movie" }))}
+      />
+
+      {/* 10. Chilling Horror & Supernatural */}
+      <MovieRow
+        title="Chilling Horror & Supernatural"
+        items={horrorMovies.map((m) => ({ ...m, media_type: "movie" }))}
+      />
+
+      {/* 11. Dramatic & Emotional Stories */}
+      <MovieRow
+        title="Dramatic & Emotional Stories"
+        items={dramaMovies.map((m) => ({ ...m, media_type: "movie" }))}
+      />
+
+      {/* 12. Highly Rated Masterpieces */}
       <MovieRow
         title="Highly Rated Masterpieces"
         items={topRated.map((m) => ({ ...m, media_type: "movie" }))}
       />
 
-      {/* 9. International & Regional Cinema */}
+      {/* 13. International & Regional Cinema */}
       <MovieRow
         title="International & Regional Cinema"
         items={asianHits.map((m) => ({ ...m, media_type: "movie" }))}
       />
 
-      {/* 10. Hilarious Comedies */}
+      {/* 14. Hilarious Comedies */}
       <MovieRow
         title="Hilarious Comedies"
         items={comedyMovies.map((m) => ({ ...m, media_type: "movie" }))}
+      />
+
+      {/* 15. Romantic Movies & Romance (At the Very Bottom) */}
+      <MovieRow
+        title="Romantic Movies & Romance"
+        items={romanceMovies.map((m) => ({ ...m, media_type: "movie" }))}
       />
     </div>
   );

@@ -12,7 +12,7 @@ interface HeroCarouselProps {
   items: MediaItem[];
 }
 
-export default function HeroCarousel({ items }: HeroCarouselProps) {
+function HeroCarousel({ items = [] }: HeroCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [addedToWatchlist, setAddedToWatchlist] = useState<Record<string, boolean>>({});
@@ -117,44 +117,44 @@ export default function HeroCarousel({ items }: HeroCarouselProps) {
             {/* Metadata Bar: IMDb score, Year, Age, 4K UHD, HDR */}
             <div className="flex flex-wrap items-center gap-2.5 text-xs text-white/90 font-medium">
               {/* IMDb Rating Badge */}
-              <div className="flex items-center gap-1 bg-[#E5B800] text-black font-extrabold px-1.5 py-0.5 rounded text-[11px] shadow-sm">
+              <div className="flex items-center gap-1 bg-[#FFD60A] text-black font-extrabold px-2 py-0.5 rounded-md text-[11px] shadow-[0_2px_10px_rgba(255,214,10,0.4)]">
                 <Star className="w-3 h-3 fill-current text-black" />
                 <span>IMDb {rating}</span>
               </div>
 
-              <span className="text-[#8197A4]">{releaseYear}</span>
-              <span className="w-1 h-1 rounded-full bg-[#8197A4]/40" />
+              <span className="text-[#8197A4] font-semibold">{releaseYear}</span>
+              <span className="w-1 h-1 rounded-full bg-white/30" />
 
               {/* Maturity Rating Tag */}
-              <span className="px-1.5 py-0.2 rounded border border-[#8197A4]/40 text-[10px] font-bold text-[#8197A4]">
+              <span className="px-2 py-0.5 rounded-md bg-[#141C2E]/80 backdrop-blur-xl border border-white/20 text-[10px] font-bold text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)]">
                 {ageRating}
               </span>
 
-              <span className="w-1 h-1 rounded-full bg-[#8197A4]/40" />
+              <span className="w-1 h-1 rounded-full bg-white/30" />
 
               {/* Video Quality Badges */}
-              <span className="px-1.5 py-0.2 rounded bg-[#192231] border border-[#8197A4]/30 text-[10px] font-bold text-[#00A8E1]">
+              <span className="px-2 py-0.5 rounded-md bg-[#00A8E1]/20 backdrop-blur-xl border border-[#00A8E1]/50 text-[10px] font-bold text-[#00D2FF] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)]">
                 4K UHD
               </span>
-              <span className="px-1.5 py-0.2 rounded bg-[#192231] border border-[#8197A4]/30 text-[10px] font-bold text-[#8197A4]">
+              <span className="px-2 py-0.5 rounded-md bg-[#141C2E]/80 backdrop-blur-xl border border-white/20 text-[10px] font-bold text-white/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)]">
                 HDR
               </span>
-              <span className="px-1.5 py-0.2 rounded bg-[#192231] border border-[#8197A4]/30 text-[10px] font-bold text-[#8197A4]">
+              <span className="px-2 py-0.5 rounded-md bg-[#141C2E]/80 backdrop-blur-xl border border-white/20 text-[10px] font-bold text-white/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)]">
                 5.1
               </span>
             </div>
 
             {/* Overview */}
-            <p className="text-xs sm:text-sm text-gray-300 font-normal line-clamp-2 sm:line-clamp-3 leading-relaxed max-w-xl drop-shadow">
-              {item.overview || "Stream high-definition movies and exclusive television series with Prime Video."}
+            <p className="text-xs sm:text-sm text-white/80 font-normal line-clamp-2 sm:line-clamp-3 leading-relaxed max-w-xl drop-shadow">
+              {item.overview || "Stream high-definition movies and exclusive television series with Nightcast."}
             </p>
 
-            {/* Prime Video CTA Buttons */}
+            {/* Liquid Glass CTA Buttons */}
             <div className="flex items-center gap-3 pt-2">
               {/* Watch Now Primary Pill */}
               <Link
                 href={`/watch/${type}/${item.id}`}
-                className="gtv-btn-primary inline-flex text-xs sm:text-sm px-6 py-3 shadow-[0_0_20px_rgba(0,168,225,0.5)] hover:shadow-[0_0_30px_rgba(0,168,225,0.8)]"
+                className="gtv-btn-primary inline-flex text-xs sm:text-sm px-7 py-3.5 shadow-[0_0_30px_rgba(0,168,225,0.6),inset_0_1px_0_0_rgba(255,255,255,0.8)] hover:shadow-[0_0_40px_rgba(0,168,225,0.9)]"
               >
                 <Play className="w-4 h-4 fill-current ml-0.5" />
                 <span>Watch Now</span>
@@ -163,7 +163,7 @@ export default function HeroCarousel({ items }: HeroCarouselProps) {
               {/* Add to Watchlist Circle Button */}
               <button
                 onClick={(e) => toggleWatchlist(e, item.id)}
-                className="w-11 h-11 rounded-full bg-[#192231] hover:bg-[#232E42] border border-[#8197A4]/30 hover:border-[#00A8E1] hover:shadow-[0_0_15px_rgba(0,168,225,0.4)] text-white flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 hover:scale-105 active:scale-95 shadow-md group/btn cursor-pointer"
+                className="w-12 h-12 rounded-full bg-[#141C2E]/80 backdrop-blur-xl hover:bg-[#1A253C] border border-white/20 hover:border-[#00A8E1] hover:shadow-[0_0_20px_rgba(0,168,225,0.5)] text-white flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 hover:scale-105 active:scale-95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)] group/btn cursor-pointer"
                 title="Add to Watchlist"
                 aria-label="Add to Watchlist"
               >
@@ -177,7 +177,7 @@ export default function HeroCarousel({ items }: HeroCarouselProps) {
               {/* Details / Trailer Circle Button */}
               <Link
                 href={`/watch/${type}/${item.id}`}
-                className="w-11 h-11 rounded-full bg-[#192231] hover:bg-[#232E42] border border-[#8197A4]/30 hover:border-[#00A8E1] hover:shadow-[0_0_15px_rgba(0,168,225,0.4)] text-white flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 hover:scale-105 active:scale-95 shadow-md group/btn cursor-pointer"
+                className="w-12 h-12 rounded-full bg-[#141C2E]/80 backdrop-blur-xl hover:bg-[#1A253C] border border-white/20 hover:border-[#00A8E1] hover:shadow-[0_0_20px_rgba(0,168,225,0.5)] text-white flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 hover:scale-105 active:scale-95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)] group/btn cursor-pointer"
                 title="Details & Episodes"
                 aria-label="Details"
               >
@@ -206,3 +206,5 @@ export default function HeroCarousel({ items }: HeroCarouselProps) {
     </div>
   );
 }
+
+export default React.memo(HeroCarousel);

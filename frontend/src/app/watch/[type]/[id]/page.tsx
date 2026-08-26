@@ -333,15 +333,35 @@ export default function WatchPage() {
     }
   };
 
-  const handleDownloadStream = (url: string) => {
+  const handleDownloadStream = (url: string, optionLabel?: string) => {
     if (!url) return;
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.target = '_blank';
-    anchor.rel = 'noopener noreferrer';
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
+    setIsDownloading(true);
+    setDownloadProgress(`Preparing ${optionLabel || "download"}...`);
+
+    const titleStr = meta?.title || meta?.name || "nightcast_video";
+    const cleanTitle = titleStr.replace(/[^a-zA-Z0-9_\-]/g, "_");
+    const filename = `${cleanTitle}_${type === 'tv' ? `S${currentSeason}E${currentEpisode}` : 'movie'}.mp4`;
+
+    const proxyDownloadUrl = `/api/v1/tmdb/download-proxy?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
+
+    try {
+      const win = window.open(proxyDownloadUrl, '_blank');
+      if (!win) {
+        window.location.href = proxyDownloadUrl;
+      }
+    } catch (e) {
+      window.location.href = proxyDownloadUrl;
+    }
+
+    setTimeout(() => {
+      setIsDownloading(false);
+      setDownloadProgress(null);
+    }, 3000);
+  };
+
+  const handleOpenDirectStream = (url: string) => {
+    if (!url) return;
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const handleCopyLink = (url: string, optionId: string) => {
@@ -349,7 +369,17 @@ export default function WatchPage() {
     navigator.clipboard.writeText(url).then(() => {
       setCopiedDownloadId(optionId);
       setTimeout(() => setCopiedDownloadId(null), 2000);
-    }).catch(console.error);
+    }).catch(() => {
+      // Fallback copy
+      const textArea = document.createElement("textarea");
+      textArea.value = url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      setCopiedDownloadId(optionId);
+      setTimeout(() => setCopiedDownloadId(null), 2000);
+    });
   };
 
   const movieTitle = meta?.title || meta?.name || "Loading Stream...";
@@ -481,14 +511,22 @@ export default function WatchPage() {
               </button>
 
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-[#1F4959]/40 border border-[#5C7C89]/30 text-white rounded-xl shadow-inner">
-                  <DownloadCloud className="w-6 h-6 text-[#5C7C89]" />
+                <div className="p-3 bg-[#00A8E1]/20 border border-[#00A8E1]/40 text-white rounded-xl shadow-inner">
+                  <DownloadCloud className="w-6 h-6 text-[#00A8E1]" />
                 </div>
                 <div>
                   <h3 className="font-extrabold text-lg text-white font-display">Offline Download Hub</h3>
-                  <p className="text-xs text-[#5C7C89]">Select a direct high-speed stream to save or download</p>
+                  <p className="text-xs text-[#8197A4]">Select a direct high-speed stream to save or download</p>
                 </div>
               </div>
+
+              {/* Downloading Progress Banner */}
+              {downloadProgress && (
+                <div className="p-3 bg-[#00A8E1]/20 border border-[#00A8E1]/50 rounded-xl flex items-center gap-2.5 text-xs text-[#00A8E1] font-bold shadow-lg animate-pulse">
+                  <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                  <span>{downloadProgress}</span>
+                </div>
+              )}
 
               <div className="space-y-2.5 max-h-72 overflow-y-auto no-scrollbar pt-2">
                 {downloadOptions.map((opt, idx) => {
@@ -496,30 +534,38 @@ export default function WatchPage() {
                   return (
                     <div
                       key={opt.id || idx}
-                      className="bg-[#011425] p-3.5 rounded-xl border border-[#5C7C89]/25 hover:border-[#5C7C89]/50 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner"
+                      className="bg-[#0B1120] p-3.5 rounded-xl border border-[#8197A4]/25 hover:border-[#00A8E1]/50 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner"
                     >
                       <div className="space-y-1 min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-[#1F4959]/60 text-white border border-[#5C7C89]/30">
+                          <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-[#00A8E1]/20 text-[#00A8E1] border border-[#00A8E1]/30">
                             {opt.quality || "1080P HD"}
                           </span>
                           <p className="font-bold text-xs text-white truncate">{opt.label || `Option ${idx + 1}`}</p>
                         </div>
-                        <p className="text-[10px] text-[#5C7C89] font-mono truncate">{movieTitle} • {type === 'tv' ? `S${currentSeason}E${currentEpisode}` : 'Full Movie'}</p>
+                        <p className="text-[10px] text-[#8197A4] font-mono truncate">{movieTitle} • {type === 'tv' ? `S${currentSeason}E${currentEpisode}` : 'Full Movie'}</p>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0 flex-wrap">
                         <button
                           onClick={() => handleCopyLink(opt.url, opt.id || `opt-${idx}`)}
-                          className="px-2.5 py-1.5 rounded-lg bg-[#081E30] hover:bg-[#1F4959]/40 text-[#5C7C89] hover:text-white border border-[#5C7C89]/30 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1.5 rounded-lg bg-[#192231] hover:bg-[#232E42] text-[#8197A4] hover:text-white border border-[#8197A4]/30 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer"
                           title="Copy direct stream link"
                         >
                           {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Globe className="w-3.5 h-3.5" />}
                           <span>{isCopied ? "Copied" : "Copy"}</span>
                         </button>
                         <button
-                          onClick={() => handleDownloadStream(opt.url)}
-                          className="px-3.5 py-1.5 bg-gradient-to-r from-[#1F4959] to-[#5C7C89] hover:from-[#255b6f] hover:to-[#6c8f9d] text-white text-xs font-bold rounded-lg transition-all shadow-md active:scale-95 flex items-center gap-1.5 border border-[#5C7C89]/40 cursor-pointer"
+                          onClick={() => handleOpenDirectStream(opt.url)}
+                          className="px-2.5 py-1.5 rounded-lg bg-[#192231] hover:bg-[#232E42] text-white border border-[#8197A4]/30 text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer"
+                          title="Open stream in new tab"
+                        >
+                          <Play className="w-3 h-3 text-[#00A8E1]" />
+                          <span>Open</span>
+                        </button>
+                        <button
+                          onClick={() => handleDownloadStream(opt.url, opt.label)}
+                          className="px-3.5 py-1.5 bg-[#00A8E1] hover:bg-[#0095C8] text-white text-xs font-bold rounded-lg transition-all shadow-md active:scale-95 flex items-center gap-1.5 border border-[#00A8E1]/40 cursor-pointer"
                         >
                           <Download className="w-3.5 h-3.5" />
                           <span>Download</span>
