@@ -139,11 +139,11 @@ function HeaderContent() {
   const renderSuggestionsDropdown = () => {
     if (!isSuggestionsOpen) return null;
     return (
-      <div className="absolute top-full left-0 right-0 mt-2 bg-[#192231]/98 backdrop-blur-xl border border-[#00A8E1]/30 rounded-xl shadow-[0_15px_40px_rgba(0,0,0,0.9)] overflow-hidden z-50 py-2 divide-y divide-[#8197A4]/15">
+      <div className="absolute top-full left-0 right-0 mt-2 bg-[#121A1D]/95 backdrop-blur-2xl border border-white/[0.1] rounded-2xl shadow-[0_20px_40px_-8px_rgba(0,0,0,0.9)] overflow-hidden z-50 py-1 divide-y divide-white/[0.06]">
         {isLoadingSuggestions ? (
-          <div className="p-4 flex items-center justify-center gap-2.5 text-xs font-bold text-[#00A8E1]">
-            <div className="w-4 h-4 rounded-full border-2 border-[#00A8E1] border-t-transparent animate-spin" />
-            <span>Searching Nightcast...</span>
+          <div className="p-4 flex items-center justify-center gap-2.5 text-xs font-sans font-medium text-[#39AEA9]">
+            <div className="w-3.5 h-3.5 border-2 border-[#39AEA9] border-t-transparent animate-spin rounded-full" />
+            <span>Searching archive...</span>
           </div>
         ) : suggestions.length > 0 ? (
           suggestions.map((item, idx) => {
@@ -158,25 +158,25 @@ function HeaderContent() {
                 key={`${item.id}-${idx}`}
                 type="button"
                 onClick={() => handleSelectSuggestion(item)}
-                className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-[#232E42] transition-colors text-left group cursor-pointer"
+                className="w-full px-3.5 py-2.5 flex items-center gap-3 hover:bg-white/[0.06] transition-colors text-left group cursor-pointer"
               >
-                <div className="relative w-9 h-12 rounded-md overflow-hidden bg-[#0B1120] shrink-0 border border-[#8197A4]/20">
+                <div className="relative w-8 h-11 rounded-lg overflow-hidden bg-[#0A0F11] shrink-0 border border-white/[0.08]">
                   <Image
                     src={posterUrl}
                     alt={title}
                     fill
-                    sizes="36px"
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    sizes="32px"
+                    className="object-cover rounded-lg group-hover:scale-105 transition-transform duration-200"
                   />
                 </div>
                 <div className="min-w-0 flex-1 space-y-0.5">
-                  <h4 className="text-xs font-bold text-white truncate group-hover:text-[#00A8E1] transition-colors">
+                  <h4 className="text-xs font-sans font-semibold text-[#F8FAFC] truncate group-hover:text-[#A2D5AB] transition-colors tracking-tight">
                     {title}
                   </h4>
-                  <div className="flex items-center gap-2 text-[10px] text-[#8197A4] font-medium">
+                  <div className="flex items-center gap-2 text-[10px] font-sans text-[#8FA8AD]">
                     {year && <span>{year}</span>}
-                    {year && <span className="w-1 h-1 rounded-full bg-[#8197A4]/40" />}
-                    <span className="px-1.5 py-0.2 rounded bg-[#00A8E1]/20 text-[9px] font-bold text-[#00A8E1] uppercase border border-[#00A8E1]/30">
+                    {year && <span className="w-1 h-1 rounded-full bg-[#8FA8AD]/40" />}
+                    <span className="px-1.5 py-0.2 bg-[#39AEA9]/15 text-[9px] font-semibold text-[#A2D5AB] rounded-full border border-[#39AEA9]/30">
                       {mediaType}
                     </span>
                   </div>
@@ -185,8 +185,8 @@ function HeaderContent() {
             );
           })
         ) : (
-          <div className="p-4 text-center text-xs font-bold text-[#8197A4]">
-            No titles found
+          <div className="p-4 text-center text-xs font-sans text-[#8FA8AD]">
+            No matching titles found
           </div>
         )}
       </div>
@@ -195,93 +195,79 @@ function HeaderContent() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#050811]/80 backdrop-blur-2xl transition-all duration-300 border-b border-white/10 shadow-[0_12px_36px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.15)] select-none">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 h-16 sm:h-18 flex items-center justify-between gap-3 sm:gap-6 min-w-0">
+      <header className="fixed top-0 left-0 right-0 z-50 apple-blur-nav transition-all duration-300 select-none">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 h-16 sm:h-17 flex items-center justify-between gap-3 sm:gap-6 min-w-0">
           {/* Brand Logo & Desktop Navigation */}
           <div className="flex items-center gap-4 sm:gap-6 md:gap-8 shrink-0">
-            {/* Nightcast Branded Logo */}
+            {/* Nightcast Turtle Brand Logo */}
             <Link
               href="/"
-              className="flex items-center gap-1.5 text-white font-extrabold text-xl tracking-tight shrink-0 group cursor-pointer z-20"
+              className="flex items-center gap-2.5 group cursor-pointer z-20 shrink-0"
             >
-              <div className="relative flex flex-col items-start leading-none">
-                <span className="text-white font-black text-2xl tracking-tight font-display uppercase">
-                  Nightcast
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-6 rounded-full bg-gradient-to-b from-[#39AEA9] to-[#A2D5AB] shadow-[0_0_15px_rgba(57,174,169,0.6)] group-hover:scale-105 transition-transform duration-200" />
+                <span className="text-white font-extrabold text-2xl tracking-tight font-display">
+                  Night<span className="bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] bg-clip-text text-transparent">cast</span>
                 </span>
-                {/* Amazon Signature Prime Smile Curve */}
-                <svg
-                  className="w-24 h-2.5 text-[#00A8E1] -mt-0.5 group-hover:scale-105 transition-transform"
-                  viewBox="0 0 100 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M 5 5 Q 50 22 92 6"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                  />
-                  <path
-                    d="M 86 2 L 95 7 L 90 14"
-                    fill="currentColor"
-                  />
-                </svg>
               </div>
             </Link>
 
-            {/* Navigation Bar Links (Desktop & Tablet) */}
-            <nav className="hidden sm:flex items-center gap-1 md:gap-2">
+            {/* Navigation Tabs (Desktop & Tablet) */}
+            <nav className="hidden sm:flex items-center gap-1.5">
               <Link
                 href="/"
-                className={`${activeTab === "home" ? "gtv-tab-pill-active" : "gtv-tab-pill"}`}
+                className={activeTab === "home" ? "cinema-tab-active" : "cinema-tab"}
               >
                 Home
               </Link>
               <Link
                 href="/movies"
-                className={`${activeTab === "movies" ? "gtv-tab-pill-active" : "gtv-tab-pill"}`}
+                className={activeTab === "movies" ? "cinema-tab-active" : "cinema-tab"}
               >
                 Movies
               </Link>
               <Link
                 href="/shows"
-                className={`${activeTab === "shows" ? "gtv-tab-pill-active" : "gtv-tab-pill"}`}
+                className={activeTab === "shows" ? "cinema-tab-active" : "cinema-tab"}
               >
-                TV Shows
+                TV Series
               </Link>
 
-              {/* Categories Dropdown Trigger & Modal Menu */}
+              {/* Categories Dropdown */}
               <div ref={categoriesRef} className="relative">
                 <button
                   type="button"
                   onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
-                  className={`gtv-tab-pill flex items-center gap-1 cursor-pointer ${
-                    isCategoriesOpen ? "border-[#00A8E1]/50 text-white bg-[#192231]" : ""
+                  className={`cinema-tab flex items-center gap-1.5 cursor-pointer ${
+                    isCategoriesOpen ? "text-white bg-white/[0.1]" : ""
                   }`}
                 >
                   <span>Categories</span>
-                  <ChevronDown className={`w-3.5 h-3.5 text-[#8197A4] transition-transform duration-200 ${
-                    isCategoriesOpen ? "rotate-180 text-[#00A8E1]" : ""
+                  <ChevronDown className={`w-3.5 h-3.5 text-[#8FA8AD] transition-transform duration-200 ${
+                    isCategoriesOpen ? "rotate-180 text-[#39AEA9]" : ""
                   }`} />
                 </button>
 
-                {/* Categories Grid Dropdown Menu */}
+                {/* Categories Grid Menu */}
                 {isCategoriesOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-64 bg-[#050811]/95 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.2)] p-3 z-50 space-y-1 animate-in fade-in slide-in-from-top-2">
-                    <div className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-[#00A8E1] border-b border-white/10 mb-1 flex items-center gap-1.5">
-                      <Grid className="w-3 h-3" />
-                      <span>Browse Categories</span>
+                  <div className="absolute top-full left-0 mt-2 w-64 bg-[#121A1D]/95 backdrop-blur-2xl border border-white/[0.1] rounded-2xl shadow-[0_20px_40px_-8px_rgba(0,0,0,0.9)] p-2.5 z-50 space-y-1">
+                    <div className="px-3 py-1.5 text-[11px] font-sans font-semibold tracking-wide text-[#A2D5AB] border-b border-white/[0.06] mb-1 flex items-center gap-2">
+                      <Grid className="w-3.5 h-3.5" />
+                      <span>Genre Directory</span>
                     </div>
-                    <div className="grid grid-cols-1 gap-1 max-h-72 overflow-y-auto no-scrollbar">
-                      {CATEGORIES.map((cat) => (
+                    <div className="grid grid-cols-1 gap-0.5 max-h-72 overflow-y-auto no-scrollbar">
+                      {CATEGORIES.map((cat, idx) => (
                         <Link
                           key={cat.id}
                           href={cat.href}
                           onClick={() => setIsCategoriesOpen(false)}
-                          className="px-3 py-2 rounded-xl text-xs font-semibold text-white/90 hover:text-white hover:bg-[#141C2E] hover:pl-4 transition-all duration-200 flex items-center justify-between group"
+                          className="px-3 py-1.5 rounded-xl text-xs font-sans font-medium text-[#CBD5E1] hover:text-white hover:bg-white/[0.08] transition-all flex items-center justify-between group"
                         >
-                          <span>{cat.name}</span>
-                          <span className="text-[#00A8E1] opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                          <div className="flex items-center gap-2.5">
+                            <span className="text-[10px] text-[#8FA8AD] font-mono">{String(idx + 1).padStart(2, '0')}</span>
+                            <span>{cat.name}</span>
+                          </div>
+                          <span className="text-[#39AEA9] opacity-0 group-hover:opacity-100 transition-opacity font-bold">→</span>
                         </Link>
                       ))}
                     </div>
@@ -291,9 +277,9 @@ function HeaderContent() {
 
               <Link
                 href="/profile"
-                className={`${activeTab === "mystuff" ? "gtv-tab-pill-active" : "gtv-tab-pill"}`}
+                className={activeTab === "mystuff" ? "cinema-tab-active" : "cinema-tab"}
               >
-                My Stuff
+                Watchlist
               </Link>
             </nav>
           </div>
@@ -304,9 +290,9 @@ function HeaderContent() {
             <div ref={searchContainerRef} className="relative hidden sm:block w-48 lg:w-64">
               <form onSubmit={handleSearchSubmit} className="relative">
                 {isLoadingSuggestions ? (
-                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-[#00A8E1] border-t-transparent animate-spin" />
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-[#39AEA9] border-t-transparent animate-spin rounded-full" />
                 ) : (
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8197A4]" />
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8FA8AD]" />
                 )}
                 <input
                   type="text"
@@ -315,20 +301,24 @@ function HeaderContent() {
                   onFocus={() => {
                     if (searchQuery.trim().length > 2) setIsSuggestionsOpen(true);
                   }}
-                  placeholder="Search Nightcast..."
-                  className="w-full h-9 pl-10 pr-8 bg-[#192231]/80 border border-[#8197A4]/30 rounded-lg text-xs text-white placeholder-[#8197A4] focus:outline-none focus:bg-[#232E42] focus:border-[#00A8E1] transition-all font-medium"
+                  placeholder="Search titles..."
+                  className="w-full h-9 pl-9 pr-8 bg-white/[0.06] border border-white/[0.1] rounded-full text-xs font-sans text-white placeholder-[#8FA8AD] focus:outline-none focus:border-[#39AEA9] focus:bg-[#121A1D] transition-all"
                 />
-                {searchQuery && (
+                {searchQuery ? (
                   <button
                     type="button"
                     onClick={() => {
                       setSearchQuery("");
                       setIsSuggestionsOpen(false);
                     }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8197A4] hover:text-white cursor-pointer"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8FA8AD] hover:text-white cursor-pointer"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
+                ) : (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <span className="text-[10px] font-sans font-medium text-[#8FA8AD] bg-white/[0.08] px-1.5 py-0.5 rounded border border-white/[0.08]">/</span>
+                  </div>
                 )}
               </form>
 
@@ -340,64 +330,64 @@ function HeaderContent() {
             <button
               type="button"
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="sm:hidden p-2 rounded-lg hover:bg-[#192231] text-[#8197A4] hover:text-white transition-colors shrink-0 cursor-pointer"
+              className="sm:hidden p-2 rounded-full bg-white/[0.06] border border-white/[0.1] text-[#8FA8AD] hover:text-white hover:border-[#39AEA9] transition-colors shrink-0 cursor-pointer"
               aria-label="Search"
             >
-              <Search className="w-5 h-5" />
+              <Search className="w-4 h-4" />
             </button>
 
             {/* Profile Avatar Trigger */}
             <button
               type="button"
               onClick={() => setIsProfileModalOpen(true)}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#192231] border border-[#00A8E1]/50 flex items-center justify-center text-white hover:border-[#00A8E1] hover:bg-[#232E42] transition-all shadow-md shrink-0 active:scale-95 group cursor-pointer"
+              className="w-9 h-9 rounded-full bg-white/[0.06] border border-white/[0.1] flex items-center justify-center text-[#CBD5E1] hover:text-white hover:border-[#39AEA9] hover:bg-white/[0.1] transition-all shadow-sm shrink-0 active:scale-95 group cursor-pointer"
               aria-label="User Profile"
             >
-              <User className="w-4 h-4 text-[#00A8E1] group-hover:text-white transition-colors" />
+              <User className="w-4 h-4 text-[#8FA8AD] group-hover:text-[#39AEA9] transition-colors" />
             </button>
           </div>
         </div>
 
         {/* Mobile Navigation Strip */}
-        <div className="sm:hidden px-4 pb-2 pt-0.5 overflow-x-auto no-scrollbar scrollbar-none flex items-center gap-1.5 border-t border-[#8197A4]/10 bg-[#0B1120]">
+        <div className="sm:hidden px-3 pb-2 pt-1 overflow-x-auto no-scrollbar scrollbar-none flex items-center gap-1.5 border-t border-white/[0.06] bg-[#0A0F11]/90 backdrop-blur-xl">
           <Link
             href="/"
-            className={`${activeTab === "home" ? "gtv-tab-pill-active text-[11px] px-3 py-1" : "gtv-tab-pill text-[11px] px-3 py-1"} shrink-0`}
+            className={`${activeTab === "home" ? "cinema-tab-active" : "cinema-tab"} text-[10px] px-3 py-1 shrink-0 rounded-full`}
           >
             Home
           </Link>
           <Link
             href="/movies"
-            className={`${activeTab === "movies" ? "gtv-tab-pill-active text-[11px] px-3 py-1" : "gtv-tab-pill text-[11px] px-3 py-1"} shrink-0`}
+            className={`${activeTab === "movies" ? "cinema-tab-active" : "cinema-tab"} text-[10px] px-3 py-1 shrink-0 rounded-full`}
           >
             Movies
           </Link>
           <Link
             href="/shows"
-            className={`${activeTab === "shows" ? "gtv-tab-pill-active text-[11px] px-3 py-1" : "gtv-tab-pill text-[11px] px-3 py-1"} shrink-0`}
+            className={`${activeTab === "shows" ? "cinema-tab-active" : "cinema-tab"} text-[10px] px-3 py-1 shrink-0 rounded-full`}
           >
-            TV Shows
+            TV Series
           </Link>
           <Link
             href="/search"
-            className="gtv-tab-pill text-[11px] px-3 py-1 shrink-0"
+            className="cinema-tab text-[10px] px-3 py-1 shrink-0 rounded-full"
           >
             Categories
           </Link>
           <Link
             href="/profile"
-            className={`${activeTab === "mystuff" ? "gtv-tab-pill-active text-[11px] px-3 py-1" : "gtv-tab-pill text-[11px] px-3 py-1"} shrink-0`}
+            className={`${activeTab === "mystuff" ? "cinema-tab-active" : "cinema-tab"} text-[10px] px-3 py-1 shrink-0 rounded-full`}
           >
-            My Stuff
+            Watchlist
           </Link>
         </div>
 
         {/* Mobile Search Bar Dropdown */}
         {isSearchOpen && (
-          <div ref={mobileSearchRef} className="sm:hidden px-4 pb-3 border-b border-[#8197A4]/20 bg-[#0B1120]">
+          <div ref={mobileSearchRef} className="sm:hidden px-4 pb-3 border-b border-white/[0.06] bg-[#0A0F11]/90 backdrop-blur-xl">
             <div className="relative">
               <form onSubmit={handleSearchSubmit} className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8197A4]" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8FA8AD]" />
                 <input
                   type="text"
                   value={searchQuery}
@@ -405,8 +395,8 @@ function HeaderContent() {
                   onFocus={() => {
                     if (searchQuery.trim().length > 2) setIsSuggestionsOpen(true);
                   }}
-                  placeholder="Search Nightcast..."
-                  className="w-full h-10 pl-11 pr-8 bg-[#192231] border border-[#00A8E1]/40 rounded-lg text-xs text-white placeholder-[#8197A4] focus:outline-none focus:border-[#00A8E1]"
+                  placeholder="Search titles..."
+                  className="w-full h-9 pl-10 pr-8 bg-white/[0.06] border border-white/[0.1] rounded-full text-xs font-sans text-white placeholder-[#8FA8AD] focus:outline-none focus:border-[#39AEA9] focus:bg-[#121A1D]"
                   autoFocus
                 />
                 {searchQuery && (
@@ -416,7 +406,7 @@ function HeaderContent() {
                       setSearchQuery("");
                       setIsSuggestionsOpen(false);
                     }}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#8197A4] hover:text-white"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8FA8AD] hover:text-white"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -442,9 +432,10 @@ function HeaderContent() {
 export default function Header() {
   return (
     <Suspense fallback={
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0B1120]/95 border-b border-[#8197A4]/15 select-none h-16 flex items-center px-6">
-        <Link href="/" className="text-white font-black text-xl font-display uppercase tracking-tight">
-          Nightcast
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0A0F11]/95 border-b border-[#223136] select-none h-16 flex items-center px-6">
+        <Link href="/" className="text-white font-black text-xl font-display uppercase tracking-tight flex items-center gap-1.5">
+          <span className="w-2 h-5 bg-gradient-to-b from-[#39AEA9] to-[#A2D5AB] rounded-full inline-block" />
+          <span>Nightcast</span>
         </Link>
       </header>
     }>

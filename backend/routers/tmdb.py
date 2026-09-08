@@ -27,6 +27,18 @@ async def get_popular(media_type: str = Query("movie", description="movie, tv"))
         catalog = MOCK_MOVIES if media_type == "movie" else MOCK_TV
         return [{**item, "media_type": media_type} for item in catalog.values()]
 
+@router.get("/now_playing")
+async def get_now_playing(media_type: str = Query("movie", description="movie")):
+    try:
+        res = await tmdb_client.get_request("/movie/now_playing")
+        results = res.get("results", [])
+        for item in results:
+            item["media_type"] = "movie"
+        return results
+    except Exception:
+        movies = list(MOCK_MOVIES.values())
+        return [{**m, "media_type": "movie"} for m in movies]
+
 @router.get("/top_rated")
 async def get_top_rated(media_type: str = Query("movie", description="movie, tv")):
     try:

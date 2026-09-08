@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useUserStore } from "../store/userStore";
 import { apiFetch, MediaItem, ContinueWatchingItem } from "../lib/api";
-import { getContinueWatchingList, LocalProgressItem } from "../lib/progress";
+import { getContinueWatchingList, removeWatchProgress, LocalProgressItem } from "../lib/progress";
 import HeroCarousel from "../components/home/HeroCarousel";
 import MovieRow from "../components/shared/MovieRow";
 import Top10RankedRow from "../components/home/Top10RankedRow";
@@ -20,19 +20,32 @@ function HomePageContent() {
   const [localContinueWatching, setLocalContinueWatching] = React.useState<LocalProgressItem[]>([]);
 
   React.useEffect(() => {
-    setLocalContinueWatching(getContinueWatchingList());
+    const refreshList = () => {
+      setLocalContinueWatching(getContinueWatchingList());
+    };
+    refreshList();
+
+    window.addEventListener("focus", refreshList);
+    window.addEventListener("storage", refreshList);
+    window.addEventListener("nightcast:progress-update", refreshList);
+
+    return () => {
+      window.removeEventListener("focus", refreshList);
+      window.removeEventListener("storage", refreshList);
+      window.removeEventListener("nightcast:progress-update", refreshList);
+    };
   }, []);
 
-  // 1. Top Picks For You (Mixed Trending)
+  // 1. Trending Right Now (Mixed Trending)
   const { data: topPicks = [], isLoading: topPicksLoading } = useQuery<MediaItem[]>({
     queryKey: ["top-picks"],
     queryFn: () => apiFetch("/api/tmdb/trending?media_type=all&time_window=week"),
   });
 
-  // 2. Trending Movies
-  const { data: trendingMovies = [] } = useQuery<MediaItem[]>({
-    queryKey: ["trending-movies"],
-    queryFn: () => apiFetch("/api/tmdb/trending?media_type=movie&time_window=week"),
+  // 2. New Movies (Now Playing)
+  const { data: newMovies = [] } = useQuery<MediaItem[]>({
+    queryKey: ["new-movies"],
+    queryFn: () => apiFetch("/api/tmdb/now_playing"),
   });
 
   // 3. Popular TV Shows
@@ -41,64 +54,64 @@ function HomePageContent() {
     queryFn: () => apiFetch("/api/tmdb/popular?media_type=tv"),
   });
 
-  // 4. Action & Adventure (Genres 28, 12)
+  // 4. Action (Genre 28)
   const { data: actionMovies = [] } = useQuery<MediaItem[]>({
-    queryKey: ["action-adventure-movies"],
-    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=28,12"),
+    queryKey: ["action-movies"],
+    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=28"),
   });
 
-  // 5. Sci-Fi & Fantasy (Genres 878, 14)
-  const { data: sciFiMovies = [] } = useQuery<MediaItem[]>({
-    queryKey: ["scifi-fantasy-movies"],
-    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=878,14"),
-  });
-
-  // 6. Top Rated Movies
-  const { data: topRated = [] } = useQuery<MediaItem[]>({
-    queryKey: ["top-rated-movies"],
-    queryFn: () => apiFetch("/api/tmdb/top_rated?media_type=movie"),
-  });
-
-  // 7. Hindi & Asian Hits
-  const { data: asianHits = [] } = useQuery<MediaItem[]>({
-    queryKey: ["hindi-asian-hits"],
-    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_original_language=hi"),
-  });
-
-  // 8. Comedies (Genre 35)
+  // 5. Comedy (Genre 35)
   const { data: comedyMovies = [] } = useQuery<MediaItem[]>({
     queryKey: ["comedy-movies"],
     queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=35"),
   });
 
-  // 9. Romantic Movies (Genre 10749)
-  const { data: romanceMovies = [] } = useQuery<MediaItem[]>({
-    queryKey: ["romance-movies"],
-    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=10749"),
+  // 6. Drama (Genre 18)
+  const { data: dramaMovies = [] } = useQuery<MediaItem[]>({
+    queryKey: ["drama-movies"],
+    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=18"),
   });
 
-  // 10. Animation & Family (Genres 16, 10751)
-  const { data: animationMovies = [] } = useQuery<MediaItem[]>({
-    queryKey: ["animation-family-movies"],
-    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=16,10751"),
-  });
-
-  // 11. Crime & Mystery (Genres 80, 9648)
-  const { data: crimeMovies = [] } = useQuery<MediaItem[]>({
-    queryKey: ["crime-mystery-movies"],
-    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=80,9648"),
-  });
-
-  // 12. Horror & Supernatural (Genre 27)
+  // 7. Horror (Genre 27)
   const { data: horrorMovies = [] } = useQuery<MediaItem[]>({
     queryKey: ["horror-movies"],
     queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=27"),
   });
 
-  // 13. Drama & Emotional Stories (Genre 18)
-  const { data: dramaMovies = [] } = useQuery<MediaItem[]>({
-    queryKey: ["drama-movies"],
-    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=18"),
+  // 8. Sci-Fi (Genre 878)
+  const { data: sciFiMovies = [] } = useQuery<MediaItem[]>({
+    queryKey: ["scifi-movies"],
+    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=878"),
+  });
+
+  // 9. Thriller (Genre 53)
+  const { data: thrillerMovies = [] } = useQuery<MediaItem[]>({
+    queryKey: ["thriller-movies"],
+    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=53"),
+  });
+
+  // 10. Romance (Genre 10749)
+  const { data: romanceMovies = [] } = useQuery<MediaItem[]>({
+    queryKey: ["romance-movies"],
+    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=10749"),
+  });
+
+  // 11. Animation (Genre 16)
+  const { data: animationMovies = [] } = useQuery<MediaItem[]>({
+    queryKey: ["animation-movies"],
+    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=16"),
+  });
+
+  // 12. Crime (Genre 80)
+  const { data: crimeMovies = [] } = useQuery<MediaItem[]>({
+    queryKey: ["crime-movies"],
+    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=80"),
+  });
+
+  // 13. Documentary (Genre 99)
+  const { data: documentaryMovies = [] } = useQuery<MediaItem[]>({
+    queryKey: ["documentary-movies"],
+    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=99"),
   });
 
   // Backend Continue Watching History
@@ -152,12 +165,32 @@ function HomePageContent() {
     });
   }, [localContinueWatching, continueWatching]);
 
+  const handleRemoveContinueWatching = React.useCallback(async (item: any) => {
+    removeWatchProgress(item.id, item.season, item.episode);
+    setLocalContinueWatching(getContinueWatchingList());
+
+    if (activeProfile) {
+      try {
+        const queryParams = new URLSearchParams();
+        if (item.season) queryParams.set("season", item.season.toString());
+        if (item.episode) queryParams.set("episode", item.episode.toString());
+        const qs = queryParams.toString() ? `?${queryParams.toString()}` : "";
+        await apiFetch(`/api/progress/continue/${item.id}${qs}`, {
+          method: "DELETE",
+          headers: { "X-Profile-ID": activeProfile.id },
+        });
+      } catch (err) {
+        console.error("Failed to delete continue watching from backend", err);
+      }
+    }
+  }, [activeProfile]);
+
   // Dynamic Hero Carousel items
-  const heroItems = topPicks.length > 0 ? topPicks.slice(0, 7) : trendingMovies.slice(0, 7);
+  const heroItems = topPicks.length > 0 ? topPicks.slice(0, 7) : newMovies.slice(0, 7);
 
   if (topPicksLoading) {
     return (
-      <div className="w-full min-h-screen bg-[#0B1120]">
+      <div className="w-full min-h-screen bg-[#0A0F11]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />
@@ -166,103 +199,111 @@ function HomePageContent() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#0B1120] pb-28 space-y-6">
-      {/* Immersive Amazon Prime Video Hero Banner Showcase */}
+    <div className="w-full min-h-screen bg-[#0A0F11] pb-28 space-y-6">
+      {/* Immersive Hero Showcase */}
       <HeroCarousel items={heroItems} />
 
-      {/* Continue Watching (Merged Local + Synced Backend) */}
+      {/* Continue Watching (If User Has In-Progress Titles) */}
       {mergedContinueWatching.length > 0 && (
         <MovieRow
           title="Continue Watching"
+          subtitle="Pick up where you left off"
           items={mergedContinueWatching}
+          onRemoveItem={handleRemoveContinueWatching}
         />
       )}
 
-      {/* 1. Top 10 Movies & Shows */}
+      {/* 1. Trending Right Now */}
       <Top10RankedRow
-        title="Top 10 Movies & Shows"
-        items={topPicks.length > 0 ? topPicks : trendingMovies}
-      />
-
-      {/* 2. Studios & Channels Row */}
-      <StudiosRow />
-
-      {/* 3. Recommended Movies & Shows */}
-      <MovieRow
-        title="Recommended Movies & Shows"
+        title="Trending Right Now"
         items={topPicks}
       />
 
-      {/* 4. Popular Movies */}
+      {/* 2. Studios & Platform */}
+      <StudiosRow />
+
+      {/* 3. New Movies */}
       <MovieRow
-        title="Popular Movies"
-        items={trendingMovies.map((m) => ({ ...m, media_type: "movie" }))}
+        title="New Movies"
+        subtitle="Latest releases & fresh premieres"
+        items={newMovies.map((m) => ({ ...m, media_type: "movie" }))}
       />
 
-      {/* 5. Binge-Worthy TV Series */}
+      {/* 4. Popular TV Shows */}
       <MovieRow
-        title="Binge-Worthy TV Series"
+        title="Popular TV Shows"
+        subtitle="Top binge-worthy series"
         items={popularTvShows.map((t) => ({ ...t, media_type: "tv" }))}
       />
 
-      {/* 6. Action & Thrillers */}
+      {/* 5. Action */}
       <MovieRow
-        title="Action & Thrillers"
+        title="Action"
+        subtitle="High-octane & explosive adventures"
         items={actionMovies.map((m) => ({ ...m, media_type: "movie" }))}
       />
 
-      {/* 7. Sci-Fi & Speculative Cinema */}
+      {/* 6. Comedy */}
       <MovieRow
-        title="Sci-Fi & Speculative Cinema"
-        items={sciFiMovies.map((m) => ({ ...m, media_type: "movie" }))}
-      />
-
-      {/* 8. Animated & Family Hits */}
-      <MovieRow
-        title="Animated & Family Hits"
-        items={animationMovies.map((m) => ({ ...m, media_type: "movie" }))}
-      />
-
-      {/* 9. Crime & Mystery Thrillers */}
-      <MovieRow
-        title="Crime & Mystery Thrillers"
-        items={crimeMovies.map((m) => ({ ...m, media_type: "movie" }))}
-      />
-
-      {/* 10. Chilling Horror & Supernatural */}
-      <MovieRow
-        title="Chilling Horror & Supernatural"
-        items={horrorMovies.map((m) => ({ ...m, media_type: "movie" }))}
-      />
-
-      {/* 11. Dramatic & Emotional Stories */}
-      <MovieRow
-        title="Dramatic & Emotional Stories"
-        items={dramaMovies.map((m) => ({ ...m, media_type: "movie" }))}
-      />
-
-      {/* 12. Highly Rated Masterpieces */}
-      <MovieRow
-        title="Highly Rated Masterpieces"
-        items={topRated.map((m) => ({ ...m, media_type: "movie" }))}
-      />
-
-      {/* 13. International & Regional Cinema */}
-      <MovieRow
-        title="International & Regional Cinema"
-        items={asianHits.map((m) => ({ ...m, media_type: "movie" }))}
-      />
-
-      {/* 14. Hilarious Comedies */}
-      <MovieRow
-        title="Hilarious Comedies"
+        title="Comedy"
+        subtitle="Hilarious & feel-good hits"
         items={comedyMovies.map((m) => ({ ...m, media_type: "movie" }))}
       />
 
-      {/* 15. Romantic Movies & Romance (At the Very Bottom) */}
+      {/* 7. Drama */}
       <MovieRow
-        title="Romantic Movies & Romance"
+        title="Drama"
+        subtitle="Compelling stories & cinematic masterpieces"
+        items={dramaMovies.map((m) => ({ ...m, media_type: "movie" }))}
+      />
+
+      {/* 8. Horror */}
+      <MovieRow
+        title="Horror"
+        subtitle="Nightmares & supernatural chills"
+        items={horrorMovies.map((m) => ({ ...m, media_type: "movie" }))}
+      />
+
+      {/* 9. Sci Fi */}
+      <MovieRow
+        title="Sci-Fi"
+        subtitle="Futuristic visions & space epics"
+        items={sciFiMovies.map((m) => ({ ...m, media_type: "movie" }))}
+      />
+
+      {/* 10. Thriller */}
+      <MovieRow
+        title="Thriller"
+        subtitle="Edge-of-your-seat suspense"
+        items={thrillerMovies.map((m) => ({ ...m, media_type: "movie" }))}
+      />
+
+      {/* 11. Romance */}
+      <MovieRow
+        title="Romance"
+        subtitle="Heartwarming passion & love stories"
         items={romanceMovies.map((m) => ({ ...m, media_type: "movie" }))}
+      />
+
+      {/* 12. Animation */}
+      <MovieRow
+        title="Animation"
+        subtitle="Anime & animated wonders"
+        items={animationMovies.map((m) => ({ ...m, media_type: "movie" }))}
+      />
+
+      {/* 13. Crime */}
+      <MovieRow
+        title="Crime"
+        subtitle="Underworld sagas & detective mysteries"
+        items={crimeMovies.map((m) => ({ ...m, media_type: "movie" }))}
+      />
+
+      {/* 14. Documentary */}
+      <MovieRow
+        title="Documentary"
+        subtitle="Real stories & untold truths"
+        items={documentaryMovies.map((m) => ({ ...m, media_type: "movie" }))}
       />
     </div>
   );
@@ -271,7 +312,7 @@ function HomePageContent() {
 export default function HomePage() {
   return (
     <Suspense fallback={
-      <div className="w-full min-h-screen bg-[#0B1120]">
+      <div className="w-full min-h-screen bg-[#0A0F11]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />

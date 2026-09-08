@@ -407,9 +407,9 @@ export default function HLSPlayer({
         <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-20">
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
-              <div className="w-16 h-16 rounded-full border-2 border-[#00D2FF]/20 border-t-[#00D2FF] animate-spin" />
+              <div className="w-16 h-16 rounded-full border-2 border-[#FA0037]/20 border-t-[#FA0037] animate-spin" />
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[#00D2FF] font-black text-xs tracking-widest">N</span>
+                <span className="text-[#FA0037] font-black text-xs tracking-widest font-mono">N</span>
               </div>
             </div>
             <p className="text-white/60 text-xs font-medium tracking-wider uppercase">Initializing Stream...</p>
@@ -430,7 +430,7 @@ export default function HLSPlayer({
             </div>
             <button
               onClick={(e) => { e.stopPropagation(); handleRetry(); }}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#00D2FF]/10 border border-[#00D2FF]/30 text-[#00D2FF] text-xs font-bold tracking-wider uppercase hover:bg-[#00D2FF]/20 transition-all duration-300"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-none bg-[#FA0037]/15 border border-[#FA0037]/40 text-[#FFF3F3] text-xs font-mono font-bold tracking-wider uppercase hover:bg-[#FA0037]/25 transition-all cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               Retry
@@ -441,12 +441,12 @@ export default function HLSPlayer({
 
       {/* Play Button Overlay (before first play) */}
       {!hasStarted && !isLoading && !error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
           <button
             onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-            className="w-20 h-20 rounded-full bg-[#00D2FF]/15 border border-[#00D2FF]/40 flex items-center justify-center backdrop-blur-xl hover:bg-[#00D2FF]/25 hover:scale-110 transition-all duration-300 shadow-[0_0_40px_rgba(0,210,255,0.3)]"
+            className="w-20 h-20 rounded-none bg-[#FA0037]/20 border border-[#FA0037]/40 flex items-center justify-center backdrop-blur-xl hover:bg-[#FA0037]/30 hover:scale-105 transition-all shadow-[0_0_40px_rgba(250,0,55,0.4)] cursor-pointer"
           >
-            <Play className="w-8 h-8 text-[#00D2FF] fill-[#00D2FF] ml-1" />
+            <Play className="w-8 h-8 text-[#FA0037] fill-[#FA0037] ml-1" />
           </button>
         </div>
       )}
@@ -458,25 +458,25 @@ export default function HLSPlayer({
           showControls ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
         }`}
       >
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent pointer-events-none" />
 
         <div className="relative px-4 pb-4 pt-12">
           {/* Seek Bar */}
           <div
             ref={seekBarRef}
-            className="group/seek w-full h-1.5 bg-white/10 rounded-full cursor-pointer mb-3 relative hover:h-2.5 transition-all duration-200"
+            className="group/seek w-full h-1.5 bg-white/10 rounded-none cursor-pointer mb-3 relative hover:h-2.5 transition-all duration-200"
             onClick={handleSeek}
           >
             <div
-              className="absolute top-0 left-0 h-full bg-white/20 rounded-full pointer-events-none"
+              className="absolute top-0 left-0 h-full bg-white/20 rounded-none pointer-events-none"
               style={{ width: `${bufferProgress}%` }}
             />
             <div
-              className="absolute top-0 left-0 h-full bg-[#00D2FF] rounded-full pointer-events-none shadow-[0_0_10px_rgba(0,210,255,0.5)]"
+              className="absolute top-0 left-0 h-full bg-[#FA0037] rounded-none pointer-events-none shadow-[0_0_10px_rgba(250,0,55,0.6)]"
               style={{ width: `${progress}%` }}
             />
             <div
-              className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-[#00D2FF] rounded-full shadow-lg opacity-0 group-hover/seek:opacity-100 transition-opacity duration-200 pointer-events-none"
+              className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-[#FA0037] rounded-none shadow-lg opacity-0 group-hover/seek:opacity-100 transition-opacity duration-200 pointer-events-none"
               style={{ left: `calc(${progress}% - 7px)` }}
             />
           </div>
@@ -487,7 +487,7 @@ export default function HLSPlayer({
             <div className="flex items-center gap-2">
               <button
                 onClick={(e) => { e.stopPropagation(); togglePlay(); }}
-                className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all duration-200"
+                className="w-9 h-9 rounded-none bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all duration-200 cursor-pointer"
               >
                 {isPlaying ? (
                   <Pause className="w-4 h-4 text-white fill-white" />
@@ -501,7 +501,7 @@ export default function HLSPlayer({
                   e.stopPropagation();
                   if (videoRef.current) videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 10);
                 }}
-                className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-all duration-200"
+                className="w-8 h-8 rounded-none hover:bg-white/10 flex items-center justify-center transition-all duration-200 cursor-pointer"
               >
                 <SkipBack className="w-3.5 h-3.5 text-white/70" />
               </button>
@@ -511,7 +511,7 @@ export default function HLSPlayer({
                   e.stopPropagation();
                   if (videoRef.current) videoRef.current.currentTime = Math.min(videoRef.current.duration || 0, videoRef.current.currentTime + 10);
                 }}
-                className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-all duration-200"
+                className="w-8 h-8 rounded-none hover:bg-white/10 flex items-center justify-center transition-all duration-200 cursor-pointer"
               >
                 <SkipForward className="w-3.5 h-3.5 text-white/70" />
               </button>
@@ -520,7 +520,7 @@ export default function HLSPlayer({
               <div className="flex items-center gap-1.5 group/vol">
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleMute(); }}
-                  className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-all duration-200"
+                  className="w-8 h-8 rounded-none hover:bg-white/10 flex items-center justify-center transition-all duration-200 cursor-pointer"
                 >
                   {isMuted || volume === 0 ? (
                     <VolumeX className="w-4 h-4 text-white/70" />
@@ -534,7 +534,7 @@ export default function HLSPlayer({
                   value={isMuted ? 0 : volume}
                   onChange={handleVolumeChange}
                   onClick={(e) => e.stopPropagation()}
-                  className="w-0 group-hover/vol:w-20 overflow-hidden transition-all duration-300 accent-[#00D2FF] h-1 cursor-pointer"
+                  className="w-0 group-hover/vol:w-20 overflow-hidden transition-all duration-300 accent-[#FA0037] h-1 cursor-pointer"
                 />
               </div>
 
@@ -550,8 +550,8 @@ export default function HLSPlayer({
                 <div className="relative">
                   <button
                     onClick={(e) => { e.stopPropagation(); setShowAudioMenu(prev => !prev); }}
-                    className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200 ${
-                      showAudioMenu ? 'bg-[#00D2FF]/20 text-[#00D2FF]' : 'bg-white/5 hover:bg-white/10 text-white/80'
+                    className={`w-9 h-9 rounded-none flex items-center justify-center transition-all duration-200 cursor-pointer ${
+                      showAudioMenu ? 'bg-[#FA0037] text-white' : 'bg-white/5 hover:bg-white/10 text-white/80'
                     }`}
                     title="Audio Track Selector"
                   >
@@ -560,26 +560,26 @@ export default function HLSPlayer({
 
                   {showAudioMenu && (
                     <div
-                      className="absolute bottom-12 right-0 bg-[#12141F] border border-white/15 rounded-xl p-2 w-48 shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2"
+                      className="absolute bottom-12 right-0 bg-[#18191D] border border-[#28292E] rounded-none p-2 w-48 shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-white/50 px-2 py-1 mb-1 border-b border-white/10">
-                        Select Audio Track
+                      <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#87878A] px-2 py-1 mb-1 border-b border-[#28292E]">
+                        Audio Track
                       </p>
                       <div className="space-y-1 max-h-40 overflow-y-auto no-scrollbar">
                         {audioTracks.map((track) => (
                           <button
                             key={track.id}
                             onClick={() => handleSelectTrack(track.id)}
-                            className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors ${
+                            className={`w-full text-left px-2.5 py-1.5 rounded-none text-xs font-mono font-semibold flex items-center justify-between transition-colors cursor-pointer ${
                               currentAudioTrack === track.id
-                                ? 'bg-[#00D2FF]/15 text-[#00D2FF]'
-                                : 'text-white/80 hover:bg-white/10 hover:text-white'
+                                ? 'bg-[#FA0037]/20 text-[#FA0037] border border-[#FA0037]/40'
+                                : 'text-white/80 hover:bg-[#232429] hover:text-white'
                             }`}
                           >
                             <span className="truncate">{track.name}</span>
                             {currentAudioTrack === track.id && (
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#00D2FF]" />
+                              <span className="w-1.5 h-1.5 rounded-none bg-[#FA0037]" />
                             )}
                           </button>
                         ))}
@@ -591,7 +591,7 @@ export default function HLSPlayer({
 
               <button
                 onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
-                className="w-9 h-9 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all duration-200"
+                className="w-9 h-9 rounded-none bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all duration-200 cursor-pointer"
               >
                 {isFullscreen ? (
                   <Minimize className="w-4 h-4 text-white/80" />

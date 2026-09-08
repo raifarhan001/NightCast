@@ -28,6 +28,7 @@ interface PlayerProps {
   playbackData?: PlaybackData;
   poster?: string;
   onProgress?: (currentTime: number, duration: number) => void;
+  onEnded?: () => void;
   startAt?: number;
   onError?: () => void;
 }
@@ -38,6 +39,7 @@ export default function NightCastPlayer({
   playbackData,
   poster,
   onProgress,
+  onEnded,
   startAt = 0,
   onError
 }: PlayerProps) {
@@ -183,7 +185,7 @@ export default function NightCastPlayer({
 
   if (!isEffectiveHls && effectiveUrl) {
     return (
-      <div className="relative w-full h-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl">
+      <div className="relative w-full h-full aspect-video bg-[#0D0E11] rounded-none overflow-hidden shadow-2xl border border-[#28292E]">
         <iframe
           src={effectiveUrl}
           className="w-full h-full border-0"
@@ -193,17 +195,17 @@ export default function NightCastPlayer({
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         />
         {audioTracks.length > 0 && (
-          <div className="absolute top-4 right-4 z-20 flex gap-2 bg-black/60 backdrop-blur-md p-1.5 rounded-lg border border-white/10">
+          <div className="absolute top-4 right-4 z-20 flex gap-1.5 bg-[#18191D]/90 backdrop-blur-md p-1 rounded-none border border-[#28292E]">
             {audioTracks.map((track, idx) => {
               const isSelected = currentAudio === track.id || currentAudio === idx || (track.id === "hi" && currentAudio === "hi") || (track.id === "en" && currentAudio === "en");
               return (
                 <button
                   key={track.id || idx}
                   onClick={() => handleAudioChange(track.id, idx)}
-                  className={`px-3 py-1 text-xs rounded-md font-medium transition-all ${
+                  className={`px-3 py-1 text-xs rounded-none font-mono font-bold uppercase transition-all cursor-pointer ${
                     isSelected
-                      ? "bg-indigo-600 text-white shadow-lg font-bold"
-                      : "text-zinc-400 hover:text-white bg-white/5"
+                      ? "bg-[#FA0037] text-[#FFF3F3] shadow-md border border-[#FA0037]"
+                      : "text-[#87878A] hover:text-white bg-[#121315] border border-transparent"
                   }`}
                 >
                   {track.label || `Audio ${idx + 1} (${track.language || "Original"})`}
@@ -217,30 +219,30 @@ export default function NightCastPlayer({
   }
 
   return (
-    <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl">
+    <div className="relative w-full aspect-video bg-[#0D0E11] rounded-none overflow-hidden shadow-2xl border border-[#28292E]">
       {statusText && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-10 text-white font-mono tracking-widest text-sm">
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+        <div className="absolute inset-0 flex items-center justify-center bg-[#0D0E11]/90 z-10 text-[#FFF3F3] font-mono tracking-widest text-xs">
+          <div className="flex flex-col items-center gap-2.5">
+            <div className="w-8 h-8 border-2 border-[#FA0037] border-t-transparent rounded-full animate-spin"></div>
             <span>{statusText}</span>
           </div>
         </div>
       )}
 
-      <video ref={videoRef} controls poster={poster} className="w-full h-full object-contain" />
+      <video ref={videoRef} controls poster={poster} onEnded={onEnded} className="w-full h-full object-contain" />
 
       {audioTracks.length > 0 && (
-        <div className="absolute top-4 right-4 z-20 flex gap-2 bg-black/60 backdrop-blur-md p-1.5 rounded-lg border border-white/10">
+        <div className="absolute top-4 right-4 z-20 flex gap-1.5 bg-[#18191D]/90 backdrop-blur-md p-1 rounded-none border border-[#28292E]">
           {audioTracks.map((track, idx) => {
             const isSelected = currentAudio === track.id || currentAudio === idx;
             return (
               <button
                 key={track.id || idx}
                 onClick={() => handleAudioChange(track.id, idx)}
-                className={`px-3 py-1 text-xs rounded-md font-medium transition-all ${
+                className={`px-3 py-1 text-xs rounded-none font-mono font-bold uppercase transition-all cursor-pointer ${
                   isSelected
-                    ? "bg-indigo-600 text-white shadow-lg font-bold"
-                    : "text-zinc-400 hover:text-white bg-white/5"
+                    ? "bg-[#FA0037] text-[#FFF3F3] shadow-md border border-[#FA0037]"
+                    : "text-[#87878A] hover:text-white bg-[#121315] border border-transparent"
                 }`}
               >
                 {track.label || `Audio ${idx + 1} (${track.language || "Original"})`}

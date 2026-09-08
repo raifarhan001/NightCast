@@ -17,16 +17,15 @@ const STUDIOS: Studio[] = [
     id: "prime",
     name: "Amazon Prime Video",
     href: "/search?studio=prime&name=Amazon%20Prime%20Video&provider=9|119&network=1024",
-    color: "#00A8E1",
+    color: "#38BDF8",
     logo: (
       <div className="flex flex-col items-center leading-none">
-        <span className="font-extrabold text-base sm:text-lg tracking-tight text-[#00A8E1] lowercase font-sans">
-          prime video
+        <span className="font-extrabold text-base sm:text-lg tracking-tight text-[#38BDF8] uppercase font-display">
+          PRIME
         </span>
-        <svg className="w-14 h-3 text-[#00A8E1] fill-current -mt-0.5" viewBox="0 0 100 20">
-          <path d="M5 5 Q50 22 95 8 Q55 14 5 5 Z" />
-          <polygon points="90,4 98,8 91,12" />
-        </svg>
+        <span className="text-[9px] font-mono tracking-widest text-[#94A3B8] uppercase">
+          VIDEO
+        </span>
       </div>
     ),
   },
@@ -146,7 +145,7 @@ const STUDIOS: Studio[] = [
     href: "/search?studio=marvel&name=Marvel%20Studios&company=420",
     color: "#E23636",
     logo: (
-      <div className="px-2 py-0.5 bg-[#E23636] text-white font-black text-[11px] sm:text-xs tracking-widest uppercase font-sans border border-white/30 rounded">
+      <div className="px-2.5 py-1 bg-[#E23636] text-white font-black text-[11px] sm:text-xs tracking-widest uppercase font-sans border border-white/20 rounded-lg">
         MARVEL
       </div>
     ),
@@ -181,8 +180,9 @@ export default function StudiosRow() {
     <section className="space-y-3 px-4 sm:px-6 md:px-12 select-none relative group/row">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl sm:text-2xl font-black text-white font-sans tracking-tight flex items-center gap-2">
-          <span className="text-[#00A8E1]">Channels & Studios</span>
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight font-display text-white flex items-center gap-2.5">
+          <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-[#39AEA9] to-[#A2D5AB] shadow-[0_0_12px_rgba(57,174,169,0.6)] inline-block shrink-0" />
+          <span>Studios & Platforms</span>
         </h2>
 
         {/* Desktop Navigation Arrows */}
@@ -190,22 +190,22 @@ export default function StudiosRow() {
           <button
             onClick={() => handleScroll("left")}
             disabled={!showLeftArrow}
-            className={`w-8 h-8 rounded-full bg-[#192231] border border-[#8197A4]/30 text-[#8197A4] hover:text-white hover:bg-[#00A8E1] hover:border-[#00A8E1] flex items-center justify-center transition-all cursor-pointer ${
+            className={`w-10 h-10 rounded-full border border-white/[0.15] bg-[#0A0F11]/75 backdrop-blur-xl text-white hover:text-[#0A0F11] hover:bg-gradient-to-r hover:from-[#39AEA9] hover:to-[#A2D5AB] hover:border-transparent flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 cursor-pointer shadow-[0_8px_24px_rgba(0,0,0,0.8)] hover:scale-105 active:scale-95 ${
               !showLeftArrow ? "opacity-30 cursor-not-allowed" : ""
             }`}
             aria-label="Scroll left"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={() => handleScroll("right")}
             disabled={!showRightArrow}
-            className={`w-8 h-8 rounded-full bg-[#192231] border border-[#8197A4]/30 text-[#8197A4] hover:text-white hover:bg-[#00A8E1] hover:border-[#00A8E1] flex items-center justify-center transition-all cursor-pointer ${
+            className={`w-10 h-10 rounded-full border border-white/[0.15] bg-[#0A0F11]/75 backdrop-blur-xl text-white hover:text-[#0A0F11] hover:bg-gradient-to-r hover:from-[#39AEA9] hover:to-[#A2D5AB] hover:border-transparent flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 cursor-pointer shadow-[0_8px_24px_rgba(0,0,0,0.8)] hover:scale-105 active:scale-95 ${
               !showRightArrow ? "opacity-30 cursor-not-allowed" : ""
             }`}
             aria-label="Scroll right"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -223,14 +223,14 @@ export default function StudiosRow() {
             className="group/studio flex flex-col items-center gap-2 shrink-0 snap-start select-none cursor-pointer"
           >
             {/* Studio Capsule Card */}
-            <div className="w-36 sm:w-44 md:w-48 h-20 sm:h-24 rounded-xl bg-[#192231] border border-[#8197A4]/25 flex items-center justify-center p-4 transition-all duration-300 group-hover/studio:scale-105 group-hover/studio:border-[#00A8E1] group-hover/studio:bg-[#232E42] group-hover/studio:shadow-[0_8px_25px_rgba(0,168,225,0.3)] shadow-md">
-              <div className="transition-transform duration-300 group-hover/studio:scale-110">
+            <div className="w-36 sm:w-44 md:w-48 h-20 sm:h-22 rounded-2xl bg-[#121A1D]/90 backdrop-blur-xl border border-white/[0.08] flex items-center justify-center p-4 transition-all duration-300 ease-out group-hover/studio:scale-105 group-hover/studio:border-[#39AEA9]/70 group-hover/studio:bg-white/[0.08] group-hover/studio:shadow-[0_12px_24px_-4px_rgba(0,0,0,0.8),0_0_20px_rgba(57,174,169,0.25)] shadow-sm">
+              <div className="transition-transform duration-300 ease-out group-hover/studio:scale-105">
                 {studio.logo}
               </div>
             </div>
 
             {/* Label */}
-            <span className="text-[11px] sm:text-xs font-semibold text-[#8197A4] group-hover/studio:text-white transition-colors truncate max-w-[140px] text-center">
+            <span className="text-[11px] font-sans font-medium text-[#8FA8AD] group-hover/studio:text-[#E5EFC1] transition-colors truncate max-w-[140px] text-center tracking-normal">
               {studio.name}
             </span>
           </Link>

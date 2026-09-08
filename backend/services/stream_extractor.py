@@ -144,34 +144,34 @@ class StreamExtractor:
             return cached
 
         if media_type == "movie":
-            s1_vidbolt = f"https://vidbolt.xyz/movie/{tmdb_id}"
-            s2_vidsrc = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
+            s1_vidsrc = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
+            s2_vidbolt = f"https://vidbolt.xyz/movie/{tmdb_id}"
             s3_hindi = f"https://vsrc.su/embed/movie/{tmdb_id}?ds_lang=hi"
         elif media_type == "anime":
-            s1_vidbolt = f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}"
-            s2_vidsrc = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+            s1_vidsrc = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+            s2_vidbolt = f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}"
             s3_hindi = f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}?ds_lang=hi"
         else:
-            s1_vidbolt = f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}"
-            s2_vidsrc = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+            s1_vidsrc = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
+            s2_vidbolt = f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}"
             s3_hindi = f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}?ds_lang=hi"
 
         all_servers = [
             {
-                "id": "vidbolt",
-                "name": "Server 1 (VidBolt)",
-                "url": s1_vidbolt,
-                "type": "iframe",
-                "language": "en",
-                "language_name": "vidbolt.xyz"
-            },
-            {
                 "id": "vidsrc",
-                "name": "Server 2 (VidSrc)",
-                "url": s2_vidsrc,
+                "name": "Server 1 (VidSrc)",
+                "url": s1_vidsrc,
                 "type": "iframe",
                 "language": "en",
                 "language_name": "vidsrc.me"
+            },
+            {
+                "id": "vidbolt",
+                "name": "Server 2 (VidBolt)",
+                "url": s2_vidbolt,
+                "type": "iframe",
+                "language": "en",
+                "language_name": "vidbolt.xyz"
             },
             {
                 "id": "hindi-dubbed",
@@ -355,15 +355,15 @@ class StreamExtractor:
         if media_type == "movie":
             return [
                 {
-                    "id": "vidbolt",
-                    "name": "Server 1 (VidBolt)",
-                    "url": f"https://vidbolt.xyz/movie/{tmdb_id}",
+                    "id": "vidsrc",
+                    "name": "Server 1 (VidSrc)",
+                    "url": f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}",
                     "type": "iframe",
                 },
                 {
-                    "id": "vidsrc",
-                    "name": "Server 2 (VidSrc)",
-                    "url": f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}",
+                    "id": "vidbolt",
+                    "name": "Server 2 (VidBolt)",
+                    "url": f"https://vidbolt.xyz/movie/{tmdb_id}",
                     "type": "iframe",
                 },
                 {
@@ -376,15 +376,15 @@ class StreamExtractor:
         elif media_type == "anime":
             return [
                 {
-                    "id": "vidbolt",
-                    "name": "Server 1 (VidBolt)",
-                    "url": f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}",
+                    "id": "vidsrc",
+                    "name": "Server 1 (VidSrc)",
+                    "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
                     "type": "iframe",
                 },
                 {
-                    "id": "vidsrc",
-                    "name": "Server 2 (VidSrc)",
-                    "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
+                    "id": "vidbolt",
+                    "name": "Server 2 (VidBolt)",
+                    "url": f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}",
                     "type": "iframe",
                 },
                 {
@@ -397,15 +397,15 @@ class StreamExtractor:
         else:
             return [
                 {
-                    "id": "vidbolt",
-                    "name": "Server 1 (VidBolt)",
-                    "url": f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}",
+                    "id": "vidsrc",
+                    "name": "Server 1 (VidSrc)",
+                    "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
                     "type": "iframe",
                 },
                 {
-                    "id": "vidsrc",
-                    "name": "Server 2 (VidSrc)",
-                    "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
+                    "id": "vidbolt",
+                    "name": "Server 2 (VidBolt)",
+                    "url": f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}",
                     "type": "iframe",
                 },
                 {

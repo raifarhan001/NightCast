@@ -15,6 +15,12 @@ export interface LocalProgressItem {
 const STORAGE_KEY = 'nightcast_continue_watching';
 const LEGACY_STORAGE_KEY = 'vidLinkProgress';
 
+function notifyProgressUpdate(detail?: any) {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('nightcast:progress-update', { detail }));
+  }
+}
+
 export function saveWatchProgress(item: Omit<LocalProgressItem, 'updated_at'>): void {
   if (typeof window === 'undefined') return;
   try {
@@ -25,12 +31,19 @@ export function saveWatchProgress(item: Omit<LocalProgressItem, 'updated_at'>): 
       ? `${item.id}_s${item.season || 1}e${item.episode || 1}`
       : `${item.id}`;
 
+    const duration = item.duration_seconds || 0;
+    const current = item.timestamp_seconds || 0;
+    const progress = item.progress_percent || (duration > 0 ? (current / duration) * 100 : 0);
+
     // If progress is near completion (>95%), remove from continue watching
-    if (item.progress_percent >= 95.0 || item.timestamp_seconds >= (item.duration_seconds * 0.95)) {
+    if (progress >= 95.0 || (duration > 60 && current >= duration * 0.95)) {
       delete map[key];
-    } else if (item.timestamp_seconds > 5) {
+    } else {
       map[key] = {
         ...item,
+        timestamp_seconds: current,
+        duration_seconds: duration,
+        progress_percent: Math.min(Math.max(progress, 0), 100),
         updated_at: new Date().toISOString(),
       };
     }
@@ -38,14 +51,24 @@ export function saveWatchProgress(item: Omit<LocalProgressItem, 'updated_at'>): 
     localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
 
     // Maintain backwards compatibility with legacy key
-    const rawLegacy = localStorage.getItem(LEGACY_STORAGE_KEY);
-    const mapLegacy = rawLegacy ? JSON.parse(rawLegacy) : {};
-    mapLegacy[key] = {
-      watched: item.timestamp_seconds,
-      duration: item.duration_seconds,
-      progress: item.progress_percent,
-    };
-    localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(mapLegacy));
+    try {
+      const rawLegacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+      const mapLegacy = rawLegacy ? JSON.parse(rawLegacy) : {};
+      if (progress >= 95.0 || (duration > 60 && current >= duration * 0.95)) {
+        delete mapLegacy[key];
+      } else {
+        mapLegacy[key] = {
+          watched: current,
+          duration: duration,
+          progress: progress,
+        };
+      }
+      localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(mapLegacy));
+    } catch {
+      // Ignore legacy errors
+    }
+
+    notifyProgressUpdate({ key, item });
   } catch (e) {
     console.error("Error saving watch progress to localStorage", e);
   }
@@ -98,12 +121,34 @@ export function removeWatchProgress(id: string | number, season?: number, episod
   if (typeof window === 'undefined') return;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const map: Record<string, LocalProgressItem> = JSON.parse(raw);
-    const key = season && episode ? `${id}_s${season}e${episode}` : `${id}`;
-    delete map[key];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+    if (raw) {
+      const map: Record<string, LocalProgressItem> = JSON.parse(raw);
+      const key = season && episode ? `${id}_s${season}e${episode}` : `${id}`;
+      delete map[key];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+    }
+
+    const rawLegacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (rawLegacy) {
+      const mapLegacy = JSON.parse(rawLegacy);
+      const key = season && episode ? `${id}_s${season}e${episode}` : `${id}`;
+      delete mapLegacy[key];
+      localStorage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(mapLegacy));
+    }
+
+    notifyProgressUpdate({ id, season, episode, removed: true });
   } catch (e) {
     console.error("Error removing watch progress", e);
+  }
+}
+
+export function clearAllWatchProgress(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    notifyProgressUpdate({ clearedAll: true });
+  } catch (e) {
+    console.error("Error clearing watch progress", e);
   }
 }

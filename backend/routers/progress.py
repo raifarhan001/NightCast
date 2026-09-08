@@ -89,6 +89,26 @@ def get_history(
     ).order_by(models.WatchHistory.watched_at.desc()).limit(50).all()
     return items
 
+@router.delete("/continue/{media_id}")
+def delete_continue_item(
+    media_id: str,
+    season: int = None,
+    episode: int = None,
+    active_profile: models.Profile = Depends(auth.get_active_profile),
+    db: Session = Depends(get_db)
+):
+    query = db.query(models.ContinueWatching).filter(
+        models.ContinueWatching.profile_id == active_profile.id,
+        models.ContinueWatching.media_id == media_id
+    )
+    if season is not None:
+        query = query.filter(models.ContinueWatching.season == season)
+    if episode is not None:
+        query = query.filter(models.ContinueWatching.episode == episode)
+    query.delete()
+    db.commit()
+    return {"status": "deleted"}
+
 @router.delete("/history")
 def clear_history(
     active_profile: models.Profile = Depends(auth.get_active_profile),

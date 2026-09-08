@@ -65,8 +65,8 @@ function MovieDetailsPage() {
   if (isLoading) return <DetailsSkeleton />;
   if (!movie) {
     return (
-      <div className="w-full min-h-screen bg-[#000000] flex justify-center items-center text-center">
-        <p className="text-sm text-white/50">Movie details not found.</p>
+      <div className="w-full min-h-screen bg-[#0D0E11] flex justify-center items-center text-center">
+        <p className="text-xs font-mono text-[#87878A] uppercase tracking-widest">Movie details not found.</p>
       </div>
     );
   }
@@ -79,9 +79,9 @@ function MovieDetailsPage() {
   const trailerKey = movie.videos?.results?.find((v: TrailerVideo) => v.type === "Trailer" && v.site === "YouTube")?.key;
 
   return (
-    <div className="w-full min-h-screen bg-[#0B1120] pb-28">
+    <div className="w-full min-h-screen bg-[#0A0F11] text-[#E5EFC1] pb-28">
       {/* Immersive Backdrop Banner */}
-      <div className="relative w-full h-[68vh] md:h-[82vh] select-none border-b border-[#8197A4]/20">
+      <div className="relative w-full h-[68vh] md:h-[82vh] select-none border-b border-[#223136]">
         <Image
           src={backdropUrl}
           alt={movie.title}
@@ -89,16 +89,16 @@ function MovieDetailsPage() {
           priority
           placeholder="blur"
           blurDataURL={ImageService.getBlurHash()}
-          className="object-cover object-top opacity-55"
+          className="object-cover object-top opacity-40 grayscale-[20%]"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/50 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0B1120] via-transparent to-[#0B1120]/70" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0F11] via-[#0A0F11]/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0A0F11] via-transparent to-[#0A0F11]/80" />
       </div>
 
       {/* Main Movie Card & Info Content */}
       <div className="max-w-7xl mx-auto px-6 sm:px-8 md:px-12 -mt-48 md:-mt-72 relative z-10 grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
-        <div className="space-y-5 flex flex-col items-center md:items-stretch">
-          <div className="relative w-56 md:w-full aspect-[2/3] rounded-3xl overflow-hidden shadow-[0_25px_60px_rgba(1,20,37,0.9)] border border-[#5C7C89]/30 bg-[#081E30]">
+        <div className="space-y-4 flex flex-col items-center md:items-stretch">
+          <div className="relative w-56 md:w-full aspect-[2/3] rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.95)] border border-[#223136] bg-[#121A1D]">
             <Image
               src={posterUrl}
               alt={movie.title}
@@ -119,20 +119,20 @@ function MovieDetailsPage() {
               toggleFavoriteMutation.mutate();
             }}
             disabled={toggleFavoriteMutation.isPending}
-            className={`w-full py-3.5 px-6 rounded-2xl border font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            className={`w-full py-3.5 px-6 rounded-xl border font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
               isFavorite
-                ? "bg-[#1F4959] text-white border-[#5C7C89] shadow-[0_0_20px_rgba(31,73,89,0.7)]"
-                : "bg-[#081E30] text-[#5C7C89] border-[#5C7C89]/35 hover:text-white hover:bg-[#1F4959]/50 hover:border-[#5C7C89]"
+                ? "bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11] border-transparent shadow-[0_0_20px_rgba(57,174,169,0.4)]"
+                : "bg-[#121A1D] text-[#8FA8AD] border-[#223136] hover:text-white hover:bg-[#1A2529] hover:border-[#39AEA9]"
             }`}
           >
             {isFavorite ? (
               <>
-                <BookmarkCheck className="w-4 h-4 text-emerald-400" />
+                <BookmarkCheck className="w-4 h-4 text-[#0A0F11]" />
                 <span>In Watchlist</span>
               </>
             ) : (
               <>
-                <Bookmark className="w-4 h-4" />
+                <Bookmark className="w-4 h-4 text-[#8FA8AD]" />
                 <span>Add to Watchlist</span>
               </>
             )}
@@ -140,54 +140,58 @@ function MovieDetailsPage() {
         </div>
 
         <div className="md:col-span-3 space-y-6">
-          {/* Ocean Metadata Chips */}
+          {/* Metadata Chips */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="px-3 py-1 rounded-full bg-[#1F4959]/60 backdrop-blur-md border border-[#5C7C89]/40 text-[10px] font-extrabold tracking-widest text-white uppercase shadow-inner">
-              NIGHTCAST EXCLUSIVE
+            <span className="px-3 py-1 rounded-full bg-[#39AEA9]/20 border border-[#39AEA9]/40 text-[#A2D5AB] text-[10px] font-sans font-semibold">
+              Nightcast Exclusive
             </span>
-            <span className="px-3 py-1 rounded-full bg-[#081E30]/80 backdrop-blur-md border border-[#5C7C89]/30 text-[10px] font-bold tracking-wider text-[#5C7C89]">
-              4K HDR
+            <span className="px-3 py-1 rounded-full bg-white/[0.08] border border-white/[0.1] text-[10px] font-sans font-medium text-[#CBD5E1] backdrop-blur-md">
+              4K Ultra HD
+            </span>
+            <span className="px-3 py-1 rounded-full bg-white/[0.08] border border-white/[0.1] text-[10px] font-sans font-medium text-[#CBD5E1] backdrop-blur-md">
+              Dolby Vision
             </span>
           </div>
 
           <div className="space-y-2">
-            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-white leading-[0.95]">
+            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-[#F8FAFC] leading-[0.95]">
               {movie.title}
             </h1>
             {movie.tagline && (
-              <p className="text-sm italic text-[#5C7C89] font-light">"{movie.tagline}"</p>
+              <p className="text-sm italic text-[#8FA8AD] font-light">"{movie.tagline}"</p>
             )}
           </div>
 
-          <div className="flex flex-wrap gap-4 text-xs font-bold text-[#5C7C89] items-center pb-4 border-b border-[#5C7C89]/20">
+          <div className="flex flex-wrap gap-5 text-xs font-sans text-[#8FA8AD] items-center pb-4 border-b border-white/[0.08]">
             <div className="flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-[#5C7C89]" />
+              <Calendar className="w-3.5 h-3.5 text-[#8FA8AD]" />
               <span>{releaseYear}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-[#5C7C89]" />
+              <Clock className="w-3.5 h-3.5 text-[#8FA8AD]" />
               <span>{duration}</span>
             </div>
-            <div className="flex items-center gap-1.5 text-white">
-              <Star className="w-4 h-4 fill-current text-yellow-400" />
-              <span>{rating} / 10</span>
+            <div className="flex items-center gap-1.5 text-[#E5EFC1]">
+              <Star className="w-3.5 h-3.5 fill-current text-[#A2D5AB]" />
+              <span className="font-bold">{rating}</span>
+              <span className="text-[#8FA8AD]">/ 10</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Languages className="w-4 h-4 text-[#5C7C89]" />
+              <Languages className="w-3.5 h-3.5 text-[#8FA8AD]" />
               <span>English, Dual Audio</span>
             </div>
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-[10px] uppercase tracking-[0.2em] text-[#5C7C89] font-black">Synopsis</h3>
-            <p className="text-sm md:text-base font-normal text-white/90 leading-relaxed">
+            <h3 className="text-xs uppercase tracking-wider text-[#8FA8AD] font-sans font-semibold">Synopsis</h3>
+            <p className="text-sm md:text-base font-normal text-[#E5EFC1] leading-relaxed font-sans max-w-3xl">
               {movie.overview}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
             {movie.genres?.map((g: any) => (
-              <span key={g.id} className="px-4 py-1.5 rounded-full border border-[#5C7C89]/30 bg-[#081E30] text-[11px] font-bold text-[#5C7C89] tracking-wide hover:text-white hover:border-[#5C7C89] transition-colors">
+              <span key={g.id} className="px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.06] text-xs font-sans text-[#CBD5E1] hover:text-[#E5EFC1] hover:border-[#39AEA9] transition-colors">
                 {g.name}
               </span>
             ))}
@@ -196,9 +200,9 @@ function MovieDetailsPage() {
           <div className="pt-2">
             <Link
               href={`/watch/movie/${id}`}
-              className="gtv-btn-primary inline-flex"
+              className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] hover:opacity-95 text-[#0A0F11] text-xs font-sans font-bold tracking-wide rounded-full shadow-[0_4px_24px_rgba(57,174,169,0.4)] transition-all cursor-pointer active:scale-[0.97]"
             >
-              <Play className="w-4 h-4 fill-current ml-0.5" aria-hidden="true" />
+              <Play className="w-4 h-4 fill-current ml-0.5 text-[#0A0F11]" aria-hidden="true" />
               <span>Stream in 4K</span>
             </Link>
           </div>
@@ -208,24 +212,24 @@ function MovieDetailsPage() {
       {/* Cast Section */}
       {movie.cast && movie.cast.length > 0 && (
         <section className="max-w-7xl mx-auto px-6 sm:px-8 md:px-12 mt-20">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="h-6 w-1 rounded-full bg-[#1F4959] shadow-[0_0_10px_#5C7C89]" />
+          <div className="flex items-center gap-3 mb-6">
+            <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-[#39AEA9] to-[#A2D5AB]" />
             <div>
-              <h3 className="font-display text-xl font-black tracking-tight text-white">Starring Cast</h3>
-              <p className="text-[10px] text-[#5C7C89] font-bold tracking-widest uppercase mt-0.5">Key Performers</p>
+              <h3 className="font-display text-xl font-bold tracking-tight text-[#F8FAFC]">Principal Cast</h3>
+              <p className="text-xs text-[#8FA8AD] font-sans">Actors &amp; Roles</p>
             </div>
           </div>
-          <div className="flex gap-6 overflow-x-auto no-scrollbar pb-2">
+          <div className="flex gap-5 overflow-x-auto no-scrollbar pb-2">
             {movie.cast.map((c: any, idx: number) => {
               const avatar = ImageService.getProfile(c.profile_path, c.name);
               return (
-                <div key={idx} className="flex flex-col items-center shrink-0 w-24 gap-2.5 text-center">
-                  <div className="relative w-16 h-16 rounded-full overflow-hidden border border-[#5C7C89]/30 ring-2 ring-[#1F4959]/40 bg-[#081E30]">
+                <div key={idx} className="flex flex-col items-center shrink-0 w-24 gap-2 text-center">
+                  <div className="relative w-16 h-16 rounded-2xl overflow-hidden border border-white/[0.1] bg-[#121A1D]">
                     <Image src={avatar} alt={c.name} fill sizes="64px" className="object-cover" />
                   </div>
                   <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-white truncate max-w-[90px]">{c.name}</p>
-                    <p className="text-[10px] text-[#5C7C89] truncate max-w-[90px]">{c.character}</p>
+                    <p className="text-xs font-medium text-[#F8FAFC] truncate max-w-[90px]">{c.name}</p>
+                    <p className="text-[11px] font-sans text-[#8FA8AD] truncate max-w-[90px]">{c.character}</p>
                   </div>
                 </div>
               );
@@ -237,14 +241,14 @@ function MovieDetailsPage() {
       {/* Official Trailer */}
       {trailerKey && (
         <section className="max-w-7xl mx-auto px-6 sm:px-8 md:px-12 mt-20">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="h-6 w-1 rounded-full bg-[#1F4959] shadow-[0_0_10px_#5C7C89]" />
+          <div className="flex items-center gap-3 mb-6">
+            <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-[#39AEA9] to-[#A2D5AB]" />
             <div>
-              <h3 className="font-display text-xl font-black tracking-tight text-white">Official Trailer</h3>
-              <p className="text-[10px] text-[#5C7C89] font-bold tracking-widest uppercase mt-0.5">4K Preview</p>
+              <h3 className="font-display text-xl font-bold tracking-tight text-[#F8FAFC]">Official Preview</h3>
+              <p className="text-xs text-[#8FA8AD] font-sans">Cinematic Trailer</p>
             </div>
           </div>
-          <div className="relative w-full aspect-video rounded-3xl overflow-hidden border border-[#5C7C89]/30 bg-[#011425] shadow-[0_25px_60px_rgba(1,20,37,0.9)]">
+          <div className="relative w-full aspect-video rounded-3xl overflow-hidden border border-white/[0.08] bg-[#121A1D] shadow-[0_25px_60px_rgba(0,0,0,0.9)]">
             <iframe
               src={`https://www.youtube.com/embed/${trailerKey}?autoplay=0&mute=1&controls=1`}
               title="Official Trailer"
@@ -258,10 +262,10 @@ function MovieDetailsPage() {
 
       {/* Recommendations */}
       {recommendations.length > 0 && (
-        <div className="mt-16">
+        <div className="mt-20">
           <MovieRow
             title="Recommended Masterpieces"
-            subtitle="Titles You Might Enjoy"
+            subtitle="Titles Selected for You"
             items={recommendations.map((m) => ({ ...m, media_type: "movie" }))}
           />
         </div>

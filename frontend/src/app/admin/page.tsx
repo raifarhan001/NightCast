@@ -42,9 +42,9 @@ function AdminPage() {
           <ShieldAlert className="w-8 h-8" />
         </div>
         <div className="space-y-2">
-          <h1 className="font-display text-xl font-extrabold tracking-tight text-white uppercase">Access Restricted</h1>
-          <p className="text-xs text-nexus-muted font-light leading-relaxed">
-            You do not have the necessary privileges. Log in with an admin account.
+          <h1 className="text-xl font-bold tracking-tight text-white">Access restricted</h1>
+          <p className="text-xs text-[#8FA8AD] leading-relaxed">
+            You do not have administrative privileges. Please log in with an administrator account.
           </p>
         </div>
       </div>
@@ -53,24 +53,24 @@ function AdminPage() {
 
   if (statsLoading || usersLoading) {
     return (
-      <div className="w-full min-h-screen bg-black flex justify-center items-center">
-        <div className="w-8 h-8 rounded-full border-2 border-cyan border-t-transparent animate-spin" />
+      <div className="w-full min-h-screen bg-[#0A0F11] flex justify-center items-center">
+        <div className="w-8 h-8 rounded-full border-2 border-[#39AEA9] border-t-transparent animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 md:px-10 py-12 min-h-screen bg-black space-y-10">
+    <div className="max-w-7xl mx-auto px-6 md:px-10 py-12 min-h-screen bg-[#0A0F11] space-y-10">
       <div className="space-y-2">
-        <h1 className="font-display text-2xl md:text-4xl font-extrabold tracking-tight text-white uppercase">Administration</h1>
-        <p className="text-xs text-nexus-muted font-light">Monitor system metrics and user activity.</p>
+        <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-white">Administration</h1>
+        <p className="text-sm text-[#8FA8AD]">Monitor system metrics and user activity.</p>
       </div>
 
       {health && health.components && (
-        <div className="glass-panel rounded-2xl p-6 border border-glass-stroke space-y-4">
-          <div className="flex items-center justify-between border-b border-glass-stroke pb-3">
-            <h3 className="text-[10px] uppercase tracking-[0.2em] text-cyan font-bold">System Telemetry</h3>
-            <span className={`px-2.5 py-0.5 rounded-lg text-[9px] uppercase tracking-wide font-bold border ${
+        <div className="bg-[#121A1D]/80 backdrop-blur-2xl rounded-3xl p-6 border border-white/[0.08] space-y-4 shadow-xl">
+          <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+            <h3 className="text-xs uppercase tracking-wider text-[#39AEA9] font-bold">System Telemetry</h3>
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
               health.status === 'healthy'
                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                 : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
@@ -78,11 +78,11 @@ function AdminPage() {
               {health.status}
             </span>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-mono">
-            <div className="space-y-1"><p className="text-[9px] uppercase tracking-wider text-nexus-muted">Database</p><p className="text-white font-bold">{health.components.database.status}</p><p className="text-[10px] text-nexus-muted">{health.components.database.latency_ms}ms</p></div>
-            <div className="space-y-1"><p className="text-[9px] uppercase tracking-wider text-nexus-muted">Cache</p><p className="text-white font-bold">{health.components.redis_cache.status}</p><p className="text-[10px] text-nexus-muted">{health.components.redis_cache.driver}</p></div>
-            <div className="space-y-1"><p className="text-[9px] uppercase tracking-wider text-nexus-muted">TMDB</p><p className="text-white font-bold">{health.components.external_tmdb.status}</p><p className="text-[10px] text-nexus-muted">{health.components.external_tmdb.mode}</p></div>
-            <div className="space-y-1"><p className="text-[9px] uppercase tracking-wider text-nexus-muted">Resources</p><p className="text-white font-bold">CPU: {health.system.cpu_utilization}</p><p className="text-[10px] text-nexus-muted">RAM: {health.system.memory_usage}</p></div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+            <div className="space-y-1"><p className="text-[11px] text-[#8FA8AD]">Database</p><p className="text-white font-semibold">{health.components.database.status}</p><p className="text-[11px] text-[#8FA8AD]">{health.components.database.latency_ms}ms</p></div>
+            <div className="space-y-1"><p className="text-[11px] text-[#8FA8AD]">Cache</p><p className="text-white font-semibold">{health.components.redis_cache.status}</p><p className="text-[11px] text-[#8FA8AD]">{health.components.redis_cache.driver}</p></div>
+            <div className="space-y-1"><p className="text-[11px] text-[#8FA8AD]">TMDB</p><p className="text-white font-semibold">{health.components.external_tmdb.status}</p><p className="text-[11px] text-[#8FA8AD]">{health.components.external_tmdb.mode}</p></div>
+            <div className="space-y-1"><p className="text-[11px] text-[#8FA8AD]">Resources</p><p className="text-white font-semibold">CPU: {health.system.cpu_utilization}</p><p className="text-[11px] text-[#8FA8AD]">RAM: {health.system.memory_usage}</p></div>
           </div>
         </div>
       )}
@@ -95,9 +95,9 @@ function AdminPage() {
           { icon: MessageSquare, label: 'Reviews', value: stats.reviews },
           { icon: Heart, label: 'Favorites', value: stats.favorites },
         ].map(({ icon: Icon, label, value }) => (
-          <div key={label} className="glass-panel rounded-2xl p-5 space-y-2">
-            <div className="text-cyan"><Icon className="w-5 h-5" /></div>
-            <p className="text-[10px] uppercase font-bold tracking-wider text-nexus-muted">{label}</p>
+          <div key={label} className="bg-[#121A1D]/80 backdrop-blur-xl rounded-2xl p-5 space-y-2 border border-white/[0.08] shadow-sm">
+            <div className="text-[#39AEA9]"><Icon className="w-5 h-5" /></div>
+            <p className="text-xs font-medium text-[#8FA8AD]">{label}</p>
             <p className="text-2xl font-bold text-white">{value ?? 0}</p>
           </div>
         ))}
@@ -105,11 +105,11 @@ function AdminPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-4">
-          <h3 className="text-[10px] uppercase tracking-[0.2em] text-cyan font-bold">Users</h3>
-          <div className="glass-panel rounded-2xl overflow-hidden">
+          <h3 className="text-xs uppercase tracking-wider text-[#39AEA9] font-bold">Users</h3>
+          <div className="bg-[#121A1D]/80 backdrop-blur-2xl rounded-3xl overflow-hidden border border-white/[0.08] shadow-xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-nexus-surface text-nexus-muted font-bold border-b border-glass-stroke">
+                <thead className="bg-white/[0.03] text-[#8FA8AD] font-semibold border-b border-white/[0.08]">
                   <tr>
                     <th className="px-5 py-3.5">Email</th>
                     <th className="px-5 py-3.5">Role</th>
@@ -117,19 +117,19 @@ function AdminPage() {
                     <th className="px-5 py-3.5">Created</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-glass-stroke">
+                <tbody className="divide-y divide-white/[0.06]">
                   {usersList.map((usr: any) => (
                     <tr key={usr.id} className="hover:bg-white/[0.02] transition-colors duration-200">
-                      <td className="px-5 py-3.5 font-semibold text-white">{usr.email}</td>
+                      <td className="px-5 py-3.5 font-medium text-white">{usr.email}</td>
                       <td className="px-5 py-3.5">
-                        <span className={`px-2.5 py-0.5 rounded-lg text-[9px] uppercase tracking-wide font-bold border ${
-                          usr.is_admin ? 'bg-cyan-muted text-cyan border-cyan/20' : 'bg-white/5 text-nexus-muted border-glass-stroke'
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
+                          usr.is_admin ? 'bg-[#39AEA9]/15 text-[#39AEA9] border-[#39AEA9]/30' : 'bg-white/5 text-[#8FA8AD] border-white/10'
                         }`}>
                           {usr.is_admin ? 'Admin' : 'User'}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-nexus-muted font-medium">{usr.profile_count} Profile(s)</td>
-                      <td className="px-5 py-3.5 text-nexus-muted">{new Date(usr.created_at).toLocaleDateString()}</td>
+                      <td className="px-5 py-3.5 text-[#8FA8AD]">{usr.profile_count} Profile(s)</td>
+                      <td className="px-5 py-3.5 text-[#8FA8AD]">{new Date(usr.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -140,15 +140,15 @@ function AdminPage() {
 
         <div className="space-y-4">
           <div className="flex items-center gap-2 text-white">
-            <Terminal className="w-4 h-4 text-cyan" />
-            <h3 className="text-[10px] uppercase tracking-[0.2em] text-cyan font-bold">System Logs</h3>
+            <Terminal className="w-4 h-4 text-[#39AEA9]" />
+            <h3 className="text-xs uppercase tracking-wider text-[#39AEA9] font-bold">System Logs</h3>
           </div>
-          <div className="glass-panel rounded-2xl p-4 bg-black font-mono text-[10px] space-y-2.5 max-h-[360px] overflow-y-auto no-scrollbar">
+          <div className="bg-[#121A1D]/80 backdrop-blur-2xl rounded-3xl p-5 font-mono text-[11px] space-y-2.5 max-h-[360px] overflow-y-auto no-scrollbar border border-white/[0.08] shadow-xl">
             {logs.map((log: any, idx: number) => (
               <div key={idx} className="space-y-0.5 leading-relaxed">
-                <span className="text-nexus-muted">[{new Date(log.timestamp).toLocaleTimeString()}]</span>{' '}
-                <span className={log.level === 'WARNING' ? 'text-yellow-500' : 'text-emerald-400'}>{log.level}</span>:{' '}
-                <span className="text-white">{log.message}</span>
+                <span className="text-[#8FA8AD]">[{new Date(log.timestamp).toLocaleTimeString()}]</span>{' '}
+                <span className={log.level === 'WARNING' ? 'text-yellow-400' : 'text-[#A2D5AB]'}>{log.level}</span>:{' '}
+                <span className="text-white/90">{log.message}</span>
               </div>
             ))}
           </div>

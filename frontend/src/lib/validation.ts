@@ -82,6 +82,9 @@ export const ZodMediaItemSchema = z.object({
   vote_average: z.coerce.number().nullable().optional().transform((val) => val ?? 0),
   release_date: z.string().optional(),
   first_air_date: z.string().optional(),
+  genre_ids: z.array(z.coerce.number()).optional().default([]),
+  genres: z.array(z.any()).optional().default([]),
+  runtime: z.coerce.number().optional(),
   score: z.coerce.number().optional()
 });
 

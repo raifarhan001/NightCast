@@ -16,6 +16,9 @@ export interface MediaItem {
   first_air_date?: string;
   genre_ids?: number[];
   score?: number; // AI score
+  season?: number;
+  episode?: number;
+  progress_percent?: number;
 }
 
 export interface Profile {

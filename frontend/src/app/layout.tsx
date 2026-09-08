@@ -27,7 +27,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <body className="min-h-screen bg-[#0B1120] text-white antialiased selection:bg-[#00A8E1] selection:text-white overflow-x-hidden font-sans relative">
+      <body className="min-h-screen bg-[#0A0F11] text-[#E5EFC1] antialiased selection:bg-[#39AEA9] selection:text-[#0A0F11] overflow-x-hidden font-sans relative">
         <GlobalErrorBoundary>
           <Providers>
             <RouteProgressBar />

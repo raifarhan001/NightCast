@@ -31,15 +31,15 @@ function RouteProgressBarContent() {
 
   return (
     <>
-      {/* Prime Cyan Glowing Top Progress Bar */}
-      <div className="fixed top-0 left-0 right-0 z-[9999] h-1 bg-transparent pointer-events-none">
-        <div className="h-full bg-gradient-to-r from-[#00A8E1] via-[#00D2FF] to-[#00A8E1] shadow-[0_0_20px_rgba(0,168,225,0.9)] animate-top-progress rounded-r-full" />
+      {/* Turtle Teal Glowing Top Progress Bar */}
+      <div className="fixed top-0 left-0 right-0 z-[9999] h-[2px] bg-transparent pointer-events-none">
+        <div className="h-full bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] shadow-[0_0_12px_rgba(57,174,169,0.8)] animate-top-progress" />
       </div>
 
-      {/* Floating Top-Right Apple Liquid Glass Loading Indicator Badge */}
-      <div className="fixed top-20 right-6 z-[9999] pointer-events-none flex items-center gap-2.5 px-4 py-2 rounded-full bg-[#050811]/85 backdrop-blur-2xl border border-white/20 shadow-[0_12px_36px_rgba(0,168,225,0.4),inset_0_1px_0_0_rgba(255,255,255,0.3)] animate-in fade-in slide-in-from-top-2 duration-200">
-        <Loader2 className="w-4 h-4 text-[#00A8E1] animate-spin" />
-        <span className="text-xs font-bold text-white tracking-wide font-sans">
+      {/* Floating Top-Right Rounded Loading Indicator Badge */}
+      <div className="fixed top-20 right-6 z-[9999] pointer-events-none flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#121A1D]/90 backdrop-blur-md border border-[#223136] shadow-[0_12px_36px_rgba(0,0,0,0.8)] animate-in fade-in slide-in-from-top-2 duration-200">
+        <Loader2 className="w-3.5 h-3.5 text-[#39AEA9] animate-spin" />
+        <span className="text-[11px] font-mono font-bold text-[#E5EFC1] tracking-wider uppercase">
           Loading...
         </span>
       </div>

@@ -1,21 +1,21 @@
 import React from "react";
 
-const shimmer = "relative overflow-hidden bg-[#081E30]/60 border border-[#5C7C89]/15 rounded-2xl before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-[#1F4959]/20 before:to-transparent";
+const shimmer = "relative overflow-hidden bg-[#121A1D] border border-[#223136] rounded-2xl before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-white/5 before:to-transparent";
 
 export function PosterSkeleton() {
   return (
-    <div className={`w-[155px] sm:w-[180px] md:w-[210px] shrink-0 aspect-[2/3] ${shimmer}`} />
+    <div className={`w-[220px] sm:w-[250px] md:w-[270px] shrink-0 aspect-video rounded-2xl ${shimmer}`} />
   );
 }
 
 export function HeroSkeleton() {
   return (
-    <div className="relative w-full h-[70vh] md:h-[80vh] bg-[#011425] border-b border-[#5C7C89]/15 flex items-end p-8 md:p-16">
+    <div className="relative w-full h-[70vh] md:h-[80vh] bg-[#0A0F11] border-b border-[#223136] flex items-end p-8 md:p-16">
       <div className="space-y-5 max-w-xl w-full">
-        <div className={`h-5 w-32 ${shimmer}`} />
-        <div className={`h-20 w-4/5 ${shimmer}`} />
-        <div className={`h-4 w-full ${shimmer}`} />
-        <div className={`h-4 w-2/3 ${shimmer}`} />
+        <div className={`h-5 w-32 rounded-full ${shimmer}`} />
+        <div className={`h-20 w-4/5 rounded-2xl ${shimmer}`} />
+        <div className={`h-4 w-full rounded-full ${shimmer}`} />
+        <div className={`h-4 w-2/3 rounded-full ${shimmer}`} />
         <div className="flex gap-4 pt-3">
           <div className={`h-12 w-36 rounded-xl ${shimmer}`} />
           <div className={`h-12 w-32 rounded-xl ${shimmer}`} />
@@ -27,12 +27,12 @@ export function HeroSkeleton() {
 
 export function MovieRowSkeleton() {
   return (
-    <div className="px-6 md:px-16 lg:px-20 py-8 space-y-4">
+    <div className="px-4 sm:px-6 md:px-12 py-6 space-y-4">
       <div className="flex items-center gap-3">
-        <div className={`w-1 h-8 rounded-full ${shimmer}`} />
-        <div className={`h-6 w-48 ${shimmer}`} />
+        <div className="w-1.5 h-6 rounded-full bg-gradient-to-b from-[#39AEA9] to-[#A2D5AB]" />
+        <div className={`h-6 w-48 rounded-full ${shimmer}`} />
       </div>
-      <div className="flex gap-5 overflow-x-auto no-scrollbar py-2">
+      <div className="flex gap-4 overflow-x-auto no-scrollbar py-2">
         {Array.from({ length: 6 }).map((_, i) => (
           <PosterSkeleton key={i} />
         ))}
@@ -48,10 +48,10 @@ export function SearchSkeleton() {
         <div className={`h-12 w-64 mx-auto ${shimmer}`} />
         <div className={`h-4 w-80 mx-auto ${shimmer}`} />
       </div>
-      <div className={`max-w-2xl mx-auto h-16 rounded-full ${shimmer}`} />
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+      <div className={`max-w-2xl mx-auto h-12 rounded-xl ${shimmer}`} />
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         {Array.from({ length: 12 }).map((_, i) => (
-          <div key={i} className="aspect-[2/3] w-full rounded-2xl overflow-hidden">
+          <div key={i} className="aspect-video w-full overflow-hidden">
             <PosterSkeleton />
           </div>
         ))}
@@ -62,17 +62,17 @@ export function SearchSkeleton() {
 
 export function DetailsSkeleton() {
   return (
-    <div className="w-full min-h-screen bg-[#011425] pb-20 space-y-16">
-      <div className={`w-full h-[65vh] md:h-[80vh] ${shimmer} rounded-none`} />
+    <div className="w-full min-h-screen bg-[#0A0F11] pb-20 space-y-16">
+      <div className={`w-full h-[65vh] md:h-[80vh] ${shimmer}`} />
       <div className="max-w-7xl mx-auto px-6 md:px-12 -mt-48 md:-mt-72 relative z-10 grid grid-cols-1 md:grid-cols-4 gap-10">
         <div className="space-y-5">
-          <div className={`aspect-[2/3] w-full rounded-2xl ${shimmer}`} />
-          <div className={`h-12 w-full rounded-xl ${shimmer}`} />
+          <div className={`aspect-[2/3] w-full ${shimmer}`} />
+          <div className={`h-12 w-full ${shimmer}`} />
         </div>
         <div className="md:col-span-3 space-y-6">
           <div className={`h-16 w-3/4 ${shimmer}`} />
           <div className={`h-4 w-1/2 ${shimmer}`} />
-          <div className="flex gap-4 pb-4 border-b border-[#5C7C89]/20">
+          <div className="flex gap-4 pb-4 border-b border-[#223136]">
             <div className={`h-5 w-24 ${shimmer}`} />
             <div className={`h-5 w-24 ${shimmer}`} />
             <div className={`h-5 w-24 ${shimmer}`} />
@@ -107,16 +107,15 @@ export function CastSkeleton() {
 
 export function PlayerSkeleton() {
   return (
-    <div className={`relative aspect-video w-full rounded-2xl overflow-hidden bg-[#011425] border border-[#5C7C89]/25 flex flex-col items-center justify-center gap-4 ${shimmer}`}>
+    <div className={`relative aspect-video w-full rounded-2xl overflow-hidden bg-[#0A0F11] border border-[#223136] flex flex-col items-center justify-center gap-4 ${shimmer}`}>
       <div className="relative flex items-center justify-center">
-        <div className="w-12 h-12 rounded-full border-2 border-[#5C7C89]/30 border-t-[#1F4959] animate-spin" />
-        <div className="absolute w-8 h-8 rounded-full bg-[#1F4959]/30 blur-md animate-pulse" />
+        <div className="w-10 h-10 border-2 border-[#223136] border-t-[#39AEA9] animate-spin rounded-full" />
       </div>
-      <div className="space-y-1.5 text-center">
-        <p className="text-xs font-bold uppercase tracking-widest text-[#5C7C89] animate-pulse font-mono">
-          Initializing Nightcast Stream...
+      <div className="space-y-1 text-center">
+        <p className="text-xs font-bold uppercase tracking-widest text-[#39AEA9] font-mono">
+          INITIALIZING STREAM...
         </p>
-        <p className="text-[10px] text-[#5C7C89]/60 font-medium">Connecting to primary high-speed CDN buffer</p>
+        <p className="text-[10px] font-mono text-[#8FA8AD]">Connecting to high-speed stream server</p>
       </div>
     </div>
   );

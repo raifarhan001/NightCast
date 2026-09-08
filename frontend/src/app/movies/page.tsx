@@ -76,7 +76,7 @@ function MoviesPageContent() {
 
   if (trendingLoading) {
     return (
-      <div className="w-full min-h-screen bg-[#0B1120]">
+      <div className="w-full min-h-screen bg-[#0A0F11]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />
@@ -85,7 +85,7 @@ function MoviesPageContent() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#0B1120] pb-28 space-y-6">
+    <div className="w-full min-h-screen bg-[#0A0F11] pb-28 space-y-6">
       {/* Movies Only Hero Carousel */}
       <HeroCarousel items={heroItems} />
 
@@ -164,7 +164,7 @@ function MoviesPageContent() {
 export default function MoviesPage() {
   return (
     <Suspense fallback={
-      <div className="w-full min-h-screen bg-[#0B1120]">
+      <div className="w-full min-h-screen bg-[#0A0F11]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />

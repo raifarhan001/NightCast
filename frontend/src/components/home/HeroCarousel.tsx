@@ -51,153 +51,139 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
 
   return (
     <div
-      className="relative w-full h-[82vh] sm:h-[86vh] overflow-hidden bg-[#0B1120] select-none"
+      className="relative w-full h-[84vh] sm:h-[88vh] overflow-hidden bg-[#0A0F11] select-none"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      {/* Prime Video Main Featured Backdrop Artwork with Hardware Accelerated Motion */}
+      {/* Featured Backdrop */}
       <AnimatePresence mode="wait">
         <motion.div
           key={item.id}
-          initial={{ opacity: 0, scale: 1.03 }}
+          initial={{ opacity: 0, scale: 1.02 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.5, ease: [0.2, 0, 0, 1] }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="absolute inset-0 select-none transform-gpu will-change-transform"
         >
           <Image
             src={backdropUrl}
             alt={title}
             fill
-            className="object-cover object-center lg:object-top opacity-100 brightness-[1.02]"
+            className="object-cover object-center lg:object-top opacity-90 brightness-[0.92]"
             priority
             placeholder="blur"
             blurDataURL={ImageService.getBlurHash()}
           />
 
-          {/* Prime Video Multi-stage Gradient Vignette Overlays */}
-          {/* Top Navbar Dark Fade */}
-          <div className="absolute top-0 inset-x-0 h-36 bg-gradient-to-b from-[#0B1120] via-[#0B1120]/60 to-transparent z-10 pointer-events-none" />
+          {/* Multi-Stage Scrim Vignettes */}
+          {/* Top Header Scrim */}
+          <div className="absolute top-0 inset-x-0 h-36 bg-gradient-to-b from-[#0A0F11] via-[#0A0F11]/75 to-transparent z-10 pointer-events-none" />
 
-          {/* Left Side Content Gradient Scrim (Amazon Prime Video signature left scrim) */}
-          <div className="absolute inset-y-0 left-0 w-full sm:w-4/5 md:w-3/5 bg-gradient-to-r from-[#0B1120] via-[#0B1120]/90 to-transparent z-15 pointer-events-none" />
+          {/* Left Anamorphic Cinema Scrim */}
+          <div className="absolute inset-y-0 left-0 w-full sm:w-4/5 md:w-3/5 bg-gradient-to-r from-[#0A0F11] via-[#0A0F11]/90 to-transparent z-15 pointer-events-none" />
 
-          {/* Bottom Blend Gradient */}
-          <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-[#0B1120] via-[#0B1120]/75 to-transparent z-15 pointer-events-none" />
+          {/* Bottom Blend Scrim */}
+          <div className="absolute bottom-0 inset-x-0 h-56 bg-gradient-to-t from-[#0A0F11] via-[#0A0F11]/85 to-transparent z-15 pointer-events-none" />
         </motion.div>
       </AnimatePresence>
 
-      {/* Prime Video Hero Content Suite with Hardware-Accelerated Staggered Motion */}
+      {/* Hero Content Suite */}
       <AnimatePresence mode="wait">
         <motion.div
           key={`content-${item.id}`}
-          initial={{ opacity: 0, y: 15 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.4, ease: [0.2, 0, 0, 1] }}
-          className="absolute bottom-12 sm:bottom-16 left-4 sm:left-6 md:left-12 z-20 max-w-2xl space-y-3.5 sm:space-y-4 pointer-events-none pr-4 transform-gpu will-change-transform"
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          className="absolute bottom-12 sm:bottom-16 left-4 sm:left-8 md:left-14 z-20 max-w-3xl space-y-4 pointer-events-none pr-4 transform-gpu will-change-transform"
         >
-          <div className="space-y-3 sm:space-y-3.5 pointer-events-auto">
-            {/* Prime Video Tag Ribbon */}
-            <div className="flex items-center gap-2">
-              <span className="prime-badge-cyan flex items-center gap-1 shadow-[0_0_10px_rgba(0,168,225,0.6)]">
-                <span className="font-sans font-black lowercase tracking-tighter">prime</span>
-                <span className="text-[9px] font-extrabold uppercase">INCLUDED WITH PRIME</span>
+          <div className="space-y-3.5 pointer-events-auto">
+            {/* Metadata Ribbon */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="cinema-badge-blood">
+                Premiere
               </span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#192231] text-[#8197A4] border border-[#8197A4]/20 uppercase">
+              <span className="cinema-badge-ash">
                 {isTv ? "TV Series" : "Movie"}
+              </span>
+              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/[0.08] backdrop-blur-xl border border-white/[0.1] text-[10px] font-sans font-semibold text-[#E5EFC1]">
+                <Star className="w-2.5 h-2.5 fill-current text-[#A2D5AB]" />
+                <span>IMDb {rating}</span>
+              </div>
+              <span className="text-xs font-sans text-[#8FA8AD]">{releaseYear}</span>
+              <span className="text-[10px] font-sans px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.1] text-[#CBD5E1]">
+                {ageRating}
+              </span>
+              <span className="text-[10px] font-sans px-2.5 py-0.5 rounded-full bg-[#39AEA9]/20 border border-[#39AEA9]/40 text-[#A2D5AB] font-semibold">
+                4K UHD
               </span>
             </div>
 
             {/* Title */}
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.05] font-sans drop-shadow-2xl">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.08] font-display drop-shadow-[0_12px_24px_rgba(0,0,0,0.9)] max-w-3xl">
               {title}
             </h1>
 
-            {/* Metadata Bar: IMDb score, Year, Age, 4K UHD, HDR */}
-            <div className="flex flex-wrap items-center gap-2.5 text-xs text-white/90 font-medium">
-              {/* IMDb Rating Badge */}
-              <div className="flex items-center gap-1 bg-[#FFD60A] text-black font-extrabold px-2 py-0.5 rounded-md text-[11px] shadow-[0_2px_10px_rgba(255,214,10,0.4)]">
-                <Star className="w-3 h-3 fill-current text-black" />
-                <span>IMDb {rating}</span>
-              </div>
-
-              <span className="text-[#8197A4] font-semibold">{releaseYear}</span>
-              <span className="w-1 h-1 rounded-full bg-white/30" />
-
-              {/* Maturity Rating Tag */}
-              <span className="px-2 py-0.5 rounded-md bg-[#141C2E]/80 backdrop-blur-xl border border-white/20 text-[10px] font-bold text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)]">
-                {ageRating}
-              </span>
-
-              <span className="w-1 h-1 rounded-full bg-white/30" />
-
-              {/* Video Quality Badges */}
-              <span className="px-2 py-0.5 rounded-md bg-[#00A8E1]/20 backdrop-blur-xl border border-[#00A8E1]/50 text-[10px] font-bold text-[#00D2FF] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.3)]">
-                4K UHD
-              </span>
-              <span className="px-2 py-0.5 rounded-md bg-[#141C2E]/80 backdrop-blur-xl border border-white/20 text-[10px] font-bold text-white/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)]">
-                HDR
-              </span>
-              <span className="px-2 py-0.5 rounded-md bg-[#141C2E]/80 backdrop-blur-xl border border-white/20 text-[10px] font-bold text-white/90 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)]">
-                5.1
-              </span>
-            </div>
-
             {/* Overview */}
-            <p className="text-xs sm:text-sm text-white/80 font-normal line-clamp-2 sm:line-clamp-3 leading-relaxed max-w-xl drop-shadow">
-              {item.overview || "Stream high-definition movies and exclusive television series with Nightcast."}
+            <p className="text-sm sm:text-base text-[#CBD5E1]/90 font-sans font-normal leading-relaxed line-clamp-2 sm:line-clamp-3 max-w-2xl drop-shadow">
+              {item.overview || "Experience state-of-the-art streaming with full master audio and high definition fidelity."}
             </p>
 
-            {/* Liquid Glass CTA Buttons */}
-            <div className="flex items-center gap-3 pt-2">
-              {/* Watch Now Primary Pill */}
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3 pt-3">
+              {/* Primary Watch Button */}
               <Link
                 href={`/watch/${type}/${item.id}`}
-                className="gtv-btn-primary inline-flex text-xs sm:text-sm px-7 py-3.5 shadow-[0_0_30px_rgba(0,168,225,0.6),inset_0_1px_0_0_rgba(255,255,255,0.8)] hover:shadow-[0_0_40px_rgba(0,168,225,0.9)]"
+                className="cinema-btn-primary"
               >
                 <Play className="w-4 h-4 fill-current ml-0.5" />
-                <span>Watch Now</span>
+                <span>Play Now</span>
               </Link>
 
-              {/* Add to Watchlist Circle Button */}
+              {/* Add to Watchlist Action */}
               <button
                 onClick={(e) => toggleWatchlist(e, item.id)}
-                className="w-12 h-12 rounded-full bg-[#141C2E]/80 backdrop-blur-xl hover:bg-[#1A253C] border border-white/20 hover:border-[#00A8E1] hover:shadow-[0_0_20px_rgba(0,168,225,0.5)] text-white flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 hover:scale-105 active:scale-95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)] group/btn cursor-pointer"
+                className="cinema-btn-secondary"
                 title="Add to Watchlist"
                 aria-label="Add to Watchlist"
               >
                 {addedToWatchlist[item.id] ? (
-                  <Check className="w-5 h-5 text-[#00A8E1]" />
+                  <>
+                    <Check className="w-4 h-4 text-[#A2D5AB]" />
+                    <span>In Watchlist</span>
+                  </>
                 ) : (
-                  <Plus className="w-5 h-5 text-white group-hover/btn:text-[#00A8E1] transition-colors" />
+                  <>
+                    <Plus className="w-4 h-4 text-white/80" />
+                    <span>Watchlist</span>
+                  </>
                 )}
               </button>
 
-              {/* Details / Trailer Circle Button */}
+              {/* Details Button */}
               <Link
                 href={`/watch/${type}/${item.id}`}
-                className="w-12 h-12 rounded-full bg-[#141C2E]/80 backdrop-blur-xl hover:bg-[#1A253C] border border-white/20 hover:border-[#00A8E1] hover:shadow-[0_0_20px_rgba(0,168,225,0.5)] text-white flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 hover:scale-105 active:scale-95 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)] group/btn cursor-pointer"
-                title="Details & Episodes"
+                className="w-11 h-11 rounded-full bg-white/[0.08] backdrop-blur-xl border border-white/[0.12] hover:bg-white/[0.15] hover:border-white/20 text-white/90 hover:text-white flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm cursor-pointer"
+                title="Details"
                 aria-label="Details"
               >
-                <Info className="w-5 h-5 text-white group-hover/btn:text-[#00A8E1] transition-colors" />
+                <Info className="w-4 h-4" />
               </Link>
             </div>
           </div>
         </motion.div>
       </AnimatePresence>
 
-      {/* Prime Carousel Indicator Dots */}
-      <div className="absolute bottom-6 sm:bottom-10 right-4 sm:right-6 md:right-12 z-20 flex items-center gap-2 pointer-events-auto">
+      {/* Slide Indicators */}
+      <div className="absolute bottom-6 sm:bottom-10 right-4 sm:right-8 md:right-14 z-20 flex items-center gap-2 pointer-events-auto">
         {items.slice(0, 7).map((_, idx) => (
           <button
             key={idx}
             onClick={() => setCurrentIndex(idx)}
-            className={`h-2 rounded-full transform-gpu will-change-transform transition-all duration-200 ${
+            className={`h-1.5 rounded-full transform-gpu will-change-transform transition-all duration-300 cursor-pointer ${
               idx === currentIndex
-                ? "w-8 bg-[#00A8E1] shadow-[0_0_12px_rgba(0,168,225,0.8)] scale-105"
-                : "w-2 bg-[#8197A4]/30 hover:bg-[#8197A4]/70"
+                ? "w-8 bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] shadow-[0_0_12px_rgba(57,174,169,0.6)]"
+                : "w-2.5 bg-white/20 hover:bg-white/40"
             }`}
             aria-label={`Slide ${idx + 1}`}
           />

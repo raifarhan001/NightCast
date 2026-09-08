@@ -64,7 +64,7 @@ function ShowsPageContent() {
 
   if (trendingLoading) {
     return (
-      <div className="w-full min-h-screen bg-[#0B1120]">
+      <div className="w-full min-h-screen bg-[#0A0F11]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />
@@ -73,7 +73,7 @@ function ShowsPageContent() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#0B1120] pb-28 space-y-6">
+    <div className="w-full min-h-screen bg-[#0A0F11] pb-28 space-y-6">
       {/* TV Shows Only Hero Carousel */}
       <HeroCarousel items={heroItems} />
 
@@ -140,7 +140,7 @@ function ShowsPageContent() {
 export default function ShowsPage() {
   return (
     <Suspense fallback={
-      <div className="w-full min-h-screen bg-[#0B1120]">
+      <div className="w-full min-h-screen bg-[#0A0F11]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />
