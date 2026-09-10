@@ -30,10 +30,11 @@
 - **📂 Interactive Categories Dropdown**:
   - Direct genre filter dropdown menu covering Action & Adventure, Comedy, Drama, Sci-Fi & Speculative, Thriller & Suspense, Horror, Animation, Documentary, and Romance.
 
-- **⚡ 3 High-Performance Streaming Servers**:
-  - **Server 1 (VidBolt)**: Primary ultra-fast 1080p full-HD multi-source stream with automatic subtitle loading.
-  - **Server 2 (VidSrc)**: High-reliability backup full-HD 1080p embed player.
+- **⚡ 4 High-Performance Streaming Servers**:
+  - **Server 1 (VidSrc)**: High-reliability primary full-HD 1080p embed player.
+  - **Server 2 (VidBolt)**: Ultra-fast 1080p full-HD multi-source stream with automatic subtitle loading.
   - **Server 3 (Hindi Dubbed)**: Dedicated Bollywood, Hindi-dubbed Hollywood, and South Indian dubbed stream.
+  - **Server 4 (Vidking)**: High-speed 1080p player with real-time watch progress tracking (`PLAYER_EVENT`) and resume timestamp integration.
 
 - **📥 Direct Offline Download Engine**:
   - Download Hub with one-click direct download links for Movies and TV Episodes across all servers.
@@ -126,15 +127,16 @@ Open your browser at: **[http://localhost:3000](http://localhost:3000)**
 
 ---
 
-## 🔌 3 High-Speed Streaming Servers
+## 🔌 4 High-Speed Streaming Servers
 
-Nightcast provides 3 dedicated streaming servers:
+Nightcast provides 4 dedicated streaming servers:
 
 | Server Name | Identifier | Resolution | Audio | Description |
 |---|---|---|---|---|
-| **Server 1** | `vidbolt` | 1080p Full HD | Original (English) | Primary high-speed embed player |
-| **Server 2** | `vidsrc` | 1080p Full HD | Original (English) | Fast fallback embed player |
+| **Server 1** | `vidsrc` | 1080p Full HD | Original (English) | High-reliability primary embed player |
+| **Server 2** | `vidbolt` | 1080p Full HD | Original (English) | Ultra-fast embed player with subtitles |
 | **Server 3** | `hindi` | 1080p / 720p HD | Hindi Dubbed | Dedicated Bollywood & Hindi dub stream |
+| **Server 4** | `vidking` | 1080p Full HD | Original (English) | High-speed player with real-time watch progress sync |
 
 ---
 

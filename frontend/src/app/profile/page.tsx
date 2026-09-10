@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUserStore } from '../../store/userStore';
 import { apiFetch, setStoredToken } from '../../lib/api';
 import MovieCard from '../../components/shared/MovieCard';
-import { getContinueWatchingList, removeWatchProgress, LocalProgressItem } from '../../lib/progress';
+import { getContinueWatchingList, removeWatchProgress, getCleanMediaId, LocalProgressItem } from '../../lib/progress';
 import { Sparkles, User, Settings as SettingsIcon, LogOut, Trash2, Plus, Bookmark, Clock, Eye, ShieldCheck, Mail, Lock, PlayCircle } from 'lucide-react';
 import Image from 'next/image';
 
@@ -58,33 +58,47 @@ export default function ProfilePage() {
   const mergedContinueWatching = useMemo(() => {
     const map = new Map<string, any>();
 
-    for (const item of localContinueWatching) {
-      const key = item.media_type === 'tv' ? `${item.id}_s${item.season || 1}e${item.episode || 1}` : `${item.id}`;
-      map.set(key, {
-        id: item.id,
-        media_type: item.media_type,
-        title: item.title,
-        poster_path: item.poster_path,
-        backdrop_path: item.backdrop_path,
-        season: item.season,
-        episode: item.episode,
-        progress_percent: item.progress_percent,
-        updated_at: item.updated_at,
-      });
-    }
+    const processItem = (c: any) => {
+      const cleanId = getCleanMediaId(c.media_id || c.id);
+      if (!cleanId) return;
 
+      const percent = Number(c.progress_percent ?? 0);
+      const seconds = Number(c.timestamp_seconds ?? 0);
+      const duration = Number(c.duration_seconds ?? 0);
+
+      // Filter out completed (>= 92%) or unstarted (< 1.5% and < 15s)
+      if (percent >= 92.0 || (duration > 60 && seconds >= duration - 30)) return;
+      if (seconds < 15 && percent < 1.5) return;
+
+      const existing = map.get(cleanId);
+      const cTime = c.updated_at ? new Date(c.updated_at).getTime() : 0;
+      const exTime = existing?.updated_at ? new Date(existing.updated_at).getTime() : 0;
+
+      const cEpScore = ((c.season || 1) * 1000) + (c.episode || 1);
+      const exEpScore = existing ? (((existing.season || 1) * 1000) + (existing.episode || 1)) : 0;
+
+      if (!existing || cTime > exTime || (cEpScore > exEpScore && cTime >= exTime - 60000)) {
+        map.set(cleanId, {
+          id: cleanId,
+          media_type: c.media_type || (c.season ? 'tv' : 'movie'),
+          title: c.title || existing?.title || 'Untitled',
+          poster_path: c.poster_path || existing?.poster_path || null,
+          backdrop_path: c.backdrop_path || (c as any).backdrop_path || existing?.backdrop_path || null,
+          season: c.season,
+          episode: c.episode,
+          progress_percent: percent,
+          timestamp_seconds: seconds,
+          duration_seconds: duration,
+          updated_at: c.updated_at || new Date().toISOString(),
+        });
+      }
+    };
+
+    for (const item of localContinueWatching) {
+      processItem(item);
+    }
     for (const c of backendContinueWatching) {
-      const key = c.media_type === 'tv' ? `${c.media_id}_s${c.season || 1}e${c.episode || 1}` : `${c.media_id}`;
-      map.set(key, {
-        id: c.media_id || c.id,
-        media_type: c.media_type,
-        title: c.title,
-        poster_path: c.poster_path,
-        season: c.season,
-        episode: c.episode,
-        progress_percent: c.progress_percent,
-        updated_at: c.updated_at,
-      });
+      processItem(c);
     }
 
     return Array.from(map.values()).sort((a, b) => {
@@ -95,7 +109,8 @@ export default function ProfilePage() {
   }, [localContinueWatching, backendContinueWatching]);
 
   const handleRemoveContinueWatching = async (item: any) => {
-    removeWatchProgress(item.id, item.season, item.episode);
+    const cleanId = getCleanMediaId(item.id);
+    removeWatchProgress(cleanId, item.season, item.episode);
     setLocalContinueWatching(getContinueWatchingList());
 
     if (activeProfile) {
@@ -104,7 +119,7 @@ export default function ProfilePage() {
         if (item.season) queryParams.set("season", item.season.toString());
         if (item.episode) queryParams.set("episode", item.episode.toString());
         const qs = queryParams.toString() ? `?${queryParams.toString()}` : "";
-        await apiFetch(`/api/progress/continue/${item.id}${qs}`, {
+        await apiFetch(`/api/progress/continue/${cleanId}${qs}`, {
           method: "DELETE",
           headers: { "X-Profile-ID": activeProfile.id },
         });

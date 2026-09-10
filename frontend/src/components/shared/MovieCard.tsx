@@ -85,10 +85,11 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
     ? item.poster_path.startsWith("http") ? item.poster_path : `https://image.tmdb.org/t/p/w500${item.poster_path}`
     : null;
 
-  const progress = item.progress_percent || 0;
+  const progress = Number(item.progress_percent ?? 0);
+  const displayPercent = Math.max(1, Math.min(99, Math.round(progress)));
 
   const defaultSubtitle = progress > 0
-    ? (item.season ? `S${item.season} E${item.episode || 1} • ${Math.round(progress)}% completed` : `${Math.round(progress)}% completed`)
+    ? (item.season ? `S${item.season} E${item.episode || 1} • ${displayPercent}% completed` : `${displayPercent}% completed`)
     : item.season
     ? `Season ${item.season}, Episode ${item.episode || 1}`
     : subtitle || (type === "tv" ? "TV Series" : "Movie");
@@ -200,7 +201,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
     setIsHovered(false);
   };
 
-  const watchUrl = `/watch/${type}/${item.id}` + (item.season ? `?season=${item.season}&episode=${item.episode}` : "");
+  const watchUrl = `/watch/${type}/${item.id}` + (item.season ? `?season=${item.season}&episode=${item.episode || 1}` : "");
   const detailUrl = `/${type}/${item.id}`;
 
   const positionClasses = useMemo(() => {
@@ -278,7 +279,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
             <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-[#0A0F11] z-30 overflow-hidden rounded-b-2xl">
               <div
                 className="h-full bg-gradient-to-r from-[#557B83] via-[#39AEA9] to-[#A2D5AB] shadow-[0_0_10px_rgba(57,174,169,0.9)] transition-all duration-300"
-                style={{ width: `${progress}%` }}
+                style={{ width: `${Math.max(2, Math.min(100, displayPercent))}%` }}
               />
             </div>
           )}
@@ -348,7 +349,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
               <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#0A0F11]/90 z-20">
                 <div
                   className="h-full bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB]"
-                  style={{ width: `${Math.min(Math.max(progress, 2), 100)}%` }}
+                  style={{ width: `${Math.max(2, Math.min(100, displayPercent))}%` }}
                 />
               </div>
             )}

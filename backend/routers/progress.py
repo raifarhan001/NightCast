@@ -77,7 +77,21 @@ def get_continue_watching(
     items = db.query(models.ContinueWatching).filter(
         models.ContinueWatching.profile_id == active_profile.id
     ).order_by(models.ContinueWatching.updated_at.desc()).all()
-    return items
+    
+    # Consolidate by clean media_id so each TV show/movie only appears once with its latest watched episode
+    seen_media = set()
+    consolidated = []
+    for item in items:
+        clean_id = item.media_id.split('_s')[0].split('-s')[0].split('_')[0].strip()
+        if item.progress_percent >= 92.0:
+            continue
+        if item.progress_percent < 1.5 and (item.timestamp_seconds or 0) < 15.0:
+            continue
+        if clean_id not in seen_media:
+            seen_media.add(clean_id)
+            item.media_id = clean_id
+            consolidated.append(item)
+    return consolidated
 
 @router.get("/history", response_model=List[schemas.WatchHistoryResponse])
 def get_history(
@@ -97,9 +111,10 @@ def delete_continue_item(
     active_profile: models.Profile = Depends(auth.get_active_profile),
     db: Session = Depends(get_db)
 ):
+    clean_id = media_id.split('_s')[0].split('-s')[0].split('_')[0].strip()
     query = db.query(models.ContinueWatching).filter(
         models.ContinueWatching.profile_id == active_profile.id,
-        models.ContinueWatching.media_id == media_id
+        (models.ContinueWatching.media_id == media_id) | (models.ContinueWatching.media_id == clean_id)
     )
     if season is not None:
         query = query.filter(models.ContinueWatching.season == season)

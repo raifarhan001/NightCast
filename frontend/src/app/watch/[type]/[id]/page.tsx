@@ -5,9 +5,9 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { apiFetch, API_BASE_URL } from '../../../../lib/api';
-import { saveWatchProgress, getSavedTimestamp } from '../../../../lib/progress';
+import { saveWatchProgress, getSavedTimestamp, getCleanMediaId } from '../../../../lib/progress';
 import { ImageService } from '../../../../lib/ImageService';
-import { Play, Star, Download, DownloadCloud, Languages, Globe, X, Check, Loader2, AlertTriangle, RotateCcw, SkipForward } from 'lucide-react';
+import { Play, Star, Download, DownloadCloud, Globe, X, Check, Loader2, AlertTriangle, RotateCcw, SkipForward } from 'lucide-react';
 import { useUserStore } from '../../../../store/userStore';
 import HLSPlayer from '../../../../components/player/HLSPlayer';
 import NightCastPlayer from '../../../../components/player/NightCastPlayer';
@@ -20,7 +20,8 @@ export default function WatchPage() {
   const router = useRouter();
   const { activeProfile } = useUserStore();
   const type = Array.isArray(params.type) ? params.type[0] : params.type;
-  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  const rawId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const id = getCleanMediaId(rawId);
 
   const [currentSeason, setCurrentSeason] = useState(1);
   const [currentEpisode, setCurrentEpisode] = useState(1);
@@ -32,14 +33,14 @@ export default function WatchPage() {
   const [servers, setServers] = useState<any[]>(() => {
     const defaultServers: any[] = [
       {
-        id: 'vidsrc',
-        name: 'Server 1 (VidSrc)',
+        id: 'vidking',
+        name: 'Server 1 (Vidking Ultra)',
         url: type === 'tv'
-          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
-          : `https://vidsrc.me/embed/movie?tmdb=${id}`,
+          ? `https://www.vidking.net/embed/tv/${id}/${currentSeason}/${currentEpisode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true`
+          : `https://www.vidking.net/embed/movie/${id}?color=00f2fe&autoPlay=true`,
         type: 'iframe',
         language: 'en',
-        language_name: 'vidsrc.me'
+        language_name: 'vidking.net'
       },
       {
         id: 'vidbolt',
@@ -68,20 +69,57 @@ export default function WatchPage() {
     return defaultServers;
   });
 
-  const [activeServerId, setActiveServerId] = useState('vidsrc');
-  const [playerUrl, setPlayerUrl] = useState("");
+  const [activeServerId, setActiveServerId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('nightcast_preferred_server');
+      if (saved && saved !== 'vidsrc' && ['vidking', 'vidbolt', 'hindi-dubbed'].includes(saved)) {
+        return saved;
+      }
+    }
+    return 'vidking';
+  });
+
+  const [resumeTime, setResumeTime] = useState<number>(() => {
+    if (typeof window === 'undefined' || !id) return 0;
+    const isTv = type === 'tv';
+    return getSavedTimestamp(
+      id,
+      isTv ? 1 : undefined,
+      isTv ? 1 : undefined,
+      type as 'movie' | 'tv'
+    );
+  });
+
+  const [playerUrl, setPlayerUrl] = useState<string>(() => {
+    if (!id) return "";
+    const isTv = type === 'tv';
+    const seconds = typeof window !== 'undefined'
+      ? getSavedTimestamp(id, isTv ? 1 : undefined, isTv ? 1 : undefined, type as 'movie' | 'tv')
+      : 0;
+    let base = isTv
+      ? `https://www.vidking.net/embed/tv/${id}/1/1?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true`
+      : `https://www.vidking.net/embed/movie/${id}?color=00f2fe&autoPlay=true`;
+    if (seconds > 5) {
+      base += `&progress=${Math.floor(seconds)}`;
+    }
+    return base;
+  });
+
   const [seasonEpisodes, setSeasonEpisodes] = useState<any[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(false);
-  const [resumeTime, setResumeTime] = useState(0);
   const [failedServerIds, setFailedServerIds] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [streamErrorMsg, setStreamErrorMsg] = useState<string | null>(null);
-  const lastPlaybackTimeRef = useRef<number>(0);
+
+  // Active Playback Tracking Refs
+  const playbackSecondsRef = useRef<number>(0);
+  const watchDurationSecondsRef = useRef<number>(0);
+  const hasRealPlayerEventsRef = useRef<boolean>(false);
 
   // Audio track switching state
   const [hlsAudioTracks, setHlsAudioTracks] = useState<Array<{ id: number; name: string; lang?: string }>>([
-    { id: 0, name: 'English', lang: 'en' },
-    { id: 1, name: 'Hindi', lang: 'hi' },
+    { id: 0, name: 'Hindi Dubbed (हिंदी)', lang: 'hi' },
+    { id: 1, name: 'English / Original', lang: 'en' },
     { id: 2, name: 'Korean', lang: 'ko' }
   ]);
   const [selectedAudioTrack, setSelectedAudioTrack] = useState<number>(0);
@@ -127,14 +165,14 @@ export default function WatchPage() {
     if (!rawActiveServer) return null;
     if (isServerFailed) {
       let fallbackUrl = rawActiveServer.url;
-      if (rawActiveServer.id === 'vidbolt') {
-        fallbackUrl = type === 'tv'
-          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
-          : `https://vidsrc.me/embed/movie?tmdb=${id}`;
-      } else if (rawActiveServer.id === 'vidsrc') {
+      if (rawActiveServer.id === 'vidking') {
         fallbackUrl = type === 'tv'
           ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}`
           : `https://vidbolt.xyz/movie/${id}`;
+      } else if (rawActiveServer.id === 'vidbolt') {
+        fallbackUrl = type === 'tv'
+          ? `https://www.vidking.net/embed/tv/${id}/${currentSeason}/${currentEpisode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true`
+          : `https://www.vidking.net/embed/movie/${id}?color=00f2fe&autoPlay=true`;
       }
       return {
         ...rawActiveServer,
@@ -205,8 +243,12 @@ export default function WatchPage() {
         );
         if (data?.servers && data.servers.length > 0) {
           setServers(data.servers);
-          const currentExists = data.servers.some((s: any) => s.id === activeServerId);
-          if (!currentExists) {
+          const preferred = typeof window !== 'undefined' ? localStorage.getItem('nightcast_preferred_server') : null;
+          const preferredExists = preferred && preferred !== 'vidsrc' && data.servers.some((s: any) => s.id === preferred);
+          const currentExists = activeServerId !== 'vidsrc' && data.servers.some((s: any) => s.id === activeServerId);
+          if (preferredExists) {
+            setActiveServerId(preferred!);
+          } else if (!currentExists) {
             setActiveServerId(data.servers[0].id);
           }
         }
@@ -220,18 +262,46 @@ export default function WatchPage() {
   useEffect(() => {
     if (!activeServer) return;
     let finalUrl = activeServer.url;
+    const isTv = type === 'tv';
+    const seconds = getSavedTimestamp(
+      id,
+      isTv ? currentSeason : undefined,
+      isTv ? currentEpisode : undefined,
+      type as 'movie' | 'tv'
+    );
 
-    if (finalUrl.includes('vidbolt.xyz')) {
+    if (finalUrl.includes('vidking.net')) {
+      try {
+        const urlObj = new URL(finalUrl);
+        if (!urlObj.searchParams.has('color')) {
+          urlObj.searchParams.set('color', '00f2fe');
+        }
+        if (!urlObj.searchParams.has('autoPlay')) {
+          urlObj.searchParams.set('autoPlay', 'true');
+        }
+        if (isTv) {
+          if (!urlObj.searchParams.has('nextEpisode')) {
+            urlObj.searchParams.set('nextEpisode', 'true');
+          }
+          if (!urlObj.searchParams.has('episodeSelector')) {
+            urlObj.searchParams.set('episodeSelector', 'true');
+          }
+        }
+        if (seconds > 5) {
+          urlObj.searchParams.set('progress', Math.floor(seconds).toString());
+        }
+        finalUrl = urlObj.toString();
+      } catch (e) {
+        console.error("Vidking URL parameter setup error", e);
+      }
+    } else if (finalUrl.includes('vidbolt.xyz')) {
       try {
         const urlObj = new URL(finalUrl);
         if (!urlObj.searchParams.has('theme')) {
           urlObj.searchParams.set('theme', 'FA0037');
         }
-        if (id) {
-          const seconds = getSavedTimestamp(id, currentSeason, currentEpisode);
-          if (seconds > 10 && !urlObj.searchParams.has('startAt')) {
-            urlObj.searchParams.set('startAt', Math.floor(seconds).toString());
-          }
+        if (seconds > 5) {
+          urlObj.searchParams.set('startAt', Math.floor(seconds).toString());
         }
         finalUrl = urlObj.toString();
       } catch (e) {
@@ -245,7 +315,13 @@ export default function WatchPage() {
 
   useEffect(() => {
     if (!id) return;
-    const seconds = getSavedTimestamp(id, currentSeason, currentEpisode);
+    const isTv = type === 'tv';
+    const seconds = getSavedTimestamp(
+      id,
+      isTv ? currentSeason : undefined,
+      isTv ? currentEpisode : undefined,
+      type as 'movie' | 'tv'
+    );
     setResumeTime(seconds);
   }, [id, activeServerId, currentSeason, currentEpisode, type]);
 
@@ -332,7 +408,7 @@ export default function WatchPage() {
 
   const handlePlayerProgress = useCallback((currentTime: number, duration: number) => {
     if (!id) return;
-    lastPlaybackTimeRef.current = currentTime;
+    playbackSecondsRef.current = currentTime;
     try {
       const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
       
@@ -346,11 +422,13 @@ export default function WatchPage() {
         episode: type === 'tv' ? currentEpisode : undefined,
         timestamp_seconds: currentTime,
         duration_seconds: duration,
-        progress_percent: progressPercent
+        progress_percent: progressPercent,
+        next_season: nextEpisodeInfo?.season,
+        next_episode: nextEpisodeInfo?.episode,
       });
 
       // Auto-trigger next episode overlay in web series when nearing the end
-      if (type === 'tv' && duration > 60 && (currentTime >= duration - 25 || progressPercent >= 93)) {
+      if (type === 'tv' && duration > 60 && (currentTime >= duration - 25 || progressPercent >= 92)) {
         if (!isAutoPlayDismissedRef.current && !showNextOverlayRef.current) {
           triggerNextEpisodeOverlay();
         }
@@ -377,31 +455,46 @@ export default function WatchPage() {
     } catch (e) {
       console.error("Failed to save progress", e);
     }
-  }, [id, activeProfile, meta, type, currentSeason, currentEpisode, triggerNextEpisodeOverlay]);
+  }, [id, activeProfile, meta, type, currentSeason, currentEpisode, nextEpisodeInfo, triggerNextEpisodeOverlay]);
 
-  // 1. Initial Watch Registration: Ensure item immediately appears in Continue Watching
+  // 1. Reset & load saved timestamp on route / episode change
+  useEffect(() => {
+    if (!id) return;
+    const isTv = type === 'tv';
+    const initialSeconds = getSavedTimestamp(
+      id,
+      isTv ? currentSeason : undefined,
+      isTv ? currentEpisode : undefined,
+      type as 'movie' | 'tv'
+    );
+    playbackSecondsRef.current = initialSeconds;
+    watchDurationSecondsRef.current = 0;
+    hasRealPlayerEventsRef.current = false;
+    setResumeTime(initialSeconds);
+  }, [id, currentSeason, currentEpisode, type]);
+
+  // 2. When TMDB meta loads, ensure metadata in localStorage is updated with high-quality backdrop & title
   useEffect(() => {
     if (!id || !meta) return;
-    const initialSeconds = getSavedTimestamp(id, currentSeason, currentEpisode);
-    const estDuration = meta?.runtime ? meta.runtime * 60 : 7200;
-    const initialProgress = estDuration > 0 && initialSeconds > 0 ? (initialSeconds / estDuration) * 100 : 2;
-
-    lastPlaybackTimeRef.current = initialSeconds > 0 ? initialSeconds : 10;
-    saveWatchProgress({
-      id: id,
-      media_type: type as 'movie' | 'tv',
-      title: meta.title || meta.name || 'Untitled',
-      poster_path: meta.poster_path || null,
-      backdrop_path: meta.backdrop_path || null,
-      season: type === 'tv' ? currentSeason : undefined,
-      episode: type === 'tv' ? currentEpisode : undefined,
-      timestamp_seconds: initialSeconds > 0 ? initialSeconds : 10,
-      duration_seconds: estDuration,
-      progress_percent: initialProgress
-    });
+    try {
+      const raw = localStorage.getItem('nightcast_continue_watching');
+      if (raw) {
+        const map = JSON.parse(raw);
+        const specificKey = type === 'tv' ? `${id}_s${currentSeason}e${currentEpisode}` : id;
+        const target = map[specificKey] || map[id];
+        if (target) {
+          target.title = meta.title || meta.name || target.title;
+          target.poster_path = meta.poster_path || target.poster_path;
+          target.backdrop_path = meta.backdrop_path || target.backdrop_path;
+          localStorage.setItem('nightcast_continue_watching', JSON.stringify(map));
+        }
+      }
+    } catch {
+      // Ignore
+    }
   }, [id, meta, type, currentSeason, currentEpisode]);
 
-  // 2. PostMessage listener for embed players (VidBolt, VidLink, VidSrc)
+  // 3. PostMessage listener for embed players (Vidking PLAYER_EVENT, VidBolt, VidLink, VidSrc)
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       try {
@@ -415,21 +508,45 @@ export default function WatchPage() {
         }
         if (!data || typeof data !== 'object') return;
 
+        // Support Vidking PLAYER_EVENT
+        if (data.type === 'PLAYER_EVENT' && data.data) {
+          hasRealPlayerEventsRef.current = true;
+          const pData = data.data;
+          const curTime = Number(pData.currentTime ?? pData.timestamp);
+          const dur = Number(pData.duration);
+          const estDur = (!isNaN(dur) && dur > 0) ? dur : (meta?.runtime ? meta.runtime * 60 : 7200);
+
+          if (!isNaN(curTime) && curTime >= 10) {
+            playbackSecondsRef.current = curTime;
+            handlePlayerProgress(curTime, estDur);
+          }
+          if (pData.event === 'ended') {
+            if (type === 'tv' && !isAutoPlayDismissedRef.current && !showNextOverlayRef.current) {
+              triggerNextEpisodeOverlay();
+            }
+          }
+          return;
+        }
+
         let curTime: number | undefined;
         let dur: number | undefined;
 
         if (data.type === 'MEDIA_DATA' && data.data) {
+          hasRealPlayerEventsRef.current = true;
           curTime = Number(data.data.currentTime);
           dur = Number(data.data.duration);
         } else if (data.event === 'timeupdate' || data.type === 'timeupdate') {
+          hasRealPlayerEventsRef.current = true;
           curTime = Number(data.currentTime ?? data.data?.currentTime);
           dur = Number(data.duration ?? data.data?.duration);
         } else if (typeof data.currentTime === 'number') {
+          hasRealPlayerEventsRef.current = true;
           curTime = data.currentTime;
           dur = typeof data.duration === 'number' ? data.duration : undefined;
         }
 
-        if (curTime !== undefined && !isNaN(curTime) && curTime > 0) {
+        if (curTime !== undefined && !isNaN(curTime) && curTime >= 10) {
+          playbackSecondsRef.current = curTime;
           const validDur = (dur && !isNaN(dur) && dur > 0) ? dur : (meta?.runtime ? meta.runtime * 60 : 7200);
           handlePlayerProgress(curTime, validDur);
         }
@@ -445,7 +562,7 @@ export default function WatchPage() {
             triggerNextEpisodeOverlay();
           }
         }
-      } catch (e) {
+      } catch {
         // Ignore cross-origin non-JSON messages
       }
     };
@@ -456,39 +573,36 @@ export default function WatchPage() {
     };
   }, [handlePlayerProgress, meta, type, triggerNextEpisodeOverlay]);
 
-  // 3. Active Watcher Heartbeat: Advance progress periodically while tab is active
+  // 4. Active Watcher Heartbeat: For iframe servers that do not emit postMessage (Server 1 VidSrc, Server 2 VidBolt, Server 3)
   useEffect(() => {
     if (!id || !meta) return;
     const estDuration = meta?.runtime ? meta.runtime * 60 : 7200;
 
     const timer = setInterval(() => {
       if (document.hidden) return;
-      const current = (lastPlaybackTimeRef.current || getSavedTimestamp(id, currentSeason, currentEpisode) || 0) + 10;
-      lastPlaybackTimeRef.current = current;
-      handlePlayerProgress(current, estDuration);
-    }, 10000);
+      // If player is reporting real events via postMessage, don't simulate
+      if (hasRealPlayerEventsRef.current) return;
+      if (!isIframeLoaded) return;
+
+      watchDurationSecondsRef.current += 5;
+      playbackSecondsRef.current += 5;
+
+      // Only save once user has actually watched for >= 15 seconds
+      if (playbackSecondsRef.current >= 15) {
+        handlePlayerProgress(playbackSecondsRef.current, estDuration);
+      }
+    }, 5000);
 
     return () => clearInterval(timer);
-  }, [id, meta, currentSeason, currentEpisode, handlePlayerProgress]);
+  }, [id, meta, isIframeLoaded, handlePlayerProgress]);
 
-  // 4. Save progress on beforeunload / exit
+  // 5. Save progress on beforeunload / exit
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (lastPlaybackTimeRef.current > 0 && meta && id) {
+      const curTime = playbackSecondsRef.current;
+      if (curTime >= 15 && meta && id) {
         const estDuration = meta?.runtime ? meta.runtime * 60 : 7200;
-        const progressPercent = estDuration > 0 ? (lastPlaybackTimeRef.current / estDuration) * 100 : 0;
-        saveWatchProgress({
-          id,
-          media_type: type as 'movie' | 'tv',
-          title: meta.title || meta.name || 'Untitled',
-          poster_path: meta.poster_path || null,
-          backdrop_path: meta.backdrop_path || null,
-          season: type === 'tv' ? currentSeason : undefined,
-          episode: type === 'tv' ? currentEpisode : undefined,
-          timestamp_seconds: lastPlaybackTimeRef.current,
-          duration_seconds: estDuration,
-          progress_percent: progressPercent
-        });
+        handlePlayerProgress(curTime, estDuration);
       }
     };
 
@@ -497,7 +611,7 @@ export default function WatchPage() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       handleBeforeUnload();
     };
-  }, [id, meta, type, currentSeason, currentEpisode]);
+  }, [id, meta, handlePlayerProgress]);
 
   const handleHlsError = useCallback(() => {
     if (activeServer) {
@@ -524,10 +638,12 @@ export default function WatchPage() {
       } else {
         const fallbackOptions = [
           {
-            id: "vidsrc-direct",
-            label: "VidSrc Primary Stream (1080p)",
-            url: type === 'tv' ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}` : `https://vidsrc.me/embed/movie?tmdb=${id}`,
-            quality: "1080p",
+            id: "vidking-direct",
+            label: "Vidking High-Speed Stream (1080p)",
+            url: type === 'tv'
+              ? `https://www.vidking.net/embed/tv/${id}/${currentSeason}/${currentEpisode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true`
+              : `https://www.vidking.net/embed/movie/${id}?color=00f2fe&autoPlay=true`,
+            quality: "1080p Full HD",
             format: "mp4/stream",
             type: "direct_stream"
           },
@@ -541,7 +657,7 @@ export default function WatchPage() {
           },
           {
             id: "hindi-direct",
-            label: "Hindi Dubbed Audio Source (720p/1080p)",
+            label: "Server 3 Hindi Dubbed Source (720p/1080p)",
             url: type === 'tv' ? `https://vsrc.su/embed/tv/${id}/${currentSeason}-${currentEpisode}?ds_lang=hi` : `https://vsrc.su/embed/movie/${id}?ds_lang=hi`,
             quality: "720p / 1080p",
             format: "mp4/stream",
@@ -564,15 +680,20 @@ export default function WatchPage() {
     const cleanTitle = titleStr.replace(/[^a-zA-Z0-9_\-]/g, "_");
     const filename = `${cleanTitle}_${type === 'tv' ? `S${currentSeason}E${currentEpisode}` : 'movie'}.mp4`;
 
-    const proxyDownloadUrl = `/api/v1/tmdb/download-proxy?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
+    const apiBase = API_BASE_URL.startsWith('http') ? API_BASE_URL : '';
+    const proxyDownloadUrl = `${apiBase}/api/v1/tmdb/download-proxy?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
 
     try {
-      const win = window.open(proxyDownloadUrl, '_blank');
-      if (!win) {
-        window.location.href = proxyDownloadUrl;
-      }
+      const link = document.createElement('a');
+      link.href = proxyDownloadUrl;
+      link.setAttribute('download', filename);
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (e) {
-      window.location.href = proxyDownloadUrl;
+      window.open(proxyDownloadUrl, '_blank');
     }
 
     setTimeout(() => {
@@ -628,7 +749,7 @@ export default function WatchPage() {
               />
             ) : (
               <iframe
-                key={activeServerId}
+                key={`${activeServerId}-${id}-${type === 'tv' ? `s${currentSeason}e${currentEpisode}` : 'movie'}`}
                 src={playerUrl}
                 onLoad={() => setIsIframeLoaded(true)}
                 className="absolute top-0 left-0 w-full h-full border-0 rounded-3xl"
@@ -765,6 +886,9 @@ export default function WatchPage() {
                     onClick={() => {
                       if (!isFailed) {
                         setActiveServerId(srv.id);
+                        if (typeof window !== 'undefined') {
+                          localStorage.setItem('nightcast_preferred_server', srv.id);
+                        }
                       }
                     }}
                     disabled={isFailed}

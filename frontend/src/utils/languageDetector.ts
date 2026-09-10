@@ -137,8 +137,28 @@ export function groupSourcesByLanguage(sources: ServerSource[]): LanguageBucket 
   }
 
   for (const source of sources) {
-    const lang = classifySourceLanguage(source);
-    buckets[lang].push(source);
+    const hasHindi =
+      source.is_dub ||
+      source.language === 'hi' ||
+      /[?&](ds_lang|lang)=hi\b/i.test(source.url || '') ||
+      /\b(hin|hindi|dual[- _]?audio)\b/i.test(source.name || '') ||
+      (Array.isArray(source.audio_tracks) &&
+        source.audio_tracks.some((t) => t.lang === 'hi' || /\bhindi\b/i.test(t.label || (t as any).name || '')));
+
+    const hasEnglish =
+      source.language === 'en' ||
+      source.language === 'multi' ||
+      /vidsrc|vidbolt|autoembed/i.test(source.url || source.id || '') ||
+      (Array.isArray(source.audio_tracks) &&
+        source.audio_tracks.some((t) => t.lang === 'en' || /\benglish\b/i.test(t.label || (t as any).name || '')));
+
+    if (hasHindi && hasEnglish) {
+      buckets.hindi.push(source);
+      buckets.english.push(source);
+    } else {
+      const lang = classifySourceLanguage(source);
+      buckets[lang].push(source);
+    }
   }
 
   return buckets;

@@ -54,8 +54,8 @@ export default function NightCastPlayer({
 
   const [audioTracks, setAudioTracks] = useState<AudioTrackData[]>(() => {
     return playbackData?.audio_tracks || [
-      { id: "en", language: "en", label: "English / Original", default: true },
-      { id: "hi", language: "hi", label: "Hindi Dubbed", default: false }
+      { id: "hi", language: "hi", label: "Hindi Dubbed (हिंदी)", default: true },
+      { id: "en", language: "en", label: "English / Original", default: false }
     ];
   });
   const [statusText, setStatusText] = useState("INITIALIZING STREAM...");
