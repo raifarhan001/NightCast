@@ -7,7 +7,28 @@ import Link from 'next/link';
 import { apiFetch, API_BASE_URL } from '../../../../lib/api';
 import { saveWatchProgress, getSavedTimestamp, getCleanMediaId } from '../../../../lib/progress';
 import { ImageService } from '../../../../lib/ImageService';
-import { Play, Star, Download, DownloadCloud, Globe, X, Check, Loader2, AlertTriangle, RotateCcw, SkipForward } from 'lucide-react';
+import {
+  Play,
+  Star,
+  Download,
+  DownloadCloud,
+  Globe,
+  X,
+  Check,
+  Loader2,
+  AlertTriangle,
+  RotateCcw,
+  SkipForward,
+  Maximize2,
+  Minimize2,
+  Tv,
+  List,
+  Keyboard,
+  Sparkles
+} from 'lucide-react';
+import { soundFx } from '../../../../lib/soundEffects';
+import AmbientGlow from '../../../../components/shared/AmbientGlow';
+import { useAmbientStore } from '../../../../store/ambientStore';
 import { useUserStore } from '../../../../store/userStore';
 import HLSPlayer from '../../../../components/player/HLSPlayer';
 import NightCastPlayer from '../../../../components/player/NightCastPlayer';
@@ -124,6 +145,11 @@ export default function WatchPage() {
   const [downloadProgress, setDownloadProgress] = useState<string | null>(null);
   const [copiedDownloadId, setCopiedDownloadId] = useState<string | null>(null);
 
+  // Luxury Cinema Experience States
+  const [isTheaterMode, setIsTheaterMode] = useState(false);
+  const [isEpisodeDrawerOpen, setIsEpisodeDrawerOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+
   // Next Episode & Auto-play states
   const [showNextOverlay, setShowNextOverlay] = useState(false);
   const [nextCountdown, setNextCountdown] = useState(10);
@@ -204,6 +230,12 @@ export default function WatchPage() {
         const data = await apiFetch(`/api/tmdb/${type}/${id}`);
         setMeta(data);
 
+        const backdrop = data?.backdrop_path || data?.poster_path;
+        const title = data?.title || data?.name;
+        if (backdrop) {
+          useAmbientStore.getState().setActiveBackdrop(backdrop, title);
+        }
+
         const recs = await apiFetch(`/api/tmdb/${type}/${id}/recommendations`);
         setRecommendations(recs || []);
       } catch (err) {
@@ -211,6 +243,10 @@ export default function WatchPage() {
       }
     };
     fetchMeta();
+
+    return () => {
+      useAmbientStore.getState().clearActiveBackdrop(0);
+    };
   }, [id, type]);
 
   useEffect(() => {
@@ -723,11 +759,176 @@ export default function WatchPage() {
     });
   };
 
+  // Cycle Stream Servers (Server 1 -> Server 2 -> Server 3)
+  const cycleNextServer = useCallback(() => {
+    if (!servers || servers.length === 0) return;
+    const currentIdx = servers.findIndex(s => s.id === activeServerId);
+    const nextIdx = (currentIdx + 1) % servers.length;
+    const nextServer = servers[nextIdx];
+    if (nextServer && !failedServerIds.includes(nextServer.id)) {
+      setActiveServerId(nextServer.id);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('nightcast_preferred_server', nextServer.id);
+      }
+      soundFx.playTap();
+      setToastMessage(`Switched stream engine to ${nextServer.name}`);
+    }
+  }, [servers, activeServerId, failedServerIds]);
+
+  // Next Episode shortcut handler
+  const handleNextEpisodeShortcut = useCallback(() => {
+    if (type === 'tv' && nextEpisodeInfo) {
+      soundFx.playTap();
+      handleEpisodeChange(nextEpisodeInfo.season, nextEpisodeInfo.episode);
+    }
+  }, [type, nextEpisodeInfo, handleEpisodeChange]);
+
+  // Keyboard Shortcuts Hook
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      if (
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          activeEl.getAttribute('contenteditable') === 'true')
+      ) {
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        if (isShortcutsOpen) {
+          setIsShortcutsOpen(false);
+          return;
+        }
+        if (isEpisodeDrawerOpen) {
+          setIsEpisodeDrawerOpen(false);
+          return;
+        }
+        if (isTheaterMode) {
+          setIsTheaterMode(false);
+          soundFx.playChime();
+          return;
+        }
+        if (isDownloadModalOpen) {
+          setIsDownloadModalOpen(false);
+          return;
+        }
+      }
+
+      if (e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        setIsTheaterMode(prev => {
+          soundFx.playChime();
+          return !prev;
+        });
+      } else if (e.key === 'e' || e.key === 'E') {
+        if (type === 'tv') {
+          e.preventDefault();
+          soundFx.playTap();
+          setIsEpisodeDrawerOpen(prev => !prev);
+        }
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        cycleNextServer();
+      } else if (e.key === 'n' || e.key === 'N') {
+        if (type === 'tv' && nextEpisodeInfo) {
+          e.preventDefault();
+          handleNextEpisodeShortcut();
+        }
+      } else if (e.key === 'd' || e.key === 'D') {
+        e.preventDefault();
+        soundFx.playTap();
+        handleOpenDownloadModal();
+      } else if (e.key === '?') {
+        e.preventDefault();
+        soundFx.playTap();
+        setIsShortcutsOpen(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    isTheaterMode,
+    isEpisodeDrawerOpen,
+    isShortcutsOpen,
+    isDownloadModalOpen,
+    type,
+    nextEpisodeInfo,
+    cycleNextServer,
+    handleNextEpisodeShortcut
+  ]);
+
   return (
     <div className="min-h-screen max-w-7xl mx-auto pt-20 pb-28 px-4 sm:px-6 md:px-12 relative select-none bg-[#0A0F11] text-[#E2E8F0]">
+      <AmbientGlow />
       <div className="space-y-6">
-        {/* Full Player Container */}
-        <div className="relative aspect-video w-full rounded-3xl overflow-hidden border border-white/[0.08] bg-[#0A0F11] shadow-[0_25px_60px_rgba(0,0,0,0.95)]">
+        {/* Full Player Container with Theater Mode and Ambilight halo */}
+        <div
+          className={
+            isTheaterMode
+              ? "fixed inset-0 z-[100] w-screen h-screen bg-black/95 backdrop-blur-3xl flex flex-col justify-center items-center p-2 sm:p-6 md:p-8"
+              : "relative w-full"
+          }
+        >
+          {/* Ambilight Aurora Halo Behind Player */}
+          <div className="absolute -inset-4 sm:-inset-8 bg-gradient-to-r from-[#39AEA9]/20 via-[#5B8FB9]/15 to-[#A2D5AB]/20 rounded-[40px] blur-3xl -z-10 opacity-70 pointer-events-none transition-opacity duration-1000 animate-pulse" />
+
+          {/* In Theater Mode, show a sleek Top HUD Bar */}
+          {isTheaterMode && (
+            <div className="w-full max-w-7xl flex items-center justify-between pb-3 px-2 text-white animate-in fade-in">
+              <div className="flex items-center gap-3">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#39AEA9] animate-pulse" />
+                <h2 className="text-sm sm:text-base font-bold font-display text-white truncate max-w-md">
+                  {movieTitle} {type === 'tv' && <span className="text-[#A2D5AB] font-sans text-xs">S{currentSeason} E{currentEpisode}</span>}
+                </h2>
+                <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[10px] font-sans font-semibold bg-white/[0.08] text-[#8FA8AD] border border-white/[0.1]">
+                  {rawActiveServer?.name || "Server 1"}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {type === 'tv' && (
+                  <button
+                    onClick={() => {
+                      soundFx.playTap();
+                      setIsEpisodeDrawerOpen(true);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#A2D5AB] text-xs font-sans font-medium border border-white/[0.1] transition-all cursor-pointer"
+                    title="Episodes [E]"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Episodes</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    soundFx.playTap();
+                    setIsShortcutsOpen(true);
+                  }}
+                  className="p-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#8FA8AD] hover:text-white transition-all cursor-pointer"
+                  title="Shortcuts [?]"
+                >
+                  <Keyboard className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    soundFx.playChime();
+                    setIsTheaterMode(false);
+                  }}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11] font-bold text-xs shadow-lg hover:opacity-95 transition-all cursor-pointer"
+                  title="Exit Theater Mode [Esc or T]"
+                >
+                  <Minimize2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Exit Theater</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Screen Box */}
+          <div className={`relative w-full ${isTheaterMode ? 'max-w-7xl max-h-[85vh] aspect-video rounded-2xl' : 'aspect-video rounded-3xl'} overflow-hidden border border-white/[0.08] bg-[#0A0F11] shadow-[0_25px_60px_rgba(0,0,0,0.95)]`}>
           {!isIframeLoaded && activeServer?.type !== 'hls' && (
             <div className="absolute inset-0 z-20 pointer-events-none">
               <PlayerSkeleton />
@@ -841,6 +1042,7 @@ export default function WatchPage() {
               </div>
             </div>
           )}
+          </div>
         </div>
 
         {/* Source Error / Fallback Notification Toast */}
@@ -883,6 +1085,7 @@ export default function WatchPage() {
                     key={srv.id}
                     onClick={() => {
                       if (!isFailed) {
+                        soundFx.playTap();
                         setActiveServerId(srv.id);
                         if (typeof window !== 'undefined') {
                           localStorage.setItem('nightcast_preferred_server', srv.id);
@@ -904,10 +1107,60 @@ export default function WatchPage() {
               })}
             </div>
 
+            {/* Quick Action Pill Controls (Theater Mode, Episode Drawer, Shortcuts) */}
+            <div className="flex items-center gap-2">
+              {/* Theater Mode Button */}
+              <button
+                onClick={() => {
+                  soundFx.playChime();
+                  setIsTheaterMode(prev => !prev);
+                }}
+                className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-xs font-sans font-medium transition-all active:scale-95 cursor-pointer ${
+                  isTheaterMode
+                    ? 'bg-[#39AEA9] text-[#0A0F11] border-[#39AEA9] font-bold shadow-[0_0_15px_rgba(57,174,169,0.5)]'
+                    : 'bg-white/[0.08] hover:bg-white/[0.14] text-[#E2E8F0] hover:text-white border-white/[0.1]'
+                }`}
+                title="Cinema Theater Mode [T]"
+              >
+                <Maximize2 className="w-3.5 h-3.5 text-[#A2D5AB]" />
+                <span className="hidden sm:inline">Theater [T]</span>
+              </button>
+
+              {/* Episode Drawer Button for TV */}
+              {type === 'tv' && (
+                <button
+                  onClick={() => {
+                    soundFx.playTap();
+                    setIsEpisodeDrawerOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-[#E2E8F0] hover:text-white font-sans font-medium text-xs border border-white/[0.1] transition-all active:scale-95 cursor-pointer"
+                  title="Quick Episode Drawer [E]"
+                >
+                  <List className="w-3.5 h-3.5 text-[#A2D5AB]" />
+                  <span className="hidden sm:inline">Episodes [E]</span>
+                </button>
+              )}
+
+              {/* Keyboard Shortcuts Button */}
+              <button
+                onClick={() => {
+                  soundFx.playTap();
+                  setIsShortcutsOpen(true);
+                }}
+                className="p-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-[#8FA8AD] hover:text-white font-sans text-xs border border-white/[0.1] transition-all active:scale-95 cursor-pointer"
+                title="Keyboard Shortcuts [?]"
+              >
+                <Keyboard className="w-3.5 h-3.5 text-[#A2D5AB]" />
+              </button>
+            </div>
+
             {/* Next Episode Button for TV Series */}
             {type === 'tv' && nextEpisodeInfo && (
               <button
-                onClick={() => handleEpisodeChange(nextEpisodeInfo.season, nextEpisodeInfo.episode)}
+                onClick={() => {
+                  soundFx.playTap();
+                  handleEpisodeChange(nextEpisodeInfo.season, nextEpisodeInfo.episode);
+                }}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] hover:opacity-95 text-[#0A0F11] font-sans font-bold text-xs shadow-[0_0_16px_rgba(57,174,169,0.45)] transition-all active:scale-95 cursor-pointer"
                 title={`Play Next: Season ${nextEpisodeInfo.season} Episode ${nextEpisodeInfo.episode} - ${nextEpisodeInfo.title}`}
               >
@@ -918,11 +1171,14 @@ export default function WatchPage() {
 
             {/* Direct Download Button */}
             <button
-              onClick={handleOpenDownloadModal}
+              onClick={() => {
+                soundFx.playTap();
+                handleOpenDownloadModal();
+              }}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-[#E2E8F0] hover:text-white font-sans font-medium text-xs border border-white/[0.1] shadow-lg transition-all active:scale-95 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5 text-[#A2D5AB]" />
-              <span>Download Offline</span>
+              <span>Download Offline [D]</span>
             </button>
           </div>
         </div>
@@ -1011,6 +1267,225 @@ export default function WatchPage() {
                   className="w-full py-2.5 bg-white/[0.06] hover:bg-white/[0.1] text-[#8FA8AD] hover:text-white text-xs font-sans font-medium rounded-xl transition-all border border-white/[0.08] cursor-pointer"
                 >
                   Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Slide-over Episode Drawer for Quick TV Navigation */}
+        {isEpisodeDrawerOpen && type === 'tv' && (
+          <div className="fixed inset-0 z-[120] flex justify-end bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+            <div
+              className="fixed inset-0 cursor-pointer"
+              onClick={() => setIsEpisodeDrawerOpen(false)}
+            />
+            <div className="relative w-full max-w-md h-full bg-[#0A0F11]/95 backdrop-blur-2xl border-l border-white/[0.1] p-6 flex flex-col shadow-[-20px_0_60px_rgba(0,0,0,0.9)] z-10 animate-in slide-in-from-right duration-300">
+              <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
+                <div>
+                  <div className="flex items-center gap-2 text-xs text-[#8FA8AD] font-sans">
+                    <Tv className="w-3.5 h-3.5 text-[#39AEA9]" />
+                    <span>Episode Drawer</span>
+                  </div>
+                  <h3 className="font-display font-bold text-lg text-white truncate max-w-[260px]">
+                    {movieTitle}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => {
+                    soundFx.playTap();
+                    setIsEpisodeDrawerOpen(false);
+                  }}
+                  className="w-8 h-8 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-white flex items-center justify-center transition-colors cursor-pointer"
+                  title="Close [Esc]"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Season Select pills in Drawer */}
+              <div className="flex gap-1.5 py-3 overflow-x-auto no-scrollbar border-b border-white/[0.08]">
+                {seasons.map((s: any) => (
+                  <button
+                    key={s.season_number}
+                    onClick={() => {
+                      soundFx.playTap();
+                      handleEpisodeChange(s.season_number, 1);
+                    }}
+                    className={`px-3 py-1 rounded-lg text-xs font-sans shrink-0 transition-all cursor-pointer ${
+                      currentSeason === s.season_number
+                        ? 'bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11] font-bold shadow-[0_0_10px_rgba(57,174,169,0.4)]'
+                        : 'bg-white/[0.06] text-[#8FA8AD] hover:text-white'
+                    }`}
+                  >
+                    {s.name || `Season ${s.season_number}`}
+                  </button>
+                ))}
+              </div>
+
+              {/* Episodes List in Drawer */}
+              <div className="flex-1 overflow-y-auto no-scrollbar py-3 space-y-2">
+                {episodesLoading ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="h-16 rounded-2xl bg-white/[0.04] animate-pulse" />
+                  ))
+                ) : seasonEpisodes.length > 0 ? (
+                  seasonEpisodes.map((ep: any) => {
+                    const isActive = ep.episode_number === currentEpisode;
+                    return (
+                      <button
+                        key={ep.episode_number}
+                        onClick={() => {
+                          soundFx.playTap();
+                          handleEpisodeChange(currentSeason, ep.episode_number);
+                          setIsEpisodeDrawerOpen(false);
+                        }}
+                        className={`w-full p-3 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer ${
+                          isActive
+                            ? 'bg-[#39AEA9]/20 border-[#39AEA9] text-white shadow-[0_0_15px_rgba(57,174,169,0.3)]'
+                            : 'bg-[#121A1D]/80 border-white/[0.06] text-[#8FA8AD] hover:text-white hover:border-[#39AEA9]/50'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                          isActive ? 'bg-gradient-to-tr from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11]' : 'bg-[#0A0F11] text-[#8FA8AD]'
+                        }`}>
+                          <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className={`text-[10px] font-sans font-semibold ${isActive ? 'text-[#A2D5AB]' : 'text-[#8FA8AD]'}`}>
+                            Episode {ep.episode_number}
+                          </p>
+                          <h4 className="text-xs font-medium text-white truncate">{ep.name || `Episode ${ep.episode_number}`}</h4>
+                        </div>
+                      </button>
+                    );
+                  })
+                ) : (
+                  Array.from({ length: episodesCount }).map((_, i) => {
+                    const epNum = i + 1;
+                    const isActive = epNum === currentEpisode;
+                    return (
+                      <button
+                        key={epNum}
+                        onClick={() => {
+                          soundFx.playTap();
+                          handleEpisodeChange(currentSeason, epNum);
+                          setIsEpisodeDrawerOpen(false);
+                        }}
+                        className={`w-full p-3 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer ${
+                          isActive
+                            ? 'bg-[#39AEA9]/20 border-[#39AEA9] text-white shadow-[0_0_15px_rgba(57,174,169,0.3)]'
+                            : 'bg-[#121A1D]/80 border-white/[0.06] text-[#8FA8AD] hover:text-white hover:border-[#39AEA9]/50'
+                        }`}
+                      >
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
+                          isActive ? 'bg-gradient-to-tr from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11]' : 'bg-[#0A0F11] text-[#8FA8AD]'
+                        }`}>
+                          <Play className="w-3 h-3 fill-current ml-0.5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className={`text-[10px] font-sans font-semibold ${isActive ? 'text-[#A2D5AB]' : 'text-[#8FA8AD]'}`}>
+                            Episode {epNum}
+                          </p>
+                          <h4 className="text-xs font-medium text-white truncate">Chapter {epNum}</h4>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Keyboard Shortcuts HUD modal */}
+        {isShortcutsOpen && (
+          <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+            <div
+              className="fixed inset-0 cursor-pointer"
+              onClick={() => setIsShortcutsOpen(false)}
+            />
+            <div className="relative bg-[#121A1D]/95 border border-[#39AEA9]/40 rounded-3xl p-6 max-w-md w-full shadow-[0_0_60px_rgba(57,174,169,0.25)] space-y-5 z-10 animate-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-[#39AEA9]/20 text-[#A2D5AB]">
+                    <Keyboard className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-display font-bold text-lg text-white">Cinema Pro Shortcuts</h3>
+                    <p className="text-xs text-[#8FA8AD] font-sans">Control your playback without a mouse</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    soundFx.playTap();
+                    setIsShortcutsOpen(false);
+                  }}
+                  className="w-7 h-7 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-white flex items-center justify-center transition-colors cursor-pointer"
+                  title="Close"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-2 text-xs font-sans">
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
+                  <span className="text-[#E2E8F0] font-medium">Cinema Theater Mode</span>
+                  <kbd className="px-2.5 py-1 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                    T
+                  </kbd>
+                </div>
+                {type === 'tv' && (
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
+                    <span className="text-[#E2E8F0] font-medium">Toggle Episode Drawer</span>
+                    <kbd className="px-2.5 py-1 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                      E
+                    </kbd>
+                  </div>
+                )}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
+                  <span className="text-[#E2E8F0] font-medium">Cycle Stream Engine (Servers)</span>
+                  <kbd className="px-2.5 py-1 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                    S
+                  </kbd>
+                </div>
+                {type === 'tv' && (
+                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
+                    <span className="text-[#E2E8F0] font-medium">Skip to Next Episode</span>
+                    <kbd className="px-2.5 py-1 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                      N
+                    </kbd>
+                  </div>
+                )}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
+                  <span className="text-[#E2E8F0] font-medium">Direct Offline Download Hub</span>
+                  <kbd className="px-2.5 py-1 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                    D
+                  </kbd>
+                </div>
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
+                  <span className="text-[#E2E8F0] font-medium">Toggle This Shortcuts Cheat Sheet</span>
+                  <kbd className="px-2.5 py-1 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                    ?
+                  </kbd>
+                </div>
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
+                  <span className="text-[#E2E8F0] font-medium">Close Overlay / Exit Theater</span>
+                  <kbd className="px-2 py-1 rounded-lg bg-[#0A0F11] text-[#8FA8AD] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                    Esc
+                  </kbd>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => {
+                    soundFx.playTap();
+                    setIsShortcutsOpen(false);
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11] font-bold text-xs shadow-md cursor-pointer hover:opacity-95 transition-all"
+                >
+                  Got It
                 </button>
               </div>
             </div>

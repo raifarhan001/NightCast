@@ -5,6 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import { ImageService } from "../../lib/ImageService";
+import { soundFx } from "../../lib/soundEffects";
+import { useAmbientStore } from "../../store/ambientStore";
 import PlatformBadge from "../shared/PlatformBadge";
 
 interface RankedItem {
@@ -112,6 +114,15 @@ export default function Top10RankedRow({
             <Link
               key={`${item.id}-${rank}`}
               href={`/watch/${type}/${item.id}`}
+              onClick={() => soundFx.playTap()}
+              onMouseEnter={() => {
+                soundFx.playHover();
+                const backdrop = item.backdrop_path || item.poster_path;
+                if (backdrop) {
+                  useAmbientStore.getState().setActiveBackdrop(backdrop, displayTitle);
+                }
+              }}
+              onMouseLeave={() => useAmbientStore.getState().clearActiveBackdrop(400)}
               className="group/item relative flex items-center shrink-0 snap-start select-none cursor-pointer transform-gpu will-change-transform transition-all duration-300 ease-out hover:-translate-y-1"
             >
               {/* Monumental Modern Rank Number */}

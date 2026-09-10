@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Play, Plus, Info, Star, Check } from "lucide-react";
 import { MediaItem } from "../../lib/api";
 import { ImageService } from "../../lib/ImageService";
+import { useAmbientStore } from "../../store/ambientStore";
 
 interface HeroCarouselProps {
   items: MediaItem[];
@@ -25,6 +26,17 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
     if (!items || items.length === 0) return;
     setCurrentIndex((prev) => (prev + 1) % items.length);
   }, [items]);
+
+  useEffect(() => {
+    if (items && items[currentIndex]) {
+      const activeItem = items[currentIndex];
+      const backdrop = activeItem.backdrop_path || activeItem.poster_path;
+      const activeTitle = activeItem.title || activeItem.name;
+      if (backdrop) {
+        useAmbientStore.getState().setActiveBackdrop(backdrop, activeTitle);
+      }
+    }
+  }, [currentIndex, items]);
 
   useEffect(() => {
     if (isPaused || !items || items.length <= 1) return;
@@ -100,22 +112,26 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
           <div className="space-y-3.5 pointer-events-auto">
             {/* Metadata Ribbon */}
             <div className="flex flex-wrap items-center gap-2">
-              <span className="cinema-badge-blood">
-                Premiere
+              <span className="px-3 py-1 rounded-full bg-black/70 backdrop-blur-xl border border-white/[0.15] text-[11px] font-sans font-bold text-[#E5EFC1] shadow-lg flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#A2D5AB] animate-pulse" />
+                Premiere Selection
               </span>
               <span className="cinema-badge-ash">
                 {isTv ? "TV Series" : "Movie"}
               </span>
-              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/[0.08] backdrop-blur-xl border border-white/[0.1] text-[10px] font-sans font-semibold text-[#E5EFC1]">
-                <Star className="w-2.5 h-2.5 fill-current text-[#A2D5AB]" />
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.08] backdrop-blur-xl border border-white/[0.1] text-[10px] font-sans font-semibold text-[#E5EFC1]">
+                <Star className="w-3 h-3 fill-current text-[#A2D5AB]" />
                 <span>IMDb {rating}</span>
               </div>
-              <span className="text-xs font-sans text-[#8FA8AD]">{releaseYear}</span>
-              <span className="text-[10px] font-sans px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.1] text-[#CBD5E1]">
-                {ageRating}
-              </span>
-              <span className="text-[10px] font-sans px-2.5 py-0.5 rounded-full bg-[#39AEA9]/20 border border-[#39AEA9]/40 text-[#A2D5AB] font-semibold">
+              <span className="text-xs font-sans text-[#8FA8AD] font-medium">{releaseYear}</span>
+              <span className="text-[10px] font-sans px-2.5 py-1 rounded-full bg-[#39AEA9]/20 border border-[#39AEA9]/40 text-[#A2D5AB] font-bold shadow-sm">
                 4K UHD
+              </span>
+              <span className="hidden sm:inline-flex text-[10px] font-sans px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/[0.1] text-white/90 font-bold backdrop-blur-md">
+                DOLBY VISION • ATMOS
+              </span>
+              <span className="hidden md:inline-flex text-[10px] font-sans px-2.5 py-1 rounded-full bg-white/[0.06] border border-white/[0.1] text-[#E5EFC1] font-bold backdrop-blur-md">
+                IMAX ENHANCED
               </span>
             </div>
 

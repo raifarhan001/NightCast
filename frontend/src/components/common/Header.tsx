@@ -8,6 +8,7 @@ import { Search, User, X, ChevronDown, Film, Tv, Sparkles, Grid } from "lucide-r
 import ProfileSelectorModal from "../profile/ProfileSelectorModal";
 import { apiFetch, MediaItem } from "../../lib/api";
 import { ImageService } from "../../lib/ImageService";
+import { soundFx } from "../../lib/soundEffects";
 
 const CATEGORIES = [
   { id: "28", name: "Action & Adventure", href: "/search?genre=28" },
@@ -29,7 +30,6 @@ function HeaderContent() {
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
-
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const mobileSearchRef = useRef<HTMLDivElement>(null);
   const categoriesRef = useRef<HTMLDivElement>(null);
@@ -339,7 +339,11 @@ function HeaderContent() {
             {/* Profile Avatar Trigger */}
             <button
               type="button"
-              onClick={() => setIsProfileModalOpen(true)}
+              onClick={() => {
+                soundFx.playTap();
+                setIsProfileModalOpen(true);
+              }}
+              onMouseEnter={() => soundFx.playHover()}
               className="w-9 h-9 rounded-full bg-white/[0.06] border border-white/[0.1] flex items-center justify-center text-[#CBD5E1] hover:text-white hover:border-[#39AEA9] hover:bg-white/[0.1] transition-all shadow-sm shrink-0 active:scale-95 group cursor-pointer"
               aria-label="User Profile"
             >

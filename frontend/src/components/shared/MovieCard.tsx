@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Play, Star, Plus, Check, ThumbsUp, ChevronDown, X } from "lucide-react";
+import { Play, Star, Plus, Check, ThumbsUp, ChevronDown, X, Sparkles } from "lucide-react";
 import { ImageService } from "../../lib/ImageService";
+import { soundFx } from "../../lib/soundEffects";
+import { useAmbientStore } from "../../store/ambientStore";
 import PlatformBadge from "./PlatformBadge";
 
 export const TMDB_GENRES: Record<number, string> = {
@@ -17,8 +19,8 @@ export const TMDB_GENRES: Record<number, string> = {
   18: "Drama",
   10751: "Family",
   14: "Fantasy",
-  36: "History",
-  27: "Horror",
+  23: "History",
+  24: "Horror",
   10402: "Music",
   9648: "Mystery",
   10749: "Romantic",
@@ -80,9 +82,9 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
   const releaseYear = (item.release_date || item.first_air_date || "").slice(0, 4);
 
   const imageUrl = item.backdrop_path
-    ? item.backdrop_path.startsWith("http") ? item.backdrop_path : `https://image.tmdb.org/t/p/w500${item.backdrop_path}`
+    ? ImageService.getBackdrop(item.backdrop_path, "w780", title)
     : item.poster_path
-    ? item.poster_path.startsWith("http") ? item.poster_path : `https://image.tmdb.org/t/p/w500${item.poster_path}`
+    ? ImageService.getPoster(item.poster_path, "w500", title)
     : null;
 
   const progress = Number(item.progress_percent ?? 0);
@@ -162,16 +164,23 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
   const handleWatchlistClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    soundFx.playTap();
     setAdded(!added);
   };
 
   const handleLikeClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    soundFx.playTap();
     setLiked(!liked);
   };
 
   const handleMouseEnter = () => {
+    soundFx.playHover();
+    const backdrop = item.backdrop_path || item.poster_path;
+    if (backdrop) {
+      useAmbientStore.getState().setActiveBackdrop(backdrop, title);
+    }
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
@@ -197,6 +206,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
   };
 
   const handleMouseLeave = () => {
+    useAmbientStore.getState().clearActiveBackdrop(400);
     if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
     setIsHovered(false);
   };
@@ -300,28 +310,25 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
           className={`absolute ${positionClasses} z-50 bg-[#14181B] rounded-2xl shadow-[0_24px_55px_rgba(0,0,0,0.98),0_0_30px_rgba(57,174,169,0.25)] border border-white/[0.15] overflow-hidden transform-gpu will-change-transform animate-in fade-in zoom-in-95 duration-200 pointer-events-auto`}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Top Banner Image with Red 'Recently added' Badge */}
-          <Link href={watchUrl} className="block relative aspect-video w-full bg-[#0A0F11] overflow-hidden group/thumb cursor-pointer">
-            {imageUrl ? (
-              <Image
-                src={imageUrl}
-                alt={title}
-                fill
-                sizes="360px"
-                className="object-cover transition-transform duration-500 group-hover/thumb:scale-105 brightness-[0.98]"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-xs text-[#8FA8AD] font-mono">
-                {title}
-              </div>
-            )}
-
-            {/* Red "Recently added" Badge (Matching User Reference Image) */}
-            <div className="absolute bottom-2.5 left-2.5 z-20 pointer-events-none">
-              <span className="px-2.5 py-0.5 text-[11px] font-sans font-bold bg-[#E50914] text-white rounded shadow-[0_2px_8px_rgba(229,9,20,0.5)]">
-                Recently added
-              </span>
-            </div>
+          {/* Top Banner: High-Res Cinema Artwork / Poster */}
+          <div className="relative aspect-video w-full bg-[#0A0F11] overflow-hidden group/thumb">
+            <Link href={watchUrl} className="block w-full h-full relative cursor-pointer">
+              {imageUrl ? (
+                <Image
+                  src={imageUrl}
+                  alt={title}
+                  fill
+                  sizes="360px"
+                  className="object-cover transition-transform duration-700 group-hover/thumb:scale-105 brightness-[0.98]"
+                  placeholder="blur"
+                  blurDataURL={ImageService.getBlurHash()}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-xs text-[#8FA8AD] font-mono">
+                  {title}
+                </div>
+              )}
+            </Link>
 
             {/* Platform Tag Top Left */}
             <div className="absolute top-2.5 left-2.5 z-20 pointer-events-none">
@@ -335,6 +342,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  soundFx.playTap();
                   onRemove();
                 }}
                 className="absolute top-2.5 right-2.5 z-30 w-7 h-7 rounded-full bg-[#0A0F11]/85 hover:bg-rose-600 text-white/80 hover:text-white border border-white/[0.15] flex items-center justify-center transition-all shadow-md cursor-pointer"
@@ -353,7 +361,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
                 />
               </div>
             )}
-          </Link>
+          </div>
 
           {/* Details Section (Exact Layout matching Reference Image) */}
           <div className="p-3.5 sm:p-4 space-y-2.5 bg-[#14181B]">
@@ -362,8 +370,9 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
               {/* Primary White Play Button with Black Triangle */}
               <Link
                 href={watchUrl}
+                onClick={() => soundFx.playTap()}
                 className="w-9 h-9 rounded-full bg-white hover:bg-white/90 text-black flex items-center justify-center shadow-md transform active:scale-95 transition-all cursor-pointer shrink-0"
-                title="Play"
+                title="Play Now"
               >
                 <Play className="w-4 h-4 fill-current text-black ml-0.5" />
               </Link>
@@ -391,6 +400,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
               {/* Chevron Down Button (Right Aligned - More Info) */}
               <Link
                 href={detailUrl}
+                onClick={() => soundFx.playTap()}
                 className="w-9 h-9 rounded-full border border-white/40 hover:border-white text-white flex items-center justify-center ml-auto transform active:scale-95 transition-all cursor-pointer shrink-0 hover:bg-white/[0.08]"
                 title="More info"
               >
@@ -398,7 +408,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
               </Link>
             </div>
 
-            {/* Row 2: Match %, Age Rating, Duration, Quality Badge */}
+            {/* Row 2: Match %, Age Rating, Duration, Quality Badge, Audio */}
             <div className="flex items-center gap-2 flex-wrap text-xs font-sans">
               <span className="text-[#46d369] font-bold text-xs">
                 {matchScore}% match
@@ -409,8 +419,11 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
               <span className="text-[#CBD5E1] font-medium text-[11px]">
                 {durationText}
               </span>
-              <span className="border border-white/35 px-1.5 py-0.5 rounded text-[10px] font-bold text-white/90">
-                HD
+              <span className="border border-[#39AEA9]/50 text-[#A2D5AB] px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider">
+                4K UHD
+              </span>
+              <span className="border border-white/30 text-[#8FA8AD] px-1.5 py-0.5 rounded text-[9px] font-medium">
+                Dual Audio
               </span>
             </div>
 

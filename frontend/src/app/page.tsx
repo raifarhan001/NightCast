@@ -7,6 +7,8 @@ import { useUserStore } from "../store/userStore";
 import { apiFetch, MediaItem, ContinueWatchingItem } from "../lib/api";
 import { getContinueWatchingList, removeWatchProgress, getCleanMediaId, LocalProgressItem } from "../lib/progress";
 import HeroCarousel from "../components/home/HeroCarousel";
+import BentoShowcase from "../components/home/BentoShowcase";
+import AmbientGlow from "../components/shared/AmbientGlow";
 import MovieRow from "../components/shared/MovieRow";
 import Top10RankedRow from "../components/home/Top10RankedRow";
 import StudiosRow from "../components/home/StudiosRow";
@@ -212,9 +214,15 @@ function HomePageContent() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#0A0F11] pb-28 space-y-6">
+    <div className="w-full min-h-screen bg-[#0A0F11] pb-28 space-y-6 relative overflow-hidden">
+      {/* Dynamic Ambient Background Glow */}
+      <AmbientGlow />
+
       {/* Immersive Hero Showcase */}
       <HeroCarousel items={heroItems} />
+
+      {/* Apple TV+ Style Bento Grid Showcase */}
+      <BentoShowcase items={topPicks} />
 
       {/* Continue Watching (If User Has In-Progress Titles) */}
       {mergedContinueWatching.length > 0 && (
@@ -228,7 +236,7 @@ function HomePageContent() {
 
       {/* 1. Trending Right Now */}
       <Top10RankedRow
-        title="Trending Right Now"
+        title="Top 10 Trending Titles"
         items={topPicks}
       />
 
