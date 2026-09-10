@@ -127,16 +127,15 @@ Open your browser at: **[http://localhost:3000](http://localhost:3000)**
 
 ---
 
-## 🔌 4 High-Speed Streaming Servers
+## 🔌 3 High-Speed Streaming Servers
 
-Nightcast provides 4 dedicated streaming servers:
+Nightcast provides 3 dedicated streaming servers:
 
 | Server Name | Identifier | Resolution | Audio | Description |
 |---|---|---|---|---|
 | **Server 1** | `vidsrc` | 1080p Full HD | Original (English) | High-reliability primary embed player |
 | **Server 2** | `vidbolt` | 1080p Full HD | Original (English) | Ultra-fast embed player with subtitles |
-| **Server 3** | `hindi` | 1080p / 720p HD | Hindi Dubbed | Dedicated Bollywood & Hindi dub stream |
-| **Server 4** | `vidking` | 1080p Full HD | Original (English) | High-speed player with real-time watch progress sync |
+| **Server 3** | `vidking` | 1080p Full HD | Original (English) | High-speed player with real-time watch progress sync |
 
 ---
 

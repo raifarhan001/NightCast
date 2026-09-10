@@ -49,7 +49,7 @@ export default function NightCastPlayer({
   const rawUrl = playbackData?.manifest_url || streamUrl || "";
   const [currentAudio, setCurrentAudio] = useState<number | string>("en");
   
-  const isEmbedUrl = rawUrl.includes("embed") || rawUrl.includes("iframe") || rawUrl.includes("vidsrc") || rawUrl.includes("autoembed") || rawUrl.includes("vidbolt");
+  const isEmbedUrl = rawUrl.includes("embed") || rawUrl.includes("iframe") || rawUrl.includes("vidsrc") || rawUrl.includes("autoembed") || rawUrl.includes("vidbolt") || rawUrl.includes("vidking");
   const isEffectiveHls = (playbackData?.type === "hls" || isHls) && !isEmbedUrl && rawUrl.includes(".m3u8");
 
   const [audioTracks, setAudioTracks] = useState<AudioTrackData[]>(() => {

@@ -136,33 +136,33 @@ class StreamExtractor:
         language_pref: Optional[str] = None
     ) -> Dict[str, Any]:
         """Main entry point. Resolves direct HLS streams, parses audio track metadata, and provides iframe fallbacks."""
-        cache_key = f"streams:v3:{media_type}:{tmdb_id}:{season}:{episode}:{language_pref or 'all'}"
+        cache_key = f"streams:v6:{media_type}:{tmdb_id}:{season}:{episode}:{language_pref or 'all'}"
         cached = redis_cache.get(cache_key)
         if cached:
             logger.info(f"Cache hit for {cache_key}")
             return cached
 
         if media_type == "movie":
-            s1_vidking = f"https://www.vidking.net/embed/movie/{tmdb_id}?color=00f2fe&autoPlay=true"
+            s1_vidsrc = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
             s2_vidbolt = f"https://vidbolt.xyz/movie/{tmdb_id}"
-            s3_hindi = f"https://vsrc.su/embed/movie/{tmdb_id}?ds_lang=hi"
+            s3_vidking = f"https://www.vidking.net/embed/movie/{tmdb_id}?color=00f2fe&autoPlay=true"
         elif media_type == "anime":
-            s1_vidking = f"https://www.vidking.net/embed/tv/{tmdb_id}/{season}/{episode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true"
+            s1_vidsrc = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
             s2_vidbolt = f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}"
-            s3_hindi = f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}?ds_lang=hi"
+            s3_vidking = f"https://www.vidking.net/embed/tv/{tmdb_id}/{season}/{episode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true"
         else:
-            s1_vidking = f"https://www.vidking.net/embed/tv/{tmdb_id}/{season}/{episode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true"
+            s1_vidsrc = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
             s2_vidbolt = f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}"
-            s3_hindi = f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}?ds_lang=hi"
+            s3_vidking = f"https://www.vidking.net/embed/tv/{tmdb_id}/{season}/{episode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true"
 
         all_servers = [
             {
-                "id": "vidking",
-                "name": "Server 1 (Vidking Ultra)",
-                "url": s1_vidking,
+                "id": "vidsrc",
+                "name": "Server 1 (VidSrc)",
+                "url": s1_vidsrc,
                 "type": "iframe",
                 "language": "en",
-                "language_name": "vidking.net"
+                "language_name": "vidsrc.me"
             },
             {
                 "id": "vidbolt",
@@ -173,13 +173,12 @@ class StreamExtractor:
                 "language_name": "vidbolt.xyz"
             },
             {
-                "id": "hindi-dubbed",
-                "name": "Server 3 (Hindi Dubbed)",
-                "url": s3_hindi,
+                "id": "vidking",
+                "name": "Server 3 (Vidking)",
+                "url": s3_vidking,
                 "type": "iframe",
-                "language": "hi",
-                "language_name": "vsrc.su",
-                "is_dub": True
+                "language": "en",
+                "language_name": "vidking.net"
             }
         ]
 
@@ -272,92 +271,76 @@ class StreamExtractor:
 
         if media_type == "movie":
             download_options.append({
-                "id": "vidking-download",
-                "label": "Vidking Ultra Fast Source (1080p)",
-                "url": f"https://www.vidking.net/embed/movie/{tmdb_id}?color=00f2fe&autoPlay=true",
-                "quality": "1080p Full HD",
-                "format": "mp4/stream",
-                "type": "direct_stream"
-            })
-            download_options.append({
-                "id": "vidbolt-download",
-                "label": "VidBolt Stream (1080p)",
-                "url": f"https://vidbolt.xyz/movie/{tmdb_id}",
-                "quality": "1080p Full HD",
-                "format": "mp4/stream",
-                "type": "direct_stream"
-            })
-            download_options.append({
                 "id": "vidsrc-download",
-                "label": "VidSrc Primary HD Source (1080p)",
+                "label": "Server 1 (VidSrc Primary HD Source 1080p)",
                 "url": f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}",
                 "quality": "1080p",
                 "format": "mp4/stream",
                 "type": "direct_stream"
             })
             download_options.append({
-                "id": "hindi-download",
-                "label": "Hindi Dubbed Stream Source (720p/1080p)",
-                "url": f"https://vsrc.su/embed/movie/{tmdb_id}?ds_lang=hi",
-                "quality": "720p / 1080p",
-                "format": "mp4/stream",
-                "type": "direct_stream"
-            })
-        elif media_type == "anime":
-            download_options.append({
-                "id": "vidking-download",
-                "label": f"Vidking Anime Stream Ep {episode} (1080p)",
-                "url": f"https://www.vidking.net/embed/tv/{tmdb_id}/{season}/{episode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true",
+                "id": "vidbolt-download",
+                "label": "Server 2 (VidBolt Stream 1080p)",
+                "url": f"https://vidbolt.xyz/movie/{tmdb_id}",
                 "quality": "1080p Full HD",
                 "format": "mp4/stream",
                 "type": "direct_stream"
             })
             download_options.append({
+                "id": "vidking-download",
+                "label": "Server 3 (Vidking Ultra Fast Source 1080p)",
+                "url": f"https://www.vidking.net/embed/movie/{tmdb_id}?color=00f2fe&autoPlay=true",
+                "quality": "1080p Full HD",
+                "format": "mp4/stream",
+                "type": "direct_stream"
+            })
+        elif media_type == "anime":
+            download_options.append({
+                "id": "vidsrc-download",
+                "label": f"Server 1 (VidSrc Primary Stream Ep {episode} 1080p)",
+                "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
+                "quality": "1080p",
+                "format": "mp4/stream",
+                "type": "direct_stream"
+            })
+            download_options.append({
                 "id": "vidbolt-download",
-                "label": f"VidBolt Anime Stream Ep {episode} (1080p)",
+                "label": f"Server 2 (VidBolt Anime Stream Ep {episode} 1080p)",
                 "url": f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}",
                 "quality": "1080p Full HD",
                 "format": "mp4/stream",
                 "type": "direct_stream"
             })
             download_options.append({
-                "id": "vidsrc-download",
-                "label": f"VidSrc Primary Stream Ep {episode} (1080p)",
-                "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
-                "quality": "1080p",
-                "format": "mp4/stream",
-                "type": "direct_stream"
-            })
-        else:
-            download_options.append({
                 "id": "vidking-download",
-                "label": f"Vidking Stream S{season}E{episode} (1080p)",
+                "label": f"Server 3 (Vidking Anime Stream Ep {episode} 1080p)",
                 "url": f"https://www.vidking.net/embed/tv/{tmdb_id}/{season}/{episode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true",
                 "quality": "1080p Full HD",
                 "format": "mp4/stream",
                 "type": "direct_stream"
             })
+        else:
+            download_options.append({
+                "id": "vidsrc-download",
+                "label": f"Server 1 (VidSrc Primary Stream S{season}E{episode} 1080p)",
+                "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
+                "quality": "1080p",
+                "format": "mp4/stream",
+                "type": "direct_stream"
+            })
             download_options.append({
                 "id": "vidbolt-download",
-                "label": f"VidBolt Stream S{season}E{episode} (1080p)",
+                "label": f"Server 2 (VidBolt Stream S{season}E{episode} 1080p)",
                 "url": f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}",
                 "quality": "1080p Full HD",
                 "format": "mp4/stream",
                 "type": "direct_stream"
             })
             download_options.append({
-                "id": "vidsrc-download",
-                "label": f"VidSrc Primary Stream S{season}E{episode} (1080p)",
-                "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
-                "quality": "1080p",
-                "format": "mp4/stream",
-                "type": "direct_stream"
-            })
-            download_options.append({
-                "id": "hindi-download",
-                "label": f"Hindi Dubbed Stream S{season}E{episode} (720p/1080p)",
-                "url": f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}?ds_lang=hi",
-                "quality": "720p / 1080p",
+                "id": "vidking-download",
+                "label": f"Server 3 (Vidking Stream S{season}E{episode} 1080p)",
+                "url": f"https://www.vidking.net/embed/tv/{tmdb_id}/{season}/{episode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true",
+                "quality": "1080p Full HD",
                 "format": "mp4/stream",
                 "type": "direct_stream"
             })
@@ -378,9 +361,9 @@ class StreamExtractor:
         if media_type == "movie":
             return [
                 {
-                    "id": "vidking",
-                    "name": "Server 1 (Vidking Ultra)",
-                    "url": f"https://www.vidking.net/embed/movie/{tmdb_id}?color=00f2fe&autoPlay=true",
+                    "id": "vidsrc",
+                    "name": "Server 1 (VidSrc)",
+                    "url": f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}",
                     "type": "iframe",
                 },
                 {
@@ -390,18 +373,18 @@ class StreamExtractor:
                     "type": "iframe",
                 },
                 {
-                    "id": "hindi-dubbed",
-                    "name": "Server 3 (Hindi Dubbed)",
-                    "url": f"https://vsrc.su/embed/movie/{tmdb_id}?ds_lang=hi",
+                    "id": "vidking",
+                    "name": "Server 3 (Vidking)",
+                    "url": f"https://www.vidking.net/embed/movie/{tmdb_id}?color=00f2fe&autoPlay=true",
                     "type": "iframe",
                 },
             ]
         elif media_type == "anime":
             return [
                 {
-                    "id": "vidking",
-                    "name": "Server 1 (Vidking Ultra)",
-                    "url": f"https://www.vidking.net/embed/tv/{tmdb_id}/{season}/{episode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true",
+                    "id": "vidsrc",
+                    "name": "Server 1 (VidSrc)",
+                    "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
                     "type": "iframe",
                 },
                 {
@@ -411,18 +394,18 @@ class StreamExtractor:
                     "type": "iframe",
                 },
                 {
-                    "id": "hindi-dubbed",
-                    "name": "Server 3 (Hindi Dubbed)",
-                    "url": f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}?ds_lang=hi",
+                    "id": "vidking",
+                    "name": "Server 3 (Vidking)",
+                    "url": f"https://www.vidking.net/embed/tv/{tmdb_id}/{season}/{episode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true",
                     "type": "iframe",
                 },
             ]
         else:
             return [
                 {
-                    "id": "vidking",
-                    "name": "Server 1 (Vidking Ultra)",
-                    "url": f"https://www.vidking.net/embed/tv/{tmdb_id}/{season}/{episode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true",
+                    "id": "vidsrc",
+                    "name": "Server 1 (VidSrc)",
+                    "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
                     "type": "iframe",
                 },
                 {
@@ -432,9 +415,9 @@ class StreamExtractor:
                     "type": "iframe",
                 },
                 {
-                    "id": "hindi-dubbed",
-                    "name": "Server 3 (Hindi Dubbed)",
-                    "url": f"https://vsrc.su/embed/tv/{tmdb_id}/{season}-{episode}?ds_lang=hi",
+                    "id": "vidking",
+                    "name": "Server 3 (Vidking)",
+                    "url": f"https://www.vidking.net/embed/tv/{tmdb_id}/{season}/{episode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true",
                     "type": "iframe",
                 },
             ]

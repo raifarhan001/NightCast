@@ -33,14 +33,14 @@ export default function WatchPage() {
   const [servers, setServers] = useState<any[]>(() => {
     const defaultServers: any[] = [
       {
-        id: 'vidking',
-        name: 'Server 1 (Vidking Ultra)',
+        id: 'vidsrc',
+        name: 'Server 1 (VidSrc)',
         url: type === 'tv'
-          ? `https://www.vidking.net/embed/tv/${id}/${currentSeason}/${currentEpisode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true`
-          : `https://www.vidking.net/embed/movie/${id}?color=00f2fe&autoPlay=true`,
+          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
+          : `https://vidsrc.me/embed/movie?tmdb=${id}`,
         type: 'iframe',
         language: 'en',
-        language_name: 'vidking.net'
+        language_name: 'vidsrc.me'
       },
       {
         id: 'vidbolt',
@@ -55,15 +55,14 @@ export default function WatchPage() {
         language_name: 'vidbolt.xyz'
       },
       {
-        id: 'hindi-dubbed',
-        name: 'Server 3 (Hindi Dubbed)',
+        id: 'vidking',
+        name: 'Server 3 (Vidking)',
         url: type === 'tv'
-          ? `https://vsrc.su/embed/tv/${id}/${currentSeason}-${currentEpisode}?ds_lang=hi`
-          : `https://vsrc.su/embed/movie/${id}?ds_lang=hi`,
+          ? `https://www.vidking.net/embed/tv/${id}/${currentSeason}/${currentEpisode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true`
+          : `https://www.vidking.net/embed/movie/${id}?color=00f2fe&autoPlay=true`,
         type: 'iframe',
-        language: 'hi',
-        language_name: 'vsrc.su',
-        is_dub: true
+        language: 'en',
+        language_name: 'vidking.net'
       }
     ];
     return defaultServers;
@@ -72,11 +71,11 @@ export default function WatchPage() {
   const [activeServerId, setActiveServerId] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('nightcast_preferred_server');
-      if (saved && saved !== 'vidsrc' && ['vidking', 'vidbolt', 'hindi-dubbed'].includes(saved)) {
+      if (saved && ['vidsrc', 'vidbolt', 'vidking'].includes(saved)) {
         return saved;
       }
     }
-    return 'vidking';
+    return 'vidsrc';
   });
 
   const [resumeTime, setResumeTime] = useState<number>(() => {
@@ -93,16 +92,9 @@ export default function WatchPage() {
   const [playerUrl, setPlayerUrl] = useState<string>(() => {
     if (!id) return "";
     const isTv = type === 'tv';
-    const seconds = typeof window !== 'undefined'
-      ? getSavedTimestamp(id, isTv ? 1 : undefined, isTv ? 1 : undefined, type as 'movie' | 'tv')
-      : 0;
-    let base = isTv
-      ? `https://www.vidking.net/embed/tv/${id}/1/1?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true`
-      : `https://www.vidking.net/embed/movie/${id}?color=00f2fe&autoPlay=true`;
-    if (seconds > 5) {
-      base += `&progress=${Math.floor(seconds)}`;
-    }
-    return base;
+    return isTv
+      ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=1&episode=1`
+      : `https://vidsrc.me/embed/movie?tmdb=${id}`;
   });
 
   const [seasonEpisodes, setSeasonEpisodes] = useState<any[]>([]);
@@ -165,7 +157,7 @@ export default function WatchPage() {
     if (!rawActiveServer) return null;
     if (isServerFailed) {
       let fallbackUrl = rawActiveServer.url;
-      if (rawActiveServer.id === 'vidking') {
+      if (rawActiveServer.id === 'vidsrc') {
         fallbackUrl = type === 'tv'
           ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}`
           : `https://vidbolt.xyz/movie/${id}`;
@@ -173,6 +165,10 @@ export default function WatchPage() {
         fallbackUrl = type === 'tv'
           ? `https://www.vidking.net/embed/tv/${id}/${currentSeason}/${currentEpisode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true`
           : `https://www.vidking.net/embed/movie/${id}?color=00f2fe&autoPlay=true`;
+      } else if (rawActiveServer.id === 'vidking') {
+        fallbackUrl = type === 'tv'
+          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
+          : `https://vidsrc.me/embed/movie?tmdb=${id}`;
       }
       return {
         ...rawActiveServer,
@@ -244,8 +240,8 @@ export default function WatchPage() {
         if (data?.servers && data.servers.length > 0) {
           setServers(data.servers);
           const preferred = typeof window !== 'undefined' ? localStorage.getItem('nightcast_preferred_server') : null;
-          const preferredExists = preferred && preferred !== 'vidsrc' && data.servers.some((s: any) => s.id === preferred);
-          const currentExists = activeServerId !== 'vidsrc' && data.servers.some((s: any) => s.id === activeServerId);
+          const preferredExists = preferred && data.servers.some((s: any) => s.id === preferred);
+          const currentExists = data.servers.some((s: any) => s.id === activeServerId);
           if (preferredExists) {
             setActiveServerId(preferred!);
           } else if (!currentExists) {
@@ -638,28 +634,30 @@ export default function WatchPage() {
       } else {
         const fallbackOptions = [
           {
-            id: "vidking-direct",
-            label: "Vidking High-Speed Stream (1080p)",
+            id: "vidsrc-direct",
+            label: "Server 1 (VidSrc Primary Stream 1080p)",
             url: type === 'tv'
-              ? `https://www.vidking.net/embed/tv/${id}/${currentSeason}/${currentEpisode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true`
-              : `https://www.vidking.net/embed/movie/${id}?color=00f2fe&autoPlay=true`,
+              ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
+              : `https://vidsrc.me/embed/movie?tmdb=${id}`,
             quality: "1080p Full HD",
             format: "mp4/stream",
             type: "direct_stream"
           },
           {
             id: "vidbolt-direct",
-            label: "VidBolt Ultra Fast Source (1080p Full HD)",
+            label: "Server 2 (VidBolt Ultra Fast Source 1080p Full HD)",
             url: type === 'tv' ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}` : `https://vidbolt.xyz/movie/${id}`,
             quality: "1080p Full HD",
             format: "mp4/stream",
             type: "direct_stream"
           },
           {
-            id: "hindi-direct",
-            label: "Server 3 Hindi Dubbed Source (720p/1080p)",
-            url: type === 'tv' ? `https://vsrc.su/embed/tv/${id}/${currentSeason}-${currentEpisode}?ds_lang=hi` : `https://vsrc.su/embed/movie/${id}?ds_lang=hi`,
-            quality: "720p / 1080p",
+            id: "vidking-direct",
+            label: "Server 3 (Vidking High-Speed Stream 1080p)",
+            url: type === 'tv'
+              ? `https://www.vidking.net/embed/tv/${id}/${currentSeason}/${currentEpisode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true`
+              : `https://www.vidking.net/embed/movie/${id}?color=00f2fe&autoPlay=true`,
+            quality: "1080p Full HD",
             format: "mp4/stream",
             type: "direct_stream"
           }
