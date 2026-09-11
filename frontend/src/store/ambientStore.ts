@@ -4,7 +4,7 @@ interface AmbientState {
   activeBackdrop: string | null;
   activeTitle: string | null;
   clearTimeoutId: any | null;
-  setActiveBackdrop: (backdrop: string | null, title?: string) => void;
+  setActiveBackdrop: (backdrop?: string | null, title?: string | null) => void;
   clearActiveBackdrop: (delayMs?: number) => void;
 }
 

@@ -95,7 +95,7 @@ export default function BentoShowcase({ items = [] }: BentoShowcaseProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
         {/* 1. Master Spotlight Card (Span 7 cols) */}
         <div
-          onMouseEnter={() => useAmbientStore.getState().setActiveBackdrop(primary.backdrop_path, primaryTitle)}
+          onMouseEnter={() => useAmbientStore.getState().setActiveBackdrop(primary.backdrop_path || primary.poster_path || null, primaryTitle)}
           onMouseLeave={() => useAmbientStore.getState().clearActiveBackdrop(400)}
           className="lg:col-span-7 relative h-[400px] sm:h-[480px] rounded-3xl overflow-hidden group bg-[#121A1D] border border-white/[0.1] hover:border-[#39AEA9]/60 shadow-[0_20px_50px_rgba(0,0,0,0.9)] hover:shadow-[0_25px_60px_rgba(0,0,0,0.95),0_0_35px_rgba(57,174,169,0.25)] transition-all duration-500"
         >
@@ -195,7 +195,7 @@ export default function BentoShowcase({ items = [] }: BentoShowcaseProps) {
             onClick={() => soundFx.playTap()}
             onMouseEnter={() => {
               soundFx.playHover();
-              useAmbientStore.getState().setActiveBackdrop(second.backdrop_path, secondTitle);
+              useAmbientStore.getState().setActiveBackdrop(second.backdrop_path || second.poster_path || null, secondTitle);
             }}
             onMouseLeave={() => useAmbientStore.getState().clearActiveBackdrop(400)}
             className="group relative h-[190px] sm:h-[228px] rounded-3xl overflow-hidden bg-[#121A1D] border border-white/[0.08] hover:border-[#39AEA9]/60 hover:shadow-[0_15px_40px_rgba(0,0,0,0.85),0_0_25px_rgba(57,174,169,0.25)] transition-all duration-300 block cursor-pointer"
@@ -241,7 +241,7 @@ export default function BentoShowcase({ items = [] }: BentoShowcaseProps) {
               onClick={() => soundFx.playTap()}
               onMouseEnter={() => {
                 soundFx.playHover();
-                useAmbientStore.getState().setActiveBackdrop(third.backdrop_path, thirdTitle);
+                useAmbientStore.getState().setActiveBackdrop(third.backdrop_path || third.poster_path || null, thirdTitle);
               }}
               onMouseLeave={() => useAmbientStore.getState().clearActiveBackdrop(400)}
               className="group relative h-[190px] sm:h-[228px] rounded-3xl overflow-hidden bg-[#121A1D] border border-white/[0.08] hover:border-[#39AEA9]/60 hover:shadow-[0_15px_35px_rgba(0,0,0,0.85),0_0_20px_rgba(57,174,169,0.25)] transition-all duration-300 block cursor-pointer"
@@ -279,7 +279,7 @@ export default function BentoShowcase({ items = [] }: BentoShowcaseProps) {
               onClick={() => soundFx.playTap()}
               onMouseEnter={() => {
                 soundFx.playHover();
-                useAmbientStore.getState().setActiveBackdrop(fourth.backdrop_path, fourthTitle);
+                useAmbientStore.getState().setActiveBackdrop(fourth.backdrop_path || fourth.poster_path || null, fourthTitle);
               }}
               onMouseLeave={() => useAmbientStore.getState().clearActiveBackdrop(400)}
               className="group relative h-[190px] sm:h-[228px] rounded-3xl overflow-hidden bg-[#121A1D] border border-white/[0.08] hover:border-[#39AEA9]/60 hover:shadow-[0_15px_35px_rgba(0,0,0,0.85),0_0_20px_rgba(57,174,169,0.25)] transition-all duration-300 block cursor-pointer"
