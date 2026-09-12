@@ -19,6 +19,7 @@ export interface MediaItem {
   season?: number;
   episode?: number;
   progress_percent?: number;
+  tagline?: string;
 }
 
 export interface Profile {

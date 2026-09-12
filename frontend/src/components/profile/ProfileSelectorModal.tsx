@@ -6,11 +6,11 @@ import { X, User, Settings, LogOut, Check } from "lucide-react";
 import { useUserStore } from "../../store/userStore";
 
 interface ProfileSelectorModalProps {
-  isOpen: boolean;
+  isOpen?: boolean;
   onClose: () => void;
 }
 
-export default function ProfileSelectorModal({ isOpen, onClose }: ProfileSelectorModalProps) {
+export default function ProfileSelectorModal({ isOpen = true, onClose }: ProfileSelectorModalProps) {
   const { activeProfile, profiles, setActiveProfile, logout } = useUserStore();
 
   if (!isOpen) return null;

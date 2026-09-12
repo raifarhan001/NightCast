@@ -205,7 +205,7 @@ function HeaderContent() {
 
       {/* Profile Selector Modal */}
       {isProfileModalOpen && (
-        <ProfileSelectorModal onClose={() => setIsProfileModalOpen(false)} />
+        <ProfileSelectorModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} />
       )}
     </>
   );
