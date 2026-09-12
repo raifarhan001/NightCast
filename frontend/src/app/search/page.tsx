@@ -176,23 +176,23 @@ function SearchPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0F11] text-[#E5EFC1] pt-24 pb-28 px-4 sm:px-6 md:px-12 select-none">
+    <div className="min-h-screen bg-[#0B131B] text-[#F0F0F0] pt-24 pb-28 px-4 sm:px-6 md:px-12 select-none">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header Title */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#A2D5AB] flex items-center gap-2">
-              <span className="w-2 h-2 bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] animate-pulse rounded-full" />
+            <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#A4C8E1] flex items-center gap-2">
+              <span className="w-2 h-2 bg-[#A4C8E1] shadow-[0_0_8px_rgba(164,200,225,0.8)] animate-pulse rounded-full" />
               <span>{isStudioFilterActive ? "CHANNEL ARCHIVE" : "NIGHTCAST CATALOG"}</span>
             </p>
 
             {/* Active Studio Filter Pill */}
             {studioNameParam && !searchTerm && (
-              <div className="flex items-center gap-2 px-3 py-1 bg-[#121A1D] border border-[#223136] rounded-full text-xs font-mono text-[#8FA8AD]">
-                <span>Platform: <strong className="text-[#E5EFC1]">{studioNameParam}</strong></span>
+              <div className="flex items-center gap-2 px-3 py-1 bg-[#1B3A57]/60 border border-[#4A6E8D]/35 rounded-full text-xs font-mono text-[#4A6E8D]">
+                <span>Platform: <strong className="text-[#F0F0F0]">{studioNameParam}</strong></span>
                 <button
                   onClick={clearAllFilters}
-                  className="w-4 h-4 rounded-full bg-[#39AEA9] hover:bg-[#A2D5AB] text-[#0A0F11] flex items-center justify-center transition-colors cursor-pointer"
+                  className="w-4 h-4 rounded-full bg-[#A4C8E1] hover:bg-white text-[#0B131B] flex items-center justify-center transition-colors cursor-pointer"
                   title="Clear filter"
                 >
                   <X className="w-2.5 h-2.5" />
@@ -201,21 +201,21 @@ function SearchPageContent() {
             )}
           </div>
 
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight font-display text-[#F8FAFC]">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight font-display text-[#F0F0F0]">
             {getPageTitle()}
           </h1>
         </div>
 
         {/* Search Bar & Filters */}
-        <div className="p-5 bg-[#121A1D]/85 backdrop-blur-2xl border border-white/[0.08] rounded-3xl space-y-4 shadow-xl">
+        <div className="p-5 bg-[#1B3A57]/35 backdrop-blur-2xl border border-[#4A6E8D]/30 rounded-3xl space-y-4 shadow-xl">
           <form onSubmit={handleSearchSubmit} className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8FA8AD]" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#4A6E8D]" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search movies, TV series, directors, cast..."
-              className="w-full h-12 pl-12 pr-12 bg-white/[0.06] border border-white/[0.1] rounded-full text-white placeholder-[#8FA8AD] focus:outline-none focus:border-[#39AEA9] focus:bg-[#121A1D] text-sm font-sans font-medium transition-all"
+              className="w-full h-12 pl-12 pr-12 bg-[#0B131B]/70 border border-[#4A6E8D]/40 rounded-full text-[#F0F0F0] placeholder-[#4A6E8D] focus:outline-none focus:border-[#A4C8E1]/70 focus:bg-[#0B131B] text-sm font-sans font-medium transition-all"
             />
             {searchTerm && (
               <button
@@ -228,7 +228,7 @@ function SearchPageContent() {
                     router.push("/search");
                   }
                 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8FA8AD] hover:text-white cursor-pointer"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#4A6E8D] hover:text-[#F0F0F0] cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -236,8 +236,8 @@ function SearchPageContent() {
           </form>
 
           {/* Capsule Selector & Filters */}
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-white/[0.06]">
-            <div className="flex items-center gap-1 p-1 bg-[#0A0F11]/80 border border-white/[0.08] rounded-full">
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-[#4A6E8D]/20">
+            <div className="flex items-center gap-1 p-1 bg-[#0B131B]/80 border border-[#4A6E8D]/30 rounded-full">
               <button
                 onClick={() => {
                   setSelectedType("all");
@@ -249,8 +249,8 @@ function SearchPageContent() {
                 }}
                 className={
                   selectedType === "all"
-                    ? "px-4 py-1.5 rounded-full text-xs font-sans font-semibold bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11] shadow-[0_0_12px_rgba(57,174,169,0.3)] cursor-pointer"
-                    : "px-4 py-1.5 rounded-full text-xs font-sans font-medium text-[#8FA8AD] hover:text-white hover:bg-white/[0.08] transition-all cursor-pointer"
+                    ? "px-4 py-1.5 rounded-full text-xs font-sans font-semibold bg-[#F0F0F0] text-[#0B131B] shadow-[0_0_12px_rgba(240,240,240,0.3)] cursor-pointer"
+                    : "px-4 py-1.5 rounded-full text-xs font-sans font-medium text-[#4A6E8D] hover:text-[#F0F0F0] hover:bg-[#2C3E50]/40 transition-all cursor-pointer"
                 }
               >
                 All
@@ -266,8 +266,8 @@ function SearchPageContent() {
                 }}
                 className={
                   selectedType === "movie"
-                    ? "px-4 py-1.5 rounded-full text-xs font-sans font-semibold bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11] shadow-[0_0_12px_rgba(57,174,169,0.3)] cursor-pointer"
-                    : "px-4 py-1.5 rounded-full text-xs font-sans font-medium text-[#8FA8AD] hover:text-white hover:bg-white/[0.08] transition-all cursor-pointer"
+                    ? "px-4 py-1.5 rounded-full text-xs font-sans font-semibold bg-[#F0F0F0] text-[#0B131B] shadow-[0_0_12px_rgba(240,240,240,0.3)] cursor-pointer"
+                    : "px-4 py-1.5 rounded-full text-xs font-sans font-medium text-[#4A6E8D] hover:text-[#F0F0F0] hover:bg-[#2C3E50]/40 transition-all cursor-pointer"
                 }
               >
                 Movies
@@ -283,8 +283,8 @@ function SearchPageContent() {
                 }}
                 className={
                   selectedType === "tv"
-                    ? "px-4 py-1.5 rounded-full text-xs font-sans font-semibold bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11] shadow-[0_0_12px_rgba(57,174,169,0.3)] cursor-pointer"
-                    : "px-4 py-1.5 rounded-full text-xs font-sans font-medium text-[#8FA8AD] hover:text-white hover:bg-white/[0.08] transition-all cursor-pointer"
+                    ? "px-4 py-1.5 rounded-full text-xs font-sans font-semibold bg-[#F0F0F0] text-[#0B131B] shadow-[0_0_12px_rgba(240,240,240,0.3)] cursor-pointer"
+                    : "px-4 py-1.5 rounded-full text-xs font-sans font-medium text-[#4A6E8D] hover:text-[#F0F0F0] hover:bg-[#2C3E50]/40 transition-all cursor-pointer"
                 }
               >
                 Series
@@ -295,10 +295,10 @@ function SearchPageContent() {
               <select
                 value={selectedGenre}
                 onChange={(e) => setSelectedGenre(e.target.value)}
-                className="h-9 px-4 rounded-full bg-white/[0.06] border border-white/[0.1] text-xs font-sans font-medium text-[#CBD5E1] hover:text-white focus:outline-none focus:border-[#39AEA9] cursor-pointer"
+                className="h-9 px-4 rounded-full bg-[#0B131B]/70 border border-[#4A6E8D]/40 text-xs font-sans font-medium text-[#F0F0F0]/90 hover:text-white focus:outline-none focus:border-[#A4C8E1]/60 cursor-pointer"
               >
                 {GENRES.map((g) => (
-                  <option key={g.id} value={g.id} className="bg-[#121A1D] text-[#E5EFC1] font-sans">
+                  <option key={g.id} value={g.id} className="bg-[#1B3A57] text-[#F0F0F0] font-sans">
                     {g.name}
                   </option>
                 ))}
@@ -307,10 +307,10 @@ function SearchPageContent() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="h-9 px-4 rounded-full bg-white/[0.06] border border-white/[0.1] text-xs font-sans font-medium text-[#CBD5E1] hover:text-white focus:outline-none focus:border-[#39AEA9] cursor-pointer"
+                className="h-9 px-4 rounded-full bg-[#0B131B]/70 border border-[#4A6E8D]/40 text-xs font-sans font-medium text-[#F0F0F0]/90 hover:text-white focus:outline-none focus:border-[#A4C8E1]/60 cursor-pointer"
               >
                 {SORTS.map((s) => (
-                  <option key={s.id} value={s.id} className="bg-[#121A1D] text-[#E5EFC1] font-sans">
+                  <option key={s.id} value={s.id} className="bg-[#1B3A57] text-[#F0F0F0] font-sans">
                     {s.name}
                   </option>
                 ))}
@@ -323,7 +323,7 @@ function SearchPageContent() {
         {isLoading ? (
           <div className="flex flex-wrap items-start justify-center sm:justify-start gap-4 sm:gap-5">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="w-[220px] sm:w-[250px] md:w-[270px] aspect-video rounded-2xl bg-[#121A1D] animate-pulse border border-white/[0.08]" />
+              <div key={i} className="w-[220px] sm:w-[250px] md:w-[270px] aspect-video rounded-2xl bg-[#1B3A57]/30 animate-pulse border border-[#4A6E8D]/25" />
             ))}
           </div>
         ) : filteredItems.length > 0 ? (
@@ -334,10 +334,10 @@ function SearchPageContent() {
           </div>
         ) : (
           <div className="py-20 text-center space-y-4">
-            <p className="text-xs font-sans font-medium text-[#8FA8AD]">No titles found matching your search</p>
+            <p className="text-xs font-sans font-medium text-[#4A6E8D]">No titles found matching your search</p>
             <button
               onClick={clearAllFilters}
-              className="px-6 py-2.5 bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11] text-xs font-sans font-bold rounded-full mx-auto transition-all cursor-pointer shadow-md active:scale-95"
+              className="px-6 py-2.5 bg-[#F0F0F0] hover:bg-[#A4C8E1] text-[#0B131B] text-xs font-sans font-bold rounded-full mx-auto transition-all cursor-pointer shadow-md active:scale-95"
             >
               Clear Filters
             </button>
@@ -351,8 +351,8 @@ function SearchPageContent() {
 export default function SearchPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#0A0F11] pt-24 px-6 max-w-7xl mx-auto">
-        <div className="h-12 w-64 bg-[#121A1D] border border-[#223136] rounded-xl animate-pulse" />
+      <div className="min-h-screen bg-[#0B131B] pt-24 px-6 max-w-7xl mx-auto">
+        <div className="h-12 w-64 bg-[#1B3A57]/30 border border-[#4A6E8D]/25 rounded-xl animate-pulse" />
       </div>
     }>
       <SearchPageContent />

@@ -180,8 +180,8 @@ export default function StudiosRow() {
     <section className="space-y-3 px-4 sm:px-6 md:px-12 select-none relative group/row">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight font-display text-white flex items-center gap-2.5">
-          <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-[#39AEA9] to-[#A2D5AB] shadow-[0_0_12px_rgba(57,174,169,0.6)] inline-block shrink-0" />
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight font-display text-[#F0F0F0] flex items-center gap-2.5">
+          <span className="w-1.5 h-5 rounded-full bg-[#A4C8E1] shadow-[0_0_12px_rgba(164,200,225,0.6)] inline-block shrink-0" />
           <span>Studios & Platforms</span>
         </h2>
 
@@ -190,7 +190,7 @@ export default function StudiosRow() {
           <button
             onClick={() => handleScroll("left")}
             disabled={!showLeftArrow}
-            className={`w-10 h-10 rounded-full border border-white/[0.15] bg-[#0A0F11]/75 backdrop-blur-xl text-white hover:text-[#0A0F11] hover:bg-gradient-to-r hover:from-[#39AEA9] hover:to-[#A2D5AB] hover:border-transparent flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 cursor-pointer shadow-[0_8px_24px_rgba(0,0,0,0.8)] hover:scale-105 active:scale-95 ${
+            className={`w-10 h-10 rounded-full border border-[#4A6E8D]/40 bg-[#1B3A57]/70 hover:bg-[#2C3E50]/90 backdrop-blur-xl text-[#F0F0F0] hover:text-[#A4C8E1] flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 cursor-pointer shadow-[0_8px_24px_rgba(11,19,27,0.85)] hover:scale-105 active:scale-95 ${
               !showLeftArrow ? "opacity-30 cursor-not-allowed" : ""
             }`}
             aria-label="Scroll left"
@@ -200,7 +200,7 @@ export default function StudiosRow() {
           <button
             onClick={() => handleScroll("right")}
             disabled={!showRightArrow}
-            className={`w-10 h-10 rounded-full border border-white/[0.15] bg-[#0A0F11]/75 backdrop-blur-xl text-white hover:text-[#0A0F11] hover:bg-gradient-to-r hover:from-[#39AEA9] hover:to-[#A2D5AB] hover:border-transparent flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 cursor-pointer shadow-[0_8px_24px_rgba(0,0,0,0.8)] hover:scale-105 active:scale-95 ${
+            className={`w-10 h-10 rounded-full border border-[#4A6E8D]/40 bg-[#1B3A57]/70 hover:bg-[#2C3E50]/90 backdrop-blur-xl text-[#F0F0F0] hover:text-[#A4C8E1] flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 cursor-pointer shadow-[0_8px_24px_rgba(11,19,27,0.85)] hover:scale-105 active:scale-95 ${
               !showRightArrow ? "opacity-30 cursor-not-allowed" : ""
             }`}
             aria-label="Scroll right"
@@ -214,7 +214,7 @@ export default function StudiosRow() {
       <div
         ref={rowRef}
         onScroll={checkScrollPosition}
-        className="flex items-center gap-3 sm:gap-4 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory pt-2 pb-2"
+        className="flex items-center gap-3 sm:gap-4 overflow-x-auto no-scrollbar scrollbar-hide scroll-smooth snap-x snap-mandatory pt-2 pb-2"
       >
         {STUDIOS.map((studio) => (
           <Link
@@ -223,14 +223,14 @@ export default function StudiosRow() {
             className="group/studio flex flex-col items-center gap-2 shrink-0 snap-start select-none cursor-pointer"
           >
             {/* Studio Capsule Card */}
-            <div className="w-36 sm:w-44 md:w-48 h-20 sm:h-22 rounded-2xl bg-[#121A1D]/90 backdrop-blur-xl border border-white/[0.08] flex items-center justify-center p-4 transition-all duration-300 ease-out group-hover/studio:scale-105 group-hover/studio:border-[#39AEA9]/70 group-hover/studio:bg-white/[0.08] group-hover/studio:shadow-[0_12px_24px_-4px_rgba(0,0,0,0.8),0_0_20px_rgba(57,174,169,0.25)] shadow-sm">
+            <div className="w-36 sm:w-44 md:w-48 h-20 sm:h-22 rounded-2xl bg-[#1B3A57]/35 hover:bg-[#2C3E50]/60 backdrop-blur-xl border border-[#4A6E8D]/35 flex items-center justify-center p-4 transition-all duration-300 ease-out group-hover/studio:scale-105 group-hover/studio:border-[#A4C8E1]/60 group-hover/studio:shadow-[0_12px_32px_rgba(11,19,27,0.85),0_0_20px_rgba(164,200,225,0.15)] shadow-sm">
               <div className="transition-transform duration-300 ease-out group-hover/studio:scale-105">
                 {studio.logo}
               </div>
             </div>
 
             {/* Label */}
-            <span className="text-[11px] font-sans font-medium text-[#8FA8AD] group-hover/studio:text-[#E5EFC1] transition-colors truncate max-w-[140px] text-center tracking-normal">
+            <span className="text-[11px] font-sans font-medium text-[#4A6E8D] group-hover/studio:text-[#F0F0F0] transition-colors truncate max-w-[140px] text-center tracking-normal">
               {studio.name}
             </span>
           </Link>

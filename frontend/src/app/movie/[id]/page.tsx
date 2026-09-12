@@ -79,9 +79,9 @@ function MovieDetailsPage() {
   const trailerKey = movie.videos?.results?.find((v: TrailerVideo) => v.type === "Trailer" && v.site === "YouTube")?.key;
 
   return (
-    <div className="w-full min-h-screen bg-[#0A0F11] text-[#E5EFC1] pb-28">
+    <div className="w-full min-h-screen bg-[#0B131B] text-[#F0F0F0] pb-28">
       {/* Immersive Backdrop Banner */}
-      <div className="relative w-full h-[68vh] md:h-[82vh] select-none border-b border-[#223136]">
+      <div className="relative w-full h-[68vh] md:h-[82vh] select-none border-b border-[#4A6E8D]/25">
         <Image
           src={backdropUrl}
           alt={movie.title}
@@ -91,14 +91,14 @@ function MovieDetailsPage() {
           blurDataURL={ImageService.getBlurHash()}
           className="object-cover object-top opacity-40 grayscale-[20%]"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0F11] via-[#0A0F11]/60 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0A0F11] via-transparent to-[#0A0F11]/80" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0B131B] via-[#0B131B]/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0B131B] via-transparent to-[#0B131B]/80" />
       </div>
 
       {/* Main Movie Card & Info Content */}
       <div className="max-w-7xl mx-auto px-6 sm:px-8 md:px-12 -mt-48 md:-mt-72 relative z-10 grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
         <div className="space-y-4 flex flex-col items-center md:items-stretch">
-          <div className="relative w-56 md:w-full aspect-[2/3] rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(0,0,0,0.95)] border border-[#223136] bg-[#121A1D]">
+          <div className="relative w-56 md:w-full aspect-[2/3] rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(11,19,27,0.95)] border border-[#4A6E8D]/30 bg-[#1B3A57]/30">
             <Image
               src={posterUrl}
               alt={movie.title}
@@ -121,18 +121,18 @@ function MovieDetailsPage() {
             disabled={toggleFavoriteMutation.isPending}
             className={`w-full py-3.5 px-6 rounded-xl border font-mono font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
               isFavorite
-                ? "bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11] border-transparent shadow-[0_0_20px_rgba(57,174,169,0.4)]"
-                : "bg-[#121A1D] text-[#8FA8AD] border-[#223136] hover:text-white hover:bg-[#1A2529] hover:border-[#39AEA9]"
+                ? "bg-[#A4C8E1] text-[#0B131B] border-[#A4C8E1] shadow-[0_0_20px_rgba(164,200,225,0.4)]"
+                : "bg-[#1B3A57]/60 text-[#4A6E8D] border-[#4A6E8D]/40 hover:text-[#F0F0F0] hover:bg-[#2C3E50]/70 hover:border-[#A4C8E1]/60"
             }`}
           >
             {isFavorite ? (
               <>
-                <BookmarkCheck className="w-4 h-4 text-[#0A0F11]" />
+                <BookmarkCheck className="w-4 h-4 text-[#0B131B]" />
                 <span>In Watchlist</span>
               </>
             ) : (
               <>
-                <Bookmark className="w-4 h-4 text-[#8FA8AD]" />
+                <Bookmark className="w-4 h-4 text-[#4A6E8D]" />
                 <span>Add to Watchlist</span>
               </>
             )}
@@ -142,56 +142,56 @@ function MovieDetailsPage() {
         <div className="md:col-span-3 space-y-6">
           {/* Metadata Chips */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="px-3 py-1 rounded-full bg-[#39AEA9]/20 border border-[#39AEA9]/40 text-[#A2D5AB] text-[10px] font-sans font-semibold">
+            <span className="px-3 py-1 rounded-full bg-[#1B3A57]/70 border border-[#4A6E8D]/40 text-[#A4C8E1] text-[10px] font-sans font-semibold">
               Nightcast Exclusive
             </span>
-            <span className="px-3 py-1 rounded-full bg-white/[0.08] border border-white/[0.1] text-[10px] font-sans font-medium text-[#CBD5E1] backdrop-blur-md">
+            <span className="px-3 py-1 rounded-full bg-[#1B3A57]/30 border border-[#4A6E8D]/25 text-[10px] font-sans font-medium text-[#F0F0F0]/80 backdrop-blur-md">
               4K Ultra HD
             </span>
-            <span className="px-3 py-1 rounded-full bg-white/[0.08] border border-white/[0.1] text-[10px] font-sans font-medium text-[#CBD5E1] backdrop-blur-md">
+            <span className="px-3 py-1 rounded-full bg-[#1B3A57]/30 border border-[#4A6E8D]/25 text-[10px] font-sans font-medium text-[#F0F0F0]/80 backdrop-blur-md">
               Dolby Vision
             </span>
           </div>
 
           <div className="space-y-2">
-            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-[#F8FAFC] leading-[0.95]">
+            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-[#F0F0F0] leading-[0.95]">
               {movie.title}
             </h1>
             {movie.tagline && (
-              <p className="text-sm italic text-[#8FA8AD] font-light">"{movie.tagline}"</p>
+              <p className="text-sm italic text-[#4A6E8D] font-light">"{movie.tagline}"</p>
             )}
           </div>
 
-          <div className="flex flex-wrap gap-5 text-xs font-sans text-[#8FA8AD] items-center pb-4 border-b border-white/[0.08]">
+          <div className="flex flex-wrap gap-5 text-xs font-sans text-[#4A6E8D] items-center pb-4 border-b border-[#4A6E8D]/20">
             <div className="flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-[#8FA8AD]" />
+              <Calendar className="w-3.5 h-3.5 text-[#4A6E8D]" />
               <span>{releaseYear}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-[#8FA8AD]" />
+              <Clock className="w-3.5 h-3.5 text-[#4A6E8D]" />
               <span>{duration}</span>
             </div>
-            <div className="flex items-center gap-1.5 text-[#E5EFC1]">
-              <Star className="w-3.5 h-3.5 fill-current text-[#A2D5AB]" />
+            <div className="flex items-center gap-1.5 text-[#F0F0F0]">
+              <Star className="w-3.5 h-3.5 fill-current text-[#A4C8E1]" />
               <span className="font-bold">{rating}</span>
-              <span className="text-[#8FA8AD]">/ 10</span>
+              <span className="text-[#4A6E8D]">/ 10</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Languages className="w-3.5 h-3.5 text-[#8FA8AD]" />
+              <Languages className="w-3.5 h-3.5 text-[#4A6E8D]" />
               <span>English, Dual Audio</span>
             </div>
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-xs uppercase tracking-wider text-[#8FA8AD] font-sans font-semibold">Synopsis</h3>
-            <p className="text-sm md:text-base font-normal text-[#E5EFC1] leading-relaxed font-sans max-w-3xl">
+            <h3 className="text-xs uppercase tracking-wider text-[#4A6E8D] font-sans font-semibold">Synopsis</h3>
+            <p className="text-sm md:text-base font-normal text-[#F0F0F0]/90 leading-relaxed font-sans max-w-3xl">
               {movie.overview}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
             {movie.genres?.map((g: any) => (
-              <span key={g.id} className="px-3 py-1 rounded-full border border-white/[0.08] bg-white/[0.06] text-xs font-sans text-[#CBD5E1] hover:text-[#E5EFC1] hover:border-[#39AEA9] transition-colors">
+              <span key={g.id} className="px-3 py-1 rounded-full border border-[#4A6E8D]/25 bg-[#1B3A57]/30 text-xs font-sans text-[#F0F0F0]/80 hover:text-[#F0F0F0] hover:border-[#A4C8E1]/60 transition-colors">
                 {g.name}
               </span>
             ))}
@@ -200,9 +200,9 @@ function MovieDetailsPage() {
           <div className="pt-2">
             <Link
               href={`/watch/movie/${id}`}
-              className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] hover:opacity-95 text-[#0A0F11] text-xs font-sans font-bold tracking-wide rounded-full shadow-[0_4px_24px_rgba(57,174,169,0.4)] transition-all cursor-pointer active:scale-[0.97]"
+              className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-[#F0F0F0] hover:bg-[#A4C8E1] text-[#0B131B] text-xs font-sans font-bold tracking-wide rounded-full shadow-[0_4px_24px_rgba(240,240,240,0.3)] transition-all cursor-pointer active:scale-[0.97]"
             >
-              <Play className="w-4 h-4 fill-current ml-0.5 text-[#0A0F11]" aria-hidden="true" />
+              <Play className="w-4 h-4 fill-current ml-0.5 text-[#0B131B]" aria-hidden="true" />
               <span>Stream in 4K</span>
             </Link>
           </div>
@@ -213,10 +213,10 @@ function MovieDetailsPage() {
       {movie.cast && movie.cast.length > 0 && (
         <section className="max-w-7xl mx-auto px-6 sm:px-8 md:px-12 mt-20">
           <div className="flex items-center gap-3 mb-6">
-            <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-[#39AEA9] to-[#A2D5AB]" />
+            <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-[#A4C8E1] to-[#4A6E8D]" />
             <div>
-              <h3 className="font-display text-xl font-bold tracking-tight text-[#F8FAFC]">Principal Cast</h3>
-              <p className="text-xs text-[#8FA8AD] font-sans">Actors &amp; Roles</p>
+              <h3 className="font-display text-xl font-bold tracking-tight text-[#F0F0F0]">Principal Cast</h3>
+              <p className="text-xs text-[#4A6E8D] font-sans">Actors &amp; Roles</p>
             </div>
           </div>
           <div className="flex gap-5 overflow-x-auto no-scrollbar pb-2">
@@ -224,12 +224,12 @@ function MovieDetailsPage() {
               const avatar = ImageService.getProfile(c.profile_path, c.name);
               return (
                 <div key={idx} className="flex flex-col items-center shrink-0 w-24 gap-2 text-center">
-                  <div className="relative w-16 h-16 rounded-2xl overflow-hidden border border-white/[0.1] bg-[#121A1D]">
+                  <div className="relative w-16 h-16 rounded-2xl overflow-hidden border border-[#4A6E8D]/30 bg-[#1B3A57]/30">
                     <Image src={avatar} alt={c.name} fill sizes="64px" className="object-cover" />
                   </div>
                   <div className="space-y-0.5">
-                    <p className="text-xs font-medium text-[#F8FAFC] truncate max-w-[90px]">{c.name}</p>
-                    <p className="text-[11px] font-sans text-[#8FA8AD] truncate max-w-[90px]">{c.character}</p>
+                    <p className="text-xs font-medium text-[#F0F0F0] truncate max-w-[90px]">{c.name}</p>
+                    <p className="text-[11px] font-sans text-[#4A6E8D] truncate max-w-[90px]">{c.character}</p>
                   </div>
                 </div>
               );
@@ -242,13 +242,13 @@ function MovieDetailsPage() {
       {trailerKey && (
         <section className="max-w-7xl mx-auto px-6 sm:px-8 md:px-12 mt-20">
           <div className="flex items-center gap-3 mb-6">
-            <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-[#39AEA9] to-[#A2D5AB]" />
+            <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-[#A4C8E1] to-[#4A6E8D]" />
             <div>
-              <h3 className="font-display text-xl font-bold tracking-tight text-[#F8FAFC]">Official Preview</h3>
-              <p className="text-xs text-[#8FA8AD] font-sans">Cinematic Trailer</p>
+              <h3 className="font-display text-xl font-bold tracking-tight text-[#F0F0F0]">Official Preview</h3>
+              <p className="text-xs text-[#4A6E8D] font-sans">Cinematic Trailer</p>
             </div>
           </div>
-          <div className="relative w-full aspect-video rounded-3xl overflow-hidden border border-white/[0.08] bg-[#121A1D] shadow-[0_25px_60px_rgba(0,0,0,0.9)]">
+          <div className="relative w-full aspect-video rounded-3xl overflow-hidden border border-[#4A6E8D]/30 bg-[#0B131B] shadow-[0_25px_60px_rgba(11,19,27,0.95)]">
             <iframe
               src={`https://www.youtube.com/embed/${trailerKey}?autoplay=0&mute=1&controls=1`}
               title="Official Trailer"

@@ -1,6 +1,6 @@
 import React from "react";
 
-const shimmer = "relative overflow-hidden bg-[#121A1D] border border-[#223136] rounded-2xl before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-white/5 before:to-transparent";
+const shimmer = "relative overflow-hidden bg-[#1B3A57]/30 border border-[#4A6E8D]/25 rounded-2xl before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-[#A4C8E1]/10 before:to-transparent";
 
 export function PosterSkeleton() {
   return (
@@ -10,7 +10,7 @@ export function PosterSkeleton() {
 
 export function HeroSkeleton() {
   return (
-    <div className="relative w-full h-[70vh] md:h-[80vh] bg-[#0A0F11] border-b border-[#223136] flex items-end p-8 md:p-16">
+    <div className="relative w-full h-[70vh] md:h-[80vh] bg-[#0B131B] border-b border-[#4A6E8D]/25 flex items-end p-8 md:p-16">
       <div className="space-y-5 max-w-xl w-full">
         <div className={`h-5 w-32 rounded-full ${shimmer}`} />
         <div className={`h-20 w-4/5 rounded-2xl ${shimmer}`} />
@@ -29,7 +29,7 @@ export function MovieRowSkeleton() {
   return (
     <div className="px-4 sm:px-6 md:px-12 py-6 space-y-4">
       <div className="flex items-center gap-3">
-        <div className="w-1.5 h-6 rounded-full bg-gradient-to-b from-[#39AEA9] to-[#A2D5AB]" />
+        <div className="w-1.5 h-6 rounded-full bg-gradient-to-b from-[#A4C8E1] to-[#4A6E8D]" />
         <div className={`h-6 w-48 rounded-full ${shimmer}`} />
       </div>
       <div className="flex gap-4 overflow-x-auto no-scrollbar py-2">
@@ -62,7 +62,7 @@ export function SearchSkeleton() {
 
 export function DetailsSkeleton() {
   return (
-    <div className="w-full min-h-screen bg-[#0A0F11] pb-20 space-y-16">
+    <div className="w-full min-h-screen bg-[#0B131B] pb-20 space-y-16">
       <div className={`w-full h-[65vh] md:h-[80vh] ${shimmer}`} />
       <div className="max-w-7xl mx-auto px-6 md:px-12 -mt-48 md:-mt-72 relative z-10 grid grid-cols-1 md:grid-cols-4 gap-10">
         <div className="space-y-5">
@@ -72,7 +72,7 @@ export function DetailsSkeleton() {
         <div className="md:col-span-3 space-y-6">
           <div className={`h-16 w-3/4 ${shimmer}`} />
           <div className={`h-4 w-1/2 ${shimmer}`} />
-          <div className="flex gap-4 pb-4 border-b border-[#223136]">
+          <div className="flex gap-4 pb-4 border-b border-[#4A6E8D]/25">
             <div className={`h-5 w-24 ${shimmer}`} />
             <div className={`h-5 w-24 ${shimmer}`} />
             <div className={`h-5 w-24 ${shimmer}`} />
@@ -107,15 +107,15 @@ export function CastSkeleton() {
 
 export function PlayerSkeleton() {
   return (
-    <div className={`relative aspect-video w-full rounded-2xl overflow-hidden bg-[#0A0F11] border border-[#223136] flex flex-col items-center justify-center gap-4 ${shimmer}`}>
+    <div className={`relative aspect-video w-full rounded-2xl overflow-hidden bg-[#0B131B] border border-[#4A6E8D]/30 flex flex-col items-center justify-center gap-4 ${shimmer}`}>
       <div className="relative flex items-center justify-center">
-        <div className="w-10 h-10 border-2 border-[#223136] border-t-[#39AEA9] animate-spin rounded-full" />
+        <div className="w-10 h-10 border-2 border-[#4A6E8D]/40 border-t-[#A4C8E1] animate-spin rounded-full" />
       </div>
       <div className="space-y-1 text-center">
-        <p className="text-xs font-bold uppercase tracking-widest text-[#39AEA9] font-mono">
+        <p className="text-xs font-bold uppercase tracking-widest text-[#A4C8E1] font-mono">
           INITIALIZING STREAM...
         </p>
-        <p className="text-[10px] font-mono text-[#8FA8AD]">Connecting to high-speed stream server</p>
+        <p className="text-[10px] font-mono text-[#4A6E8D]">Connecting to high-speed stream server</p>
       </div>
     </div>
   );

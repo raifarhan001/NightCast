@@ -31,15 +31,15 @@ function RouteProgressBarContent() {
 
   return (
     <>
-      {/* Turtle Teal Glowing Top Progress Bar */}
+      {/* Cinema Ice Blue Glowing Top Progress Bar */}
       <div className="fixed top-0 left-0 right-0 z-[9999] h-[2px] bg-transparent pointer-events-none">
-        <div className="h-full bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] shadow-[0_0_12px_rgba(57,174,169,0.8)] animate-top-progress" />
+        <div className="h-full bg-gradient-to-r from-[#4A6E8D] via-[#A4C8E1] to-[#F0F0F0] shadow-[0_0_12px_rgba(164,200,225,0.8)] animate-top-progress" />
       </div>
 
       {/* Floating Top-Right Rounded Loading Indicator Badge */}
-      <div className="fixed top-20 right-6 z-[9999] pointer-events-none flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#121A1D]/90 backdrop-blur-md border border-[#223136] shadow-[0_12px_36px_rgba(0,0,0,0.8)] animate-in fade-in slide-in-from-top-2 duration-200">
-        <Loader2 className="w-3.5 h-3.5 text-[#39AEA9] animate-spin" />
-        <span className="text-[11px] font-mono font-bold text-[#E5EFC1] tracking-wider uppercase">
+      <div className="fixed top-20 right-6 z-[9999] pointer-events-none flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#0B131B]/95 backdrop-blur-md border border-[#4A6E8D]/40 shadow-[0_12px_36px_rgba(11,19,27,0.9)] animate-in fade-in slide-in-from-top-2 duration-200">
+        <Loader2 className="w-3.5 h-3.5 text-[#A4C8E1] animate-spin" />
+        <span className="text-[11px] font-mono font-bold text-[#F0F0F0] tracking-wider uppercase">
           Loading...
         </span>
       </div>

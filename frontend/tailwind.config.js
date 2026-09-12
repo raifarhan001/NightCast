@@ -8,70 +8,47 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Turtle Palette from user specification
-        turtle: {
-          light: '#E5EFC1', // Cream / Light Sage
-          mint: '#A2D5AB',  // Mint Green / Soft Jade
-          teal: '#39AEA9',  // Vibrant Turquoise / Teal (Primary)
-          slate: '#557B83', // Deep Slate Teal / Ocean Moss
+        // User Cinema Palette
+        cinema: {
+          prussian: '#1B3A57',  // Deep Prussian Navy (#1B3A57)
+          slate: '#2C3E50',     // Dark Charcoal Blue / Midnight Slate (#2C3E50)
+          steel: '#4A6E8D',     // Steel Blue / Muted Slate (#4A6E8D)
+          ice: '#A4C8E1',       // Ice Blue / Soft Glow (#A4C8E1)
+          platinum: '#F0F0F0',  // Crisp Off-White / Platinum (#F0F0F0)
         },
-        // Midnight Slate Canvas
-        midnight: {
-          950: '#0A0F11', // Ultra Deep Canvas
-          900: '#0E1416', // Elevated Backdrop
-          800: '#121A1D', // Card Base
-          750: '#152024', // Popovers / Dropdowns
-          700: '#1A2529', // Hover Surface
-          600: '#223136', // Subtle Hairline Border
-          500: '#2E4249', // Secondary
-          400: '#557B83', // Slate accent
-          300: '#8FA8AD', // Subtitle text
-        },
-        // Electric Violet (kept for backward compatibility)
-        violet: {
-          400: '#A78BFA',
-          500: '#8B5CF6',
-          600: '#7C3AED',
-          700: '#6D28D9',
-        },
-        // Neon Pink (kept for backward compatibility)
-        pink: {
-          400: '#F472B6',
-          500: '#EC4899',
-          600: '#DB2777',
-        },
-        // Neutral Palette
-        neutral: {
-          100: '#FFFFFF',
-          200: '#E2E8F0',
-          300: '#8FA8AD',
+        // Deep Cinematic Canvas
+        canvas: {
+          950: '#070C12', // Ultra Deep Canvas
+          900: '#0B131B', // Primary Dark Base
+          850: '#0F1A24', // Subtle Elevated Surface
+          800: '#142230', // Card Surface
         },
         // Semantic Mappings
-        background: '#0A0F11',
-        foreground: '#E2E8F0',
+        background: '#0B131B',
+        foreground: '#F0F0F0',
         card: {
-          DEFAULT: '#121A1D',
-          foreground: '#FFFFFF',
+          DEFAULT: '#1B3A57',
+          foreground: '#F0F0F0',
         },
         popover: {
-          DEFAULT: '#152024',
-          foreground: '#E2E8F0',
+          DEFAULT: '#142230',
+          foreground: '#F0F0F0',
         },
         primary: {
-          DEFAULT: '#39AEA9',
-          foreground: '#0A0F11',
-          hover: '#A2D5AB',
+          DEFAULT: '#A4C8E1',
+          foreground: '#0B131B',
+          hover: '#F0F0F0',
         },
         secondary: {
-          DEFAULT: '#1A2529',
-          foreground: '#E2E8F0',
-          hover: '#223136',
+          DEFAULT: '#2C3E50',
+          foreground: '#F0F0F0',
+          hover: '#4A6E8D',
         },
         muted: {
-          DEFAULT: '#1A2529',
-          foreground: '#8FA8AD',
+          DEFAULT: '#2C3E50',
+          foreground: '#A4C8E1',
         },
-        border: 'rgba(85, 123, 131, 0.25)',
+        border: 'rgba(74, 110, 141, 0.25)',
       },
       fontFamily: {
         display: ['Syne', 'sans-serif'],
@@ -84,10 +61,9 @@ module.exports = {
         'md': '0 4px 12px -2px rgba(0, 0, 0, 0.7)',
         'lg': '0 12px 28px -4px rgba(0, 0, 0, 0.8)',
         'xl': '0 20px 48px -8px rgba(0, 0, 0, 0.9)',
-        'neon-turtle': '0 0 25px rgba(57, 174, 169, 0.45)',
-        'neon-violet': '0 0 25px rgba(57, 174, 169, 0.45)',
-        'neon-pink': '0 0 25px rgba(162, 213, 171, 0.45)',
-        'card-glow': '0 12px 32px -4px rgba(0, 0, 0, 0.7), 0 0 24px -2px rgba(57, 174, 169, 0.28)',
+        'glow-ice': '0 0 25px rgba(164, 200, 225, 0.45)',
+        'glow-steel': '0 0 25px rgba(74, 110, 141, 0.35)',
+        'card-cinema': '0 12px 32px -4px rgba(7, 12, 18, 0.85), 0 0 20px -2px rgba(164, 200, 225, 0.15)',
       },
       borderRadius: {
         'none': '0px',

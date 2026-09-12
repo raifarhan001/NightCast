@@ -4,6 +4,7 @@ import React, { Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch, MediaItem } from "../../lib/api";
 import HeroCarousel from "../../components/home/HeroCarousel";
+import AmbientGlow from "../../components/shared/AmbientGlow";
 import MovieRow from "../../components/shared/MovieRow";
 import Top10RankedRow from "../../components/home/Top10RankedRow";
 import StudiosRow from "../../components/home/StudiosRow";
@@ -70,13 +71,24 @@ function MoviesPageContent() {
     queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=16,10751"),
   });
 
+  // Auto-scroll to #top10 if hash is present
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash === "#top10" && trendingMovies.length > 0) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById("top10");
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [trendingMovies]);
+
   const heroItems = trendingMovies.length > 0
     ? trendingMovies.slice(0, 7).map(m => ({ ...m, media_type: "movie" as const }))
     : popularMovies.slice(0, 7).map(m => ({ ...m, media_type: "movie" as const }));
 
   if (trendingLoading) {
     return (
-      <div className="w-full min-h-screen bg-[#0A0F11]">
+      <div className="w-full min-h-screen bg-[#0B131B]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />
@@ -85,15 +97,22 @@ function MoviesPageContent() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#0A0F11] pb-28 space-y-6">
+    <div className="w-full min-h-screen bg-[#0B131B] pb-28 relative overflow-hidden">
+      {/* Dynamic Ambient Background Glow */}
+      <AmbientGlow />
+
       {/* Movies Only Hero Carousel */}
       <HeroCarousel items={heroItems} />
 
-      {/* 1. Top 10 Movies Right Now */}
-      <Top10RankedRow
-        title="Top 10 Movies"
-        items={trendingMovies.map(m => ({ ...m, media_type: "movie" as const }))}
-      />
+      {/* Content Rows Container */}
+      <div className="space-y-6 sm:space-y-8 mt-4 sm:mt-6">
+        {/* 1. Top 10 Movies Right Now */}
+        <div id="top10" className="scroll-mt-8">
+          <Top10RankedRow
+            title="Top 10 Movies"
+            items={trendingMovies.map(m => ({ ...m, media_type: "movie" as const }))}
+          />
+        </div>
 
       {/* 2. Studios & Platforms */}
       <StudiosRow />
@@ -152,11 +171,12 @@ function MoviesPageContent() {
         items={horrorMovies.map(m => ({ ...m, media_type: "movie" as const }))}
       />
 
-      {/* 12. Romantic Movies & Romance (At the Very Bottom) */}
-      <MovieRow
-        title="Romantic Movies & Romance"
-        items={romanceMovies.map(m => ({ ...m, media_type: "movie" as const }))}
-      />
+        {/* 12. Romantic Movies & Romance (At the Very Bottom) */}
+        <MovieRow
+          title="Romantic Movies & Romance"
+          items={romanceMovies.map(m => ({ ...m, media_type: "movie" as const }))}
+        />
+      </div>
     </div>
   );
 }
@@ -164,7 +184,7 @@ function MoviesPageContent() {
 export default function MoviesPage() {
   return (
     <Suspense fallback={
-      <div className="w-full min-h-screen bg-[#0A0F11]">
+      <div className="w-full min-h-screen bg-[#0B131B]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />

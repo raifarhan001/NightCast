@@ -7,7 +7,6 @@ import { useUserStore } from "../store/userStore";
 import { apiFetch, MediaItem, ContinueWatchingItem } from "../lib/api";
 import { getContinueWatchingList, removeWatchProgress, getCleanMediaId, LocalProgressItem } from "../lib/progress";
 import HeroCarousel from "../components/home/HeroCarousel";
-import BentoShowcase from "../components/home/BentoShowcase";
 import AmbientGlow from "../components/shared/AmbientGlow";
 import MovieRow from "../components/shared/MovieRow";
 import Top10RankedRow from "../components/home/Top10RankedRow";
@@ -43,6 +42,17 @@ function HomePageContent() {
     queryKey: ["top-picks"],
     queryFn: () => apiFetch("/api/tmdb/trending?media_type=all&time_window=week"),
   });
+
+  // Auto-scroll to #top10 if hash is present
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash === "#top10" && topPicks.length > 0) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById("top10");
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [topPicks]);
 
   // 2. New Movies (Now Playing)
   const { data: newMovies = [] } = useQuery<MediaItem[]>({
@@ -205,7 +215,7 @@ function HomePageContent() {
 
   if (topPicksLoading) {
     return (
-      <div className="w-full min-h-screen bg-[#0A0F11]">
+      <div className="w-full min-h-screen bg-[#0B131B]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />
@@ -214,31 +224,32 @@ function HomePageContent() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#0A0F11] pb-28 space-y-6 relative overflow-hidden">
+    <div className="w-full min-h-screen bg-[#0B131B] pb-28 relative overflow-hidden">
       {/* Dynamic Ambient Background Glow */}
       <AmbientGlow />
 
-      {/* Immersive Hero Showcase */}
+      {/* Immersive Hero Showcase - Flush with Top */}
       <HeroCarousel items={heroItems} />
 
-      {/* Apple TV+ Style Bento Grid Showcase */}
-      <BentoShowcase items={topPicks} />
-
-      {/* Continue Watching (If User Has In-Progress Titles) */}
-      {mergedContinueWatching.length > 0 && (
-        <MovieRow
-          title="Continue Watching"
-          subtitle="Pick up where you left off"
-          items={mergedContinueWatching}
-          onRemoveItem={handleRemoveContinueWatching}
-        />
-      )}
+      {/* Content Rows Container */}
+      <div className="space-y-6 sm:space-y-8 mt-4 sm:mt-6">
+        {/* Continue Watching (If User Has In-Progress Titles) */}
+        {mergedContinueWatching.length > 0 && (
+          <MovieRow
+            title="Continue Watching"
+            subtitle="Pick up where you left off"
+            items={mergedContinueWatching}
+            onRemoveItem={handleRemoveContinueWatching}
+          />
+        )}
 
       {/* 1. Trending Right Now */}
-      <Top10RankedRow
-        title="Top 10 Trending Titles"
-        items={topPicks}
-      />
+      <div id="top10" className="scroll-mt-8">
+        <Top10RankedRow
+          title="Top 10 Trending Titles"
+          items={topPicks}
+        />
+      </div>
 
       {/* 2. Studios & Platform */}
       <StudiosRow />
@@ -320,12 +331,13 @@ function HomePageContent() {
         items={crimeMovies.map((m) => ({ ...m, media_type: "movie" }))}
       />
 
-      {/* 14. Documentary */}
-      <MovieRow
-        title="Documentary"
-        subtitle="Real stories & untold truths"
-        items={documentaryMovies.map((m) => ({ ...m, media_type: "movie" }))}
-      />
+        {/* 14. Documentary */}
+        <MovieRow
+          title="Documentary"
+          subtitle="Real stories & untold truths"
+          items={documentaryMovies.map((m) => ({ ...m, media_type: "movie" }))}
+        />
+      </div>
     </div>
   );
 }
@@ -333,7 +345,7 @@ function HomePageContent() {
 export default function HomePage() {
   return (
     <Suspense fallback={
-      <div className="w-full min-h-screen bg-[#0A0F11]">
+      <div className="w-full min-h-screen bg-[#0B131B]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />

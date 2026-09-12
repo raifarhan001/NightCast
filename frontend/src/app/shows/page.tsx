@@ -4,6 +4,7 @@ import React, { Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch, MediaItem } from "../../lib/api";
 import HeroCarousel from "../../components/home/HeroCarousel";
+import AmbientGlow from "../../components/shared/AmbientGlow";
 import MovieRow from "../../components/shared/MovieRow";
 import Top10RankedRow from "../../components/home/Top10RankedRow";
 import StudiosRow from "../../components/home/StudiosRow";
@@ -15,6 +16,17 @@ function ShowsPageContent() {
     queryKey: ["shows-page-trending"],
     queryFn: () => apiFetch("/api/tmdb/trending?media_type=tv&time_window=week"),
   });
+
+  // Auto-scroll to #top10 if hash is present
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash === "#top10" && trendingShows.length > 0) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById("top10");
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [trendingShows]);
 
   // 2. Popular TV Shows
   const { data: popularShows = [] } = useQuery<MediaItem[]>({
@@ -64,7 +76,7 @@ function ShowsPageContent() {
 
   if (trendingLoading) {
     return (
-      <div className="w-full min-h-screen bg-[#0A0F11]">
+      <div className="w-full min-h-screen bg-[#0B131B]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />
@@ -73,15 +85,22 @@ function ShowsPageContent() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#0A0F11] pb-28 space-y-6">
+    <div className="w-full min-h-screen bg-[#0B131B] pb-28 relative overflow-hidden">
+      {/* Dynamic Ambient Background Glow */}
+      <AmbientGlow />
+
       {/* TV Shows Only Hero Carousel */}
       <HeroCarousel items={heroItems} />
 
-      {/* 1. Top 10 Shows Right Now */}
-      <Top10RankedRow
-        title="Top 10 TV Series"
-        items={trendingShows.map(t => ({ ...t, media_type: "tv" as const }))}
-      />
+      {/* Content Rows Container */}
+      <div className="space-y-6 sm:space-y-8 mt-4 sm:mt-6">
+        {/* 1. Top 10 Shows Right Now */}
+        <div id="top10" className="scroll-mt-8">
+          <Top10RankedRow
+            title="Top 10 TV Series"
+            items={trendingShows.map(t => ({ ...t, media_type: "tv" as const }))}
+          />
+        </div>
 
       {/* 2. Studios & Platforms */}
       <StudiosRow />
@@ -128,11 +147,12 @@ function ShowsPageContent() {
         items={mysteryShows.map(t => ({ ...t, media_type: "tv" as const }))}
       />
 
-      {/* 10. Comedy Series */}
-      <MovieRow
-        title="Comedy Series"
-        items={comedyShows.map(t => ({ ...t, media_type: "tv" as const }))}
-      />
+        {/* 10. Comedy Series */}
+        <MovieRow
+          title="Comedy Series"
+          items={comedyShows.map(t => ({ ...t, media_type: "tv" as const }))}
+        />
+      </div>
     </div>
   );
 }
@@ -140,7 +160,7 @@ function ShowsPageContent() {
 export default function ShowsPage() {
   return (
     <Suspense fallback={
-      <div className="w-full min-h-screen bg-[#0A0F11]">
+      <div className="w-full min-h-screen bg-[#0B131B]">
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />

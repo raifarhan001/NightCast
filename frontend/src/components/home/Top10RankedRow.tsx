@@ -63,10 +63,10 @@ export default function Top10RankedRow({
 
   return (
     <section className="space-y-4 px-4 sm:px-6 md:px-12 select-none relative group/row">
-      {/* Header with Title and Scroll Arrows */}
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight font-display text-white flex items-center gap-2.5">
-          <span className="cinema-badge-blood text-[10px] font-sans font-semibold tracking-wide">Trending</span>
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight font-display text-[#F0F0F0] flex items-center gap-2.5">
+          <span className="w-1.5 h-5 rounded-full bg-[#A4C8E1] shadow-[0_0_12px_rgba(164,200,225,0.6)] inline-block shrink-0" />
           <span>{title}</span>
         </h2>
 
@@ -75,7 +75,7 @@ export default function Top10RankedRow({
           <button
             onClick={() => handleScroll("left")}
             disabled={!showLeftArrow}
-            className={`w-10 h-10 rounded-full border border-white/[0.15] bg-[#0A0F11]/75 backdrop-blur-xl text-white hover:text-[#0A0F11] hover:bg-gradient-to-r hover:from-[#39AEA9] hover:to-[#A2D5AB] hover:border-transparent flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 cursor-pointer shadow-[0_8px_24px_rgba(0,0,0,0.8)] hover:scale-105 active:scale-95 ${
+            className={`w-10 h-10 rounded-full border border-[#4A6E8D]/40 bg-[#1B3A57]/70 hover:bg-[#2C3E50]/90 backdrop-blur-xl text-[#F0F0F0] hover:text-[#A4C8E1] flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 cursor-pointer shadow-[0_8px_24px_rgba(11,19,27,0.85)] hover:scale-105 active:scale-95 ${
               !showLeftArrow ? "opacity-30 cursor-not-allowed" : ""
             }`}
             aria-label="Scroll left"
@@ -85,7 +85,7 @@ export default function Top10RankedRow({
           <button
             onClick={() => handleScroll("right")}
             disabled={!showRightArrow}
-            className={`w-10 h-10 rounded-full border border-white/[0.15] bg-[#0A0F11]/75 backdrop-blur-xl text-white hover:text-[#0A0F11] hover:bg-gradient-to-r hover:from-[#39AEA9] hover:to-[#A2D5AB] hover:border-transparent flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 cursor-pointer shadow-[0_8px_24px_rgba(0,0,0,0.8)] hover:scale-105 active:scale-95 ${
+            className={`w-10 h-10 rounded-full border border-[#4A6E8D]/40 bg-[#1B3A57]/70 hover:bg-[#2C3E50]/90 backdrop-blur-xl text-[#F0F0F0] hover:text-[#A4C8E1] flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 cursor-pointer shadow-[0_8px_24px_rgba(11,19,27,0.85)] hover:scale-105 active:scale-95 ${
               !showRightArrow ? "opacity-30 cursor-not-allowed" : ""
             }`}
             aria-label="Scroll right"
@@ -99,7 +99,7 @@ export default function Top10RankedRow({
       <div
         ref={rowRef}
         onScroll={checkScrollPosition}
-        className="flex items-center gap-3 sm:gap-6 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory pt-2 pb-6 px-1"
+        className="flex items-center gap-3 sm:gap-6 overflow-x-auto no-scrollbar scrollbar-hide scroll-smooth snap-x snap-mandatory pt-2 pb-6 px-1"
       >
         {top10Items.map((item, index) => {
           const rank = index + 1;
@@ -137,11 +137,11 @@ export default function Top10RankedRow({
                     x="50%"
                     y="88%"
                     textAnchor="middle"
-                    fill="#121A1D"
-                    stroke="#223136"
+                    fill="#1B3A57"
+                    stroke="#4A6E8D"
                     strokeWidth="3.5"
                     strokeLinejoin="round"
-                    className="font-extrabold group-hover/item:stroke-[#39AEA9] group-hover/item:fill-[#1A2529] transition-colors duration-300"
+                    className="font-extrabold group-hover/item:stroke-[#A4C8E1] group-hover/item:fill-[#2C3E50] transition-colors duration-300"
                     style={{
                       fontSize: isTwoDigits ? "140px" : "165px",
                       fontFamily: "Syne, sans-serif",
@@ -153,7 +153,7 @@ export default function Top10RankedRow({
               </div>
 
               {/* Vertical Poster Card with Rounded-2xl */}
-              <div className="relative z-10 -ml-7 sm:-ml-9 md:-ml-12 w-28 sm:w-36 md:w-40 aspect-[2/3] rounded-2xl overflow-hidden bg-[#121A1D] border border-white/[0.1] shadow-[0_20px_40px_-8px_rgba(0,0,0,0.8)] transform-gpu will-change-transform transition-all duration-300 ease-out group-hover/item:scale-[1.03] group-hover/item:border-[#39AEA9]/70 group-hover/item:shadow-[0_20px_40px_rgba(57,174,169,0.25)]">
+              <div className="relative z-10 -ml-7 sm:-ml-9 md:-ml-12 w-28 sm:w-36 md:w-40 aspect-[2/3] rounded-2xl overflow-hidden bg-[#1B3A57]/20 border border-[#4A6E8D]/30 shadow-[0_8px_32px_rgba(11,19,27,0.8)] transform-gpu will-change-transform transition-all duration-300 ease-out group-hover/item:scale-[1.03] group-hover/item:border-[#A4C8E1]/60 group-hover/item:shadow-[0_16px_40px_rgba(164,200,225,0.18)]">
                 <Image
                   src={posterUrl}
                   alt={displayTitle}
@@ -170,10 +170,10 @@ export default function Top10RankedRow({
                   <PlatformBadge item={item} />
                 </div>
 
-                {/* Play Icon on Hover with Turtle Gradient */}
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-[#0A0F11]/95 via-[#0A0F11]/40 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11] flex items-center justify-center shadow-[0_4px_16px_rgba(57,174,169,0.5)] transform-gpu will-change-transform group-hover/item:scale-110 active:scale-95 transition-transform duration-200">
-                    <Play className="w-4 h-4 fill-current ml-0.5 text-[#0A0F11]" />
+                {/* Play Icon on Hover with White Pill Glass Effect */}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-[#0B131B]/95 via-[#1B3A57]/40 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-[#F0F0F0] text-[#0B131B] flex items-center justify-center shadow-[0_4px_16px_rgba(240,240,240,0.3)] transform-gpu will-change-transform group-hover/item:scale-110 active:scale-95 transition-transform duration-200">
+                    <Play className="w-4 h-4 fill-[#0B131B] text-[#0B131B] ml-0.5" />
                   </div>
                 </div>
               </div>

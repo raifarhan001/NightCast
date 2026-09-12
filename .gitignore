@@ -62,4 +62,4 @@ Thumbs.db
 .vercel/
 *.report.txt
 nexus_play_workspace_report.txt
-
+.agents/

@@ -177,10 +177,15 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
 
   const handleMouseEnter = () => {
     soundFx.playHover();
-    const backdrop = item.backdrop_path || item.poster_path;
-    if (backdrop) {
-      useAmbientStore.getState().setActiveBackdrop(backdrop, title);
-    }
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = setTimeout(() => {
+      const backdrop = item.backdrop_path || item.poster_path;
+      if (backdrop) {
+        useAmbientStore.getState().setActiveBackdrop(backdrop, title);
+      }
+      setIsHovered(true);
+    }, 280);
+
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
@@ -198,16 +203,14 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
     } else {
       setAlign("center");
     }
-
-    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-    hoverTimerRef.current = setTimeout(() => {
-      setIsHovered(true);
-    }, 240);
   };
 
   const handleMouseLeave = () => {
     useAmbientStore.getState().clearActiveBackdrop(400);
-    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
     setIsHovered(false);
   };
 
@@ -216,12 +219,12 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
 
   const positionClasses = useMemo(() => {
     if (align === "left") {
-      return "-top-10 sm:-top-14 left-0 w-[290px] sm:w-[325px] md:w-[345px] origin-top-left";
+      return "-top-10 sm:-top-12 left-0 w-[280px] sm:w-[310px] md:w-[330px] origin-top-left";
     }
     if (align === "right") {
-      return "-top-10 sm:-top-14 right-0 w-[290px] sm:w-[325px] md:w-[345px] origin-top-right";
+      return "-top-10 sm:-top-12 right-0 w-[280px] sm:w-[310px] md:w-[330px] origin-top-right";
     }
-    return "-top-10 sm:-top-14 left-1/2 -translate-x-1/2 w-[290px] sm:w-[325px] md:w-[345px] origin-top";
+    return "-top-10 sm:-top-12 left-1/2 -translate-x-1/2 w-[280px] sm:w-[310px] md:w-[330px] origin-top";
   }, [align]);
 
   return (
@@ -229,14 +232,16 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
       ref={containerRef}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="w-[220px] sm:w-[250px] md:w-[270px] min-w-[220px] sm:min-w-[250px] md:min-w-[270px] max-w-[220px] sm:max-w-[250px] md:max-w-[270px] shrink-0 select-none snap-start relative"
+      className={`w-[220px] sm:w-[250px] md:w-[270px] min-w-[220px] sm:min-w-[250px] md:min-w-[270px] max-w-[220px] sm:max-w-[250px] md:max-w-[270px] shrink-0 select-none snap-start relative ${
+        isHovered ? "z-50" : "z-10"
+      }`}
     >
       {/* Default Base Card */}
       <Link
         href={watchUrl}
         className="group block cursor-pointer transform-gpu will-change-transform"
       >
-        <div className="cinema-card-landscape w-full bg-[#121A1D] border border-[#223136] rounded-2xl group-hover:border-[#39AEA9]/70 group-hover:shadow-[0_16px_36px_-6px_rgba(0,0,0,0.85),0_0_24px_rgba(57,174,169,0.25)] transition-all duration-300 ease-out relative">
+        <div className="cinema-card-landscape w-full bg-[#1B3A57]/25 border border-[#4A6E8D]/30 rounded-2xl group-hover:border-[#A4C8E1]/60 group-hover:shadow-[0_16px_36px_-6px_rgba(11,19,27,0.9),0_0_24px_rgba(164,200,225,0.18)] transition-all duration-300 ease-out relative">
           {imageUrl ? (
             <Image
               src={imageUrl}
@@ -249,7 +254,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
               blurDataURL={ImageService.getBlurHash()}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-[#8FA8AD] text-xs font-mono font-medium p-3 text-center bg-[#121A1D] rounded-2xl">
+            <div className="w-full h-full flex items-center justify-center text-[#A4C8E1]/60 text-xs font-mono font-medium p-3 text-center bg-[#1B3A57]/20 rounded-2xl">
               {title}
             </div>
           )}
@@ -268,7 +273,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
                 e.stopPropagation();
                 onRemove();
               }}
-              className="absolute top-2.5 right-2.5 z-40 w-7 h-7 rounded-full bg-[#0A0F11]/85 hover:bg-rose-600 text-white/80 hover:text-white border border-white/[0.15] hover:border-rose-400 flex items-center justify-center transition-all shadow-md group-hover:opacity-100 sm:opacity-0 opacity-100 cursor-pointer"
+              className="absolute top-2.5 right-2.5 z-40 w-7 h-7 rounded-full bg-[#0B131B]/80 hover:bg-rose-600/90 text-[#F0F0F0]/80 hover:text-white border border-[#4A6E8D]/40 hover:border-rose-400 flex items-center justify-center transition-all shadow-md group-hover:opacity-100 sm:opacity-0 opacity-100 cursor-pointer"
               title="Remove from Continue Watching"
               aria-label="Remove from Continue Watching"
             >
@@ -278,17 +283,17 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
 
           {/* IMDb Rating Tag Top Right */}
           {rating && !onRemove && (
-            <div className="absolute top-2.5 right-2.5 z-20 px-2 py-0.5 rounded-full bg-[#0A0F11]/75 backdrop-blur-xl border border-white/[0.12] text-[10px] font-sans font-semibold text-[#E5EFC1] flex items-center gap-1 shadow-sm">
-              <Star className="w-2.5 h-2.5 fill-current text-[#A2D5AB]" />
+            <div className="absolute top-2.5 right-2.5 z-20 px-2 py-0.5 rounded-full bg-[#1B3A57]/80 backdrop-blur-xl border border-[#4A6E8D]/40 text-[10px] font-sans font-semibold text-[#F0F0F0] flex items-center gap-1 shadow-sm">
+              <Star className="w-2.5 h-2.5 fill-current text-[#A4C8E1]" />
               <span>{rating}</span>
             </div>
           )}
 
           {/* Progress Bar (if watched) */}
           {progress > 0 && (
-            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-[#0A0F11] z-30 overflow-hidden rounded-b-2xl">
+            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-[#0B131B]/80 z-30 overflow-hidden rounded-b-2xl">
               <div
-                className="h-full bg-gradient-to-r from-[#557B83] via-[#39AEA9] to-[#A2D5AB] shadow-[0_0_10px_rgba(57,174,169,0.9)] transition-all duration-300"
+                className="h-full bg-[#A4C8E1] shadow-[0_0_8px_rgba(164,200,225,0.8)] transition-all duration-300"
                 style={{ width: `${Math.max(2, Math.min(100, displayPercent))}%` }}
               />
             </div>
@@ -297,34 +302,34 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
 
         {/* Card Title & Subtitle */}
         <div className="w-full min-w-0 pt-2.5 px-1 space-y-0.5 overflow-hidden">
-          <h4 className="text-xs sm:text-sm font-sans font-semibold text-[#F8FAFC] truncate block w-full group-hover:text-[#A2D5AB] transition-colors duration-200">
+          <h4 className="text-xs sm:text-sm font-sans font-semibold text-[#F0F0F0] truncate block w-full group-hover:text-[#A4C8E1] transition-colors duration-200">
             {title}
           </h4>
-          <p className="text-[11px] font-sans text-[#8FA8AD] truncate block w-full">{defaultSubtitle}</p>
+          <p className="text-[11px] font-sans text-[#4A6E8D] group-hover:text-[#A4C8E1]/75 truncate block w-full transition-colors">{defaultSubtitle}</p>
         </div>
       </Link>
 
       {/* Netflix-Style Hover Preview Pop-Up Card */}
       {isHovered && (
         <div
-          className={`absolute ${positionClasses} z-50 bg-[#14181B] rounded-2xl shadow-[0_24px_55px_rgba(0,0,0,0.98),0_0_30px_rgba(57,174,169,0.25)] border border-white/[0.15] overflow-hidden transform-gpu will-change-transform animate-in fade-in zoom-in-95 duration-200 pointer-events-auto`}
+          className={`absolute ${positionClasses} z-50 bg-[#0B131B] backdrop-blur-2xl rounded-2xl sm:rounded-3xl shadow-[0_24px_60px_rgba(0,0,0,0.95),0_0_25px_rgba(164,200,225,0.18)] border border-[#4A6E8D]/50 overflow-hidden transform-gpu will-change-transform animate-in fade-in zoom-in-95 duration-200 pointer-events-auto`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Top Banner: High-Res Cinema Artwork / Poster */}
-          <div className="relative aspect-video w-full bg-[#0A0F11] overflow-hidden group/thumb">
+          <div className="relative aspect-video w-full bg-[#0B131B] overflow-hidden group/thumb">
             <Link href={watchUrl} className="block w-full h-full relative cursor-pointer">
               {imageUrl ? (
                 <Image
                   src={imageUrl}
                   alt={title}
                   fill
-                  sizes="360px"
+                  sizes="340px"
                   className="object-cover transition-transform duration-700 group-hover/thumb:scale-105 brightness-[0.98]"
                   placeholder="blur"
                   blurDataURL={ImageService.getBlurHash()}
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-xs text-[#8FA8AD] font-mono">
+                <div className="w-full h-full flex items-center justify-center text-xs text-[#A4C8E1]/60 font-mono">
                   {title}
                 </div>
               )}
@@ -345,7 +350,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
                   soundFx.playTap();
                   onRemove();
                 }}
-                className="absolute top-2.5 right-2.5 z-30 w-7 h-7 rounded-full bg-[#0A0F11]/85 hover:bg-rose-600 text-white/80 hover:text-white border border-white/[0.15] flex items-center justify-center transition-all shadow-md cursor-pointer"
+                className="absolute top-2.5 right-2.5 z-30 w-7 h-7 rounded-full bg-[#0B131B]/80 hover:bg-rose-600/90 text-[#F0F0F0]/80 hover:text-white border border-[#4A6E8D]/40 flex items-center justify-center transition-all shadow-md cursor-pointer"
                 title="Remove from Continue Watching"
               >
                 <X className="w-3.5 h-3.5" />
@@ -354,86 +359,83 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
 
             {/* Progress bar on popup image */}
             {progress > 0 && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#0A0F11]/90 z-20">
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#0B131B]/80 z-20">
                 <div
-                  className="h-full bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB]"
+                  className="h-full bg-[#A4C8E1] shadow-[0_0_8px_rgba(164,200,225,0.8)]"
                   style={{ width: `${Math.max(2, Math.min(100, displayPercent))}%` }}
                 />
               </div>
             )}
           </div>
 
-          {/* Details Section (Exact Layout matching Reference Image) */}
-          <div className="p-3.5 sm:p-4 space-y-2.5 bg-[#14181B]">
+          {/* Details Section (Frosted Glass Layout with Rounded Bottom) */}
+          <div className="p-3 sm:p-3.5 space-y-2.5 bg-[#1B3A57]/55 backdrop-blur-xl rounded-b-2xl sm:rounded-b-3xl border-t border-[#4A6E8D]/30">
             {/* Row 1: Action Controls */}
             <div className="flex items-center gap-2">
-              {/* Primary White Play Button with Black Triangle */}
+              {/* Primary Platinum Play Button */}
               <Link
                 href={watchUrl}
                 onClick={() => soundFx.playTap()}
-                className="w-9 h-9 rounded-full bg-white hover:bg-white/90 text-black flex items-center justify-center shadow-md transform active:scale-95 transition-all cursor-pointer shrink-0"
+                className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-full bg-[#F0F0F0] hover:bg-[#A4C8E1] text-[#0B131B] flex items-center justify-center shadow-[0_0_12px_rgba(240,240,240,0.3)] transform active:scale-95 transition-all cursor-pointer shrink-0"
                 title="Play Now"
               >
-                <Play className="w-4 h-4 fill-current text-black ml-0.5" />
+                <Play className="w-4 h-4 fill-[#0B131B] text-[#0B131B] ml-0.5" />
               </Link>
 
               {/* Add to Watchlist Button */}
               <button
                 type="button"
                 onClick={handleWatchlistClick}
-                className="w-9 h-9 rounded-full border border-white/40 hover:border-white text-white flex items-center justify-center transform active:scale-95 transition-all cursor-pointer shrink-0 hover:bg-white/[0.08]"
+                className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-full bg-[#2C3E50]/60 hover:bg-[#4A6E8D]/50 border border-[#4A6E8D]/40 hover:border-[#A4C8E1]/60 text-[#F0F0F0] flex items-center justify-center transform active:scale-95 transition-all cursor-pointer shrink-0 backdrop-blur-md"
                 title={added ? "In Watchlist" : "Add to Watchlist"}
               >
-                {added ? <Check className="w-4 h-4 text-[#A2D5AB]" /> : <Plus className="w-4 h-4 text-white" />}
+                {added ? <Check className="w-4 h-4 text-[#A4C8E1]" /> : <Plus className="w-4 h-4 text-[#F0F0F0]" />}
               </button>
 
               {/* Like / ThumbsUp Button */}
               <button
                 type="button"
                 onClick={handleLikeClick}
-                className="w-9 h-9 rounded-full border border-white/40 hover:border-white text-white flex items-center justify-center transform active:scale-95 transition-all cursor-pointer shrink-0 hover:bg-white/[0.08]"
+                className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-full bg-[#2C3E50]/60 hover:bg-[#4A6E8D]/50 border border-[#4A6E8D]/40 hover:border-[#A4C8E1]/60 text-[#F0F0F0] flex items-center justify-center transform active:scale-95 transition-all cursor-pointer shrink-0 backdrop-blur-md"
                 title="Like"
               >
-                <ThumbsUp className={`w-4 h-4 ${liked ? "text-[#39AEA9] fill-current" : "text-white"}`} />
+                <ThumbsUp className={`w-4 h-4 ${liked ? "text-[#A4C8E1] fill-current" : "text-[#F0F0F0]"}`} />
               </button>
 
               {/* Chevron Down Button (Right Aligned - More Info) */}
               <Link
                 href={detailUrl}
                 onClick={() => soundFx.playTap()}
-                className="w-9 h-9 rounded-full border border-white/40 hover:border-white text-white flex items-center justify-center ml-auto transform active:scale-95 transition-all cursor-pointer shrink-0 hover:bg-white/[0.08]"
+                className="w-8.5 h-8.5 sm:w-9 sm:h-9 rounded-full bg-[#2C3E50]/60 hover:bg-[#4A6E8D]/50 border border-[#4A6E8D]/40 hover:border-[#A4C8E1]/60 text-[#F0F0F0] flex items-center justify-center ml-auto transform active:scale-95 transition-all cursor-pointer shrink-0 backdrop-blur-md"
                 title="More info"
               >
-                <ChevronDown className="w-4 h-4 text-white" />
+                <ChevronDown className="w-4 h-4 text-[#F0F0F0]" />
               </Link>
             </div>
 
-            {/* Row 2: Match %, Age Rating, Duration, Quality Badge, Audio */}
-            <div className="flex items-center gap-2 flex-wrap text-xs font-sans">
-              <span className="text-[#46d369] font-bold text-xs">
+            {/* Row 2: Match %, Age Rating, Duration, Quality Badge */}
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-xs font-sans">
+              <span className="text-[#A4C8E1] font-bold text-xs drop-shadow-[0_0_8px_rgba(164,200,225,0.4)]">
                 {matchScore}% match
               </span>
-              <span className="border border-white/35 px-1.5 py-0.5 rounded text-[10px] font-semibold text-white/90">
+              <span className="border border-[#4A6E8D]/40 bg-[#2C3E50]/60 px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#F0F0F0]/90">
                 {ageRating}
               </span>
-              <span className="text-[#CBD5E1] font-medium text-[11px]">
+              <span className="text-[#F0F0F0]/75 font-medium text-[11px]">
                 {durationText}
               </span>
-              <span className="border border-[#39AEA9]/50 text-[#A2D5AB] px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider">
+              <span className="border border-[#4A6E8D]/40 bg-[#2C3E50]/60 text-[#A4C8E1] px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider">
                 4K UHD
-              </span>
-              <span className="border border-white/30 text-[#8FA8AD] px-1.5 py-0.5 rounded text-[9px] font-medium">
-                Dual Audio
               </span>
             </div>
 
             {/* Row 3: Genres (Dot-separated) */}
-            <div className="flex items-center gap-1.5 flex-wrap text-xs text-white/90 font-sans font-medium pt-0.5">
+            <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-[#F0F0F0]/85 font-sans font-medium pt-0.5 pb-1">
               {genresList.map((g, idx) => (
                 <React.Fragment key={g}>
                   <span>{g}</span>
                   {idx < genresList.length - 1 && (
-                    <span className="text-white/40">•</span>
+                    <span className="text-[#4A6E8D]">•</span>
                   )}
                 </React.Fragment>
               ))}
