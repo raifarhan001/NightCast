@@ -9,6 +9,7 @@ import AmbientGlow from '../../components/shared/AmbientGlow';
 import { getContinueWatchingList, removeWatchProgress, getCleanMediaId, LocalProgressItem } from '../../lib/progress';
 import { Sparkles, User, Settings as SettingsIcon, LogOut, Trash2, Plus, Bookmark, Clock, Eye, ShieldCheck, Mail, Lock, PlayCircle, Film, LogIn } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function ProfilePage() {
   const queryClient = useQueryClient();
@@ -270,6 +271,29 @@ export default function ProfilePage() {
     }),
     onSuccess: () => refetchHistory()
   });
+
+  const deleteHistoryItemMutation = useMutation({
+    mutationFn: (historyId: string) => apiFetch(`/api/progress/history/${historyId}`, {
+      method: 'DELETE',
+      headers: activeProfile ? { 'X-Profile-ID': activeProfile.id } : {}
+    }),
+    onSuccess: () => refetchHistory()
+  });
+
+  const dedupedHistory = useMemo(() => {
+    const seen = new Set<string>();
+    const list: any[] = [];
+    for (const h of history) {
+      const rawId = String(h.media_id || h.id);
+      const cleanId = rawId.split('_s')[0].split('-s')[0].split('_')[0].trim();
+      if (Number(h.progress_percent || 0) < 1.0) continue;
+      if (!seen.has(cleanId)) {
+        seen.add(cleanId);
+        list.push(h);
+      }
+    }
+    return list;
+  }, [history]);
 
   return (
     <div className="w-full min-h-screen bg-[#0B131B] text-[#F0F0F0] relative overflow-hidden pb-28 pt-24 sm:pt-28">
@@ -587,7 +611,7 @@ export default function ProfilePage() {
                   <Eye className="w-5 h-5 text-[#A4C8E1]" />
                   <h3 className="text-base font-bold text-[#F0F0F0]">Watch History</h3>
                 </div>
-                {history.length > 0 && (
+                {dedupedHistory.length > 0 && (
                   <button
                     type="button"
                     onClick={() => clearHistoryMutation.mutate()}
@@ -597,29 +621,46 @@ export default function ProfilePage() {
                   </button>
                 )}
               </div>
-              {history.length > 0 ? (
+              {dedupedHistory.length > 0 ? (
                 <div className="space-y-2">
-                  {history.map((h) => (
-                    <div
-                      key={h.id}
-                      className="p-3.5 rounded-xl bg-[#1B3A57]/20 border border-[#4A6E8D]/25 hover:border-[#A4C8E1]/40 flex items-center justify-between transition"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 bg-[#2C3E50]/50 rounded-lg flex items-center justify-center text-[#A4C8E1] shrink-0">
-                          <Eye className="w-4 h-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <h4 className="text-xs font-semibold text-[#F0F0F0] truncate max-w-sm">{h.title}</h4>
-                          <p className="text-[10px] text-[#4A6E8D] uppercase tracking-wider">
-                            {h.media_type} &middot; {h.progress_percent.toFixed(0)}% watched
-                          </p>
+                  {dedupedHistory.map((h) => {
+                    const cleanId = String(h.media_id || h.id).split('_s')[0].split('-s')[0].split('_')[0].trim();
+                    const watchUrl = `/watch/${h.media_type || 'movie'}/${cleanId}`;
+                    return (
+                      <div
+                        key={h.id}
+                        className="p-3.5 rounded-xl bg-[#1B3A57]/20 border border-[#4A6E8D]/25 hover:border-[#A4C8E1]/40 flex items-center justify-between transition group"
+                      >
+                        <Link href={watchUrl} className="flex items-center gap-3 min-w-0 flex-grow hover:opacity-90">
+                          <div className="w-8 h-8 bg-[#2C3E50]/50 rounded-lg flex items-center justify-center text-[#A4C8E1] shrink-0 group-hover:bg-[#22C55E]/20 group-hover:text-[#22C55E] transition-colors">
+                            <PlayCircle className="w-4 h-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="text-xs font-semibold text-[#F0F0F0] truncate max-w-sm group-hover:text-[#22C55E] transition-colors">{h.title}</h4>
+                            <p className="text-[10px] text-[#4A6E8D] uppercase tracking-wider">
+                              {h.media_type} &middot; {Math.max(1, Math.round(Number(h.progress_percent || 0)))}% watched
+                            </p>
+                          </div>
+                        </Link>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="text-[11px] text-[#4A6E8D] font-mono">
+                            {new Date(h.watched_at).toLocaleDateString()}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteHistoryItemMutation.mutate(h.id);
+                            }}
+                            className="p-1 rounded text-[#4A6E8D] hover:text-red-400 hover:bg-red-500/10 transition cursor-pointer"
+                            title="Remove from history"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
-                      <span className="text-[11px] text-[#4A6E8D] font-mono">
-                        {new Date(h.watched_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="p-6 rounded-2xl bg-[#1B3A57]/20 border border-[#4A6E8D]/25 text-center text-xs text-[#4A6E8D]">
