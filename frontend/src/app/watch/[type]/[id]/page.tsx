@@ -53,14 +53,14 @@ function attachTimestampToUrl(url: string, seconds: number): string {
     }
     if (url.includes('vidlink.pro')) {
       if (!urlObj.searchParams.has('primaryColor')) {
-        urlObj.searchParams.set('primaryColor', '39AEA9');
+        urlObj.searchParams.set('primaryColor', '22c55e');
       }
       if (!urlObj.searchParams.has('autoplay')) {
         urlObj.searchParams.set('autoplay', 'true');
       }
     } else if (url.includes('vidbolt.xyz')) {
       if (!urlObj.searchParams.has('theme')) {
-        urlObj.searchParams.set('theme', '39AEA9');
+        urlObj.searchParams.set('theme', '22c55e');
       }
     }
     return urlObj.toString();
@@ -153,11 +153,21 @@ export default function WatchPage() {
         id: 'vidlink',
         name: 'Server 4 (VidLink Pro)',
         url: type === 'tv'
-          ? `https://vidlink.pro/tv/${id}/${seasonNum}/${episodeNum}?primaryColor=39AEA9&autoplay=true`
-          : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`,
+          ? `https://vidlink.pro/tv/${id}/${seasonNum}/${episodeNum}?primaryColor=22c55e&autoplay=true`
+          : `https://vidlink.pro/movie/${id}?primaryColor=22c55e&autoplay=true`,
         type: 'iframe',
         language: 'en',
         language_name: 'vidlink.pro'
+      },
+      {
+        id: 'nightcast-native',
+        name: 'Server 5 (NightCast Native)',
+        url: type === 'tv'
+          ? `https://player.autoembed.cc/embed/tv/${id}/${seasonNum}/${episodeNum}`
+          : `https://player.autoembed.cc/embed/movie/${id}`,
+        type: 'hls',
+        language: 'en',
+        language_name: 'NightCast Player'
       }
     ];
   }, [type, id]);
@@ -167,7 +177,7 @@ export default function WatchPage() {
   const [activeServerId, setActiveServerId] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('nightcast_preferred_server_v2') || localStorage.getItem('nightcast_preferred_server');
-      if (saved && saved !== 'vidlink' && ['vidsrc', 'vidsrc-to', 'vidbolt', 'vidlink'].includes(saved)) {
+      if (saved && saved !== 'vidlink' && ['vidsrc', 'vidsrc-to', 'vidbolt', 'vidlink', 'nightcast-native'].includes(saved)) {
         return saved;
       }
     }

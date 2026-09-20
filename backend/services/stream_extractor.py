@@ -146,17 +146,17 @@ class StreamExtractor:
             s1_vidsrc = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
             s2_vidsrc_to = f"https://vidsrc.to/embed/movie/{tmdb_id}"
             s3_vidbolt = f"https://vidbolt.xyz/movie/{tmdb_id}"
-            s4_vidlink = f"https://vidlink.pro/movie/{tmdb_id}?primaryColor=39AEA9&autoplay=true"
+            s4_vidlink = f"https://vidlink.pro/movie/{tmdb_id}?primaryColor=22c55e&autoplay=true"
         elif media_type == "anime":
             s1_vidsrc = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
             s2_vidsrc_to = f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}"
             s3_vidbolt = f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}"
-            s4_vidlink = f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=39AEA9&autoplay=true"
+            s4_vidlink = f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=22c55e&autoplay=true"
         else:
             s1_vidsrc = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
             s2_vidsrc_to = f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}"
             s3_vidbolt = f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}"
-            s4_vidlink = f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=39AEA9&autoplay=true"
+            s4_vidlink = f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=22c55e&autoplay=true"
 
         all_servers = [
             {
@@ -297,7 +297,7 @@ class StreamExtractor:
                 {
                     "id": "vidlink",
                     "name": "Server 4 (VidLink Pro)",
-                    "url": f"https://vidlink.pro/movie/{tmdb_id}?primaryColor=39AEA9&autoplay=true",
+                    "url": f"https://vidlink.pro/movie/{tmdb_id}?primaryColor=22c55e&autoplay=true",
                     "type": "iframe",
                 },
             ]
@@ -324,7 +324,7 @@ class StreamExtractor:
                 {
                     "id": "vidlink",
                     "name": "Server 4 (VidLink Pro)",
-                    "url": f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=39AEA9&autoplay=true",
+                    "url": f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=22c55e&autoplay=true",
                     "type": "iframe",
                 },
             ]
@@ -351,7 +351,7 @@ class StreamExtractor:
                 {
                     "id": "vidlink",
                     "name": "Server 4 (VidLink Pro)",
-                    "url": f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=39AEA9&autoplay=true",
+                    "url": f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=22c55e&autoplay=true",
                     "type": "iframe",
                 },
             ]
