@@ -145,12 +145,12 @@ function HeaderContent() {
       {/* Floating Top-Right Search Capsule (Matching Reference UI) */}
       <div className="fixed top-3 sm:top-5 right-3 sm:right-8 md:right-12 z-40 pointer-events-auto">
         <div ref={searchContainerRef} className="relative">
-          {/* Frosted Search Pill Capsule */}
+          {/* Frosted Search Pill Capsule - Highly Transparent & Compact Glass */}
           <form
             onSubmit={handleSearchSubmit}
-            className="flex items-center gap-2 sm:gap-2.5 px-3.5 sm:px-5 py-1.5 sm:py-2.5 rounded-full bg-[#1B3A57]/65 hover:bg-[#2C3E50]/75 focus-within:bg-[#2C3E50]/90 backdrop-blur-xl border border-[#4A6E8D]/35 shadow-[0_8px_32px_rgba(7,12,18,0.7)] transition-all duration-200"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-white/[0.07] hover:bg-white/[0.12] focus-within:bg-white/[0.16] backdrop-blur-md border border-white/15 shadow-[0_4px_20px_rgba(0,0,0,0.2)] transition-all duration-200"
           >
-            <Search className="w-4 h-4 text-[#A4C8E1]/80 shrink-0" />
+            <Search className="w-3.5 h-3.5 text-white/70 shrink-0" />
             <input
               ref={searchInputRef}
               type="text"
@@ -158,11 +158,11 @@ function HeaderContent() {
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleInputKeyDown}
               placeholder="Search for Movie or TV"
-              className="bg-transparent text-xs sm:text-sm text-[#F0F0F0] placeholder-[#A4C8E1]/50 focus:outline-none w-28 sm:w-48 md:w-64 focus:w-36 sm:focus:w-56 font-sans transition-all duration-200"
+              className="bg-transparent text-xs text-[#F0F0F0] placeholder-white/45 focus:outline-none w-24 sm:w-36 md:w-48 focus:w-28 sm:focus:w-44 md:focus:w-56 font-sans transition-all duration-200"
             />
             {!searchQuery && (
-              <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono text-[#A4C8E1]/60 bg-[#0B131B]/40 border border-[#4A6E8D]/30 rounded pointer-events-none select-none">
-                <span className="text-[9px]">Ctrl</span>
+              <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-mono text-white/50 bg-white/[0.08] border border-white/10 rounded pointer-events-none select-none">
+                <span className="text-[8px]">Ctrl</span>
                 <span>K</span>
               </kbd>
             )}
@@ -173,24 +173,24 @@ function HeaderContent() {
                   setSearchQuery("");
                   setSelectedIndex(-1);
                 }}
-                className="text-[#A4C8E1]/60 hover:text-[#F0F0F0] text-xs p-0.5 rounded-full transition"
+                className="text-white/60 hover:text-white text-xs p-0.5 rounded-full transition"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3 h-3" />
               </button>
             )}
             <button
               type="button"
               onClick={() => setIsFilterOpen((prev) => !prev)}
-              className="w-7 h-7 rounded-full flex items-center justify-center text-[#A4C8E1]/80 hover:text-[#F0F0F0] hover:bg-[#A4C8E1]/15 transition cursor-pointer"
+              className="w-6 h-6 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition cursor-pointer"
               title="Filter Movies"
             >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
+              <SlidersHorizontal className="w-3 h-3" />
             </button>
           </form>
 
           {/* Filter Dropdown Popover */}
           {isFilterOpen && (
-            <div className="absolute top-full right-0 mt-2 w-64 bg-[#0B131B]/95 backdrop-blur-2xl border border-[#4A6E8D]/30 rounded-2xl p-4 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
+            <div className="absolute top-full right-0 mt-2 w-64 bg-[#0B131B]/85 backdrop-blur-2xl border border-[#4A6E8D]/30 rounded-2xl p-4 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-150">
               <div className="text-xs font-semibold text-[#A4C8E1] mb-2.5">Quick Genres</div>
               <div className="flex flex-wrap gap-1.5">
                 {GENRES.map((g) => (
@@ -200,7 +200,7 @@ function HeaderContent() {
                       setIsFilterOpen(false);
                       router.push(`/search?genre=${g.id}`);
                     }}
-                    className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#1B3A57]/45 hover:bg-[#2C3E50]/70 text-[#F0F0F0] border border-[#4A6E8D]/25 transition"
+                    className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#1B3A57]/35 hover:bg-[#2C3E50]/60 text-[#F0F0F0] border border-[#4A6E8D]/25 transition"
                   >
                     {g.name}
                   </button>
@@ -211,7 +211,7 @@ function HeaderContent() {
 
           {/* Auto Suggestions Dropdown with Keyboard Navigation & Badges */}
           {isSuggestionsOpen && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-[#0B131B]/95 backdrop-blur-2xl border border-[#4A6E8D]/30 rounded-2xl shadow-[0_20px_40px_rgba(7,12,18,0.9)] overflow-hidden z-50 py-1 divide-y divide-[#4A6E8D]/20">
+            <div className="absolute top-full left-0 right-0 mt-2 bg-[#0B131B]/85 backdrop-blur-2xl border border-[#4A6E8D]/30 rounded-2xl shadow-[0_20px_40px_rgba(7,12,18,0.9)] overflow-hidden z-50 py-1 divide-y divide-[#4A6E8D]/20">
               {isLoadingSuggestions ? (
                 <div className="p-4 flex items-center justify-center gap-2 text-xs text-[#A4C8E1]/70">
                   <div className="w-3.5 h-3.5 border-2 border-[#A4C8E1]/40 border-t-[#A4C8E1] animate-spin rounded-full" />

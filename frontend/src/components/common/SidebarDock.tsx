@@ -121,7 +121,7 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
     <>
       {/* Desktop Vertical Left Dock (Hidden on mobile screens < 640px) */}
       <aside
-        className="hidden sm:flex fixed top-0 left-0 bottom-0 w-[72px] sm:w-[80px] z-50 flex-col items-center py-5 bg-[#0B131B]/90 backdrop-blur-2xl border-r border-[#4A6E8D]/25 shadow-[0_8px_32px_rgba(7,12,18,0.75)] select-none transition-all duration-300"
+        className="hidden sm:flex fixed top-0 left-0 bottom-0 w-[72px] sm:w-[80px] z-50 flex-col items-center py-5 bg-[#0B131B]/75 backdrop-blur-2xl border-r border-[#4A6E8D]/25 shadow-[0_8px_32px_rgba(7,12,18,0.75)] select-none transition-all duration-300"
         aria-label="Main Navigation"
       >
         {/* Top Apps/Grid Menu Button */}
@@ -132,7 +132,7 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
             className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 ${
               isCategoriesDrawerOpen
                 ? "bg-[#A4C8E1]/25 text-[#F0F0F0] border border-[#A4C8E1]/50 shadow-[0_0_20px_rgba(164,200,225,0.35)]"
-                : "text-[#A4C8E1] hover:text-[#F0F0F0] bg-[#1B3A57]/50 hover:bg-[#2C3E50]/70 backdrop-blur-xl border border-[#4A6E8D]/30 shadow-md"
+                : "text-[#A4C8E1] hover:text-[#F0F0F0] bg-[#1B3A57]/30 hover:bg-[#2C3E50]/50 backdrop-blur-xl border border-[#4A6E8D]/25 shadow-md"
             }`}
             title="Browse All Categories"
             aria-label="Browse All Categories"
@@ -153,7 +153,7 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
             const buttonClasses = `relative w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer active:scale-90 ${
               active
                 ? "bg-[#A4C8E1]/25 text-[#F0F0F0] backdrop-blur-xl border border-[#A4C8E1]/45 shadow-[0_0_20px_rgba(164,200,225,0.3)]"
-                : "bg-[#1B3A57]/30 hover:bg-[#2C3E50]/55 text-[#A4C8E1]/75 hover:text-[#F0F0F0] backdrop-blur-md border border-[#4A6E8D]/20 hover:border-[#A4C8E1]/35"
+                : "bg-[#1B3A57]/20 hover:bg-[#2C3E50]/40 text-[#A4C8E1]/75 hover:text-[#F0F0F0] backdrop-blur-md border border-[#4A6E8D]/20 hover:border-[#A4C8E1]/35"
             }`;
 
             return (
@@ -179,7 +179,7 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
         <div className="mt-auto relative group">
           <Link
             href="/profile"
-            className="w-10 h-10 rounded-full overflow-hidden border border-[#4A6E8D]/35 hover:border-[#A4C8E1]/70 transition-all duration-200 flex items-center justify-center bg-[#1B3A57]/50 hover:bg-[#2C3E50]/70 backdrop-blur-xl text-[#A4C8E1] hover:text-[#F0F0F0] font-bold text-xs shadow-md active:scale-95"
+            className="w-10 h-10 rounded-full overflow-hidden border border-[#4A6E8D]/35 hover:border-[#A4C8E1]/70 transition-all duration-200 flex items-center justify-center bg-[#1B3A57]/30 hover:bg-[#2C3E50]/50 backdrop-blur-xl text-[#A4C8E1] hover:text-[#F0F0F0] font-bold text-xs shadow-md active:scale-95"
             title="User Profile & Settings"
           >
             N

@@ -215,7 +215,7 @@ function SearchPageContent() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search movies, TV series, directors, cast..."
-              className="w-full h-12 pl-12 pr-12 bg-[#0B131B]/70 border border-[#4A6E8D]/40 rounded-full text-[#F0F0F0] placeholder-[#4A6E8D] focus:outline-none focus:border-[#A4C8E1]/70 focus:bg-[#0B131B] text-sm font-sans font-medium transition-all"
+              className="w-full h-12 pl-12 pr-12 bg-[#0B131B]/40 hover:bg-[#0B131B]/55 focus:bg-[#0B131B]/70 backdrop-blur-xl border border-[#4A6E8D]/35 rounded-full text-[#F0F0F0] placeholder-[#4A6E8D] focus:outline-none focus:border-[#A4C8E1]/70 text-sm font-sans font-medium transition-all"
             />
             {searchTerm && (
               <button
@@ -237,7 +237,7 @@ function SearchPageContent() {
 
           {/* Capsule Selector & Filters */}
           <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-[#4A6E8D]/20">
-            <div className="flex items-center gap-1 p-1 bg-[#0B131B]/80 border border-[#4A6E8D]/30 rounded-full">
+            <div className="flex items-center gap-1 p-1 bg-[#0B131B]/60 backdrop-blur-xl border border-[#4A6E8D]/30 rounded-full">
               <button
                 onClick={() => {
                   setSelectedType("all");
@@ -249,7 +249,7 @@ function SearchPageContent() {
                 }}
                 className={
                   selectedType === "all"
-                    ? "px-4 py-1.5 rounded-full text-xs font-sans font-semibold bg-[#F0F0F0] text-[#0B131B] shadow-[0_0_12px_rgba(240,240,240,0.3)] cursor-pointer"
+                    ? "px-4 py-1.5 rounded-full text-xs font-sans font-semibold bg-[#F0F0F0]/85 hover:bg-[#F0F0F0] text-[#0B131B] backdrop-blur-md shadow-[0_0_12px_rgba(240,240,240,0.3)] cursor-pointer"
                     : "px-4 py-1.5 rounded-full text-xs font-sans font-medium text-[#4A6E8D] hover:text-[#F0F0F0] hover:bg-[#2C3E50]/40 transition-all cursor-pointer"
                 }
               >
@@ -266,7 +266,7 @@ function SearchPageContent() {
                 }}
                 className={
                   selectedType === "movie"
-                    ? "px-4 py-1.5 rounded-full text-xs font-sans font-semibold bg-[#F0F0F0] text-[#0B131B] shadow-[0_0_12px_rgba(240,240,240,0.3)] cursor-pointer"
+                    ? "px-4 py-1.5 rounded-full text-xs font-sans font-semibold bg-[#F0F0F0]/85 hover:bg-[#F0F0F0] text-[#0B131B] backdrop-blur-md shadow-[0_0_12px_rgba(240,240,240,0.3)] cursor-pointer"
                     : "px-4 py-1.5 rounded-full text-xs font-sans font-medium text-[#4A6E8D] hover:text-[#F0F0F0] hover:bg-[#2C3E50]/40 transition-all cursor-pointer"
                 }
               >
@@ -283,7 +283,7 @@ function SearchPageContent() {
                 }}
                 className={
                   selectedType === "tv"
-                    ? "px-4 py-1.5 rounded-full text-xs font-sans font-semibold bg-[#F0F0F0] text-[#0B131B] shadow-[0_0_12px_rgba(240,240,240,0.3)] cursor-pointer"
+                    ? "px-4 py-1.5 rounded-full text-xs font-sans font-semibold bg-[#F0F0F0]/85 hover:bg-[#F0F0F0] text-[#0B131B] backdrop-blur-md shadow-[0_0_12px_rgba(240,240,240,0.3)] cursor-pointer"
                     : "px-4 py-1.5 rounded-full text-xs font-sans font-medium text-[#4A6E8D] hover:text-[#F0F0F0] hover:bg-[#2C3E50]/40 transition-all cursor-pointer"
                 }
               >

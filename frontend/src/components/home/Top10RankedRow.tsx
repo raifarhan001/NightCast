@@ -75,7 +75,7 @@ export default function Top10RankedRow({
           <button
             onClick={() => handleScroll("left")}
             disabled={!showLeftArrow}
-            className={`w-10 h-10 rounded-full border border-[#4A6E8D]/40 bg-[#1B3A57]/70 hover:bg-[#2C3E50]/90 backdrop-blur-xl text-[#F0F0F0] hover:text-[#A4C8E1] flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 cursor-pointer shadow-[0_8px_24px_rgba(11,19,27,0.85)] hover:scale-105 active:scale-95 ${
+            className={`w-10 h-10 rounded-full border border-[#4A6E8D]/35 bg-[#1B3A57]/45 hover:bg-[#2C3E50]/70 backdrop-blur-xl text-[#F0F0F0] hover:text-[#A4C8E1] flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 cursor-pointer shadow-[0_8px_24px_rgba(11,19,27,0.85)] hover:scale-105 active:scale-95 ${
               !showLeftArrow ? "opacity-30 cursor-not-allowed" : ""
             }`}
             aria-label="Scroll left"
@@ -85,7 +85,7 @@ export default function Top10RankedRow({
           <button
             onClick={() => handleScroll("right")}
             disabled={!showRightArrow}
-            className={`w-10 h-10 rounded-full border border-[#4A6E8D]/40 bg-[#1B3A57]/70 hover:bg-[#2C3E50]/90 backdrop-blur-xl text-[#F0F0F0] hover:text-[#A4C8E1] flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 cursor-pointer shadow-[0_8px_24px_rgba(11,19,27,0.85)] hover:scale-105 active:scale-95 ${
+            className={`w-10 h-10 rounded-full border border-[#4A6E8D]/35 bg-[#1B3A57]/45 hover:bg-[#2C3E50]/70 backdrop-blur-xl text-[#F0F0F0] hover:text-[#A4C8E1] flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 cursor-pointer shadow-[0_8px_24px_rgba(11,19,27,0.85)] hover:scale-105 active:scale-95 ${
               !showRightArrow ? "opacity-30 cursor-not-allowed" : ""
             }`}
             aria-label="Scroll right"

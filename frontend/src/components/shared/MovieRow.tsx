@@ -45,7 +45,7 @@ function MovieRow({ title, subtitle, items, onRemoveItem }: MovieRowProps) {
       <div className="relative">
         <button
           onClick={() => scroll("left")}
-          className="hidden sm:flex absolute -left-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full border border-[#4A6E8D]/40 bg-[#1B3A57]/70 hover:bg-[#2C3E50]/90 backdrop-blur-xl items-center justify-center text-[#F0F0F0] hover:text-[#A4C8E1] opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-105 active:scale-95 shadow-[0_8px_24px_rgba(11,19,27,0.85)] cursor-pointer"
+          className="hidden sm:flex absolute -left-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full border border-[#4A6E8D]/35 bg-[#1B3A57]/45 hover:bg-[#2C3E50]/70 backdrop-blur-xl items-center justify-center text-[#F0F0F0] hover:text-[#A4C8E1] opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-105 active:scale-95 shadow-[0_8px_24px_rgba(11,19,27,0.85)] cursor-pointer"
           aria-label="Scroll left"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -75,7 +75,7 @@ function MovieRow({ title, subtitle, items, onRemoveItem }: MovieRowProps) {
 
         <button
           onClick={() => scroll("right")}
-          className="hidden sm:flex absolute -right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full border border-[#4A6E8D]/40 bg-[#1B3A57]/70 hover:bg-[#2C3E50]/90 backdrop-blur-xl items-center justify-center text-[#F0F0F0] hover:text-[#A4C8E1] opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-105 active:scale-95 shadow-[0_8px_24px_rgba(11,19,27,0.85)] cursor-pointer"
+          className="hidden sm:flex absolute -right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full border border-[#4A6E8D]/35 bg-[#1B3A57]/45 hover:bg-[#2C3E50]/70 backdrop-blur-xl items-center justify-center text-[#F0F0F0] hover:text-[#A4C8E1] opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-105 active:scale-95 shadow-[0_8px_24px_rgba(11,19,27,0.85)] cursor-pointer"
           aria-label="Scroll right"
         >
           <ChevronRight className="w-5 h-5" />

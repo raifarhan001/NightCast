@@ -310,10 +310,10 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
 
             {/* Action Buttons: Watch now & Trailer */}
             <div className="flex items-center gap-2.5 sm:gap-3 pt-1 sm:pt-2">
-              {/* "Watch now" Button (Crisp White Pill with Black Play Icon) */}
+              {/* "Watch now" Button (Crisp Translucent White Pill with Black Play Icon) */}
               <Link
                 href={`/watch/${type}/${activeItem.id}`}
-                className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#F0F0F0] text-[#0B131B] font-semibold text-xs sm:text-sm tracking-wide flex items-center gap-2 hover:bg-[#A4C8E1] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-white/10 cursor-pointer group"
+                className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#F0F0F0]/85 hover:bg-[#F0F0F0] text-[#0B131B] backdrop-blur-md border border-white/20 font-semibold text-xs sm:text-sm tracking-wide flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-white/10 cursor-pointer group"
               >
                 <Play className="w-4 h-4 fill-[#0B131B] text-[#0B131B] ml-0.5 transition-transform group-hover:scale-110" />
                 <span>Watch now</span>
@@ -323,7 +323,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
               <button
                 type="button"
                 onClick={() => handleOpenTrailer(activeItem)}
-                className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#2C3E50]/60 hover:bg-[#4A6E8D]/50 text-[#F0F0F0] border border-[#4A6E8D]/40 text-xs sm:text-sm font-medium tracking-wide flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-md backdrop-blur-md cursor-pointer"
+                className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#2C3E50]/35 hover:bg-[#4A6E8D]/45 text-[#F0F0F0] border border-[#4A6E8D]/30 text-xs sm:text-sm font-medium tracking-wide flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-md backdrop-blur-xl cursor-pointer"
               >
                 Trailer
               </button>
@@ -392,7 +392,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
             className={`w-9 sm:w-10 h-9 sm:h-10 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all duration-200 active:scale-95 cursor-pointer shadow-lg ${
               favorites[activeItem.id]
                 ? "bg-rose-500/25 border-rose-500/50 text-rose-400 scale-105"
-                : "bg-[#1B3A57]/60 hover:bg-[#2C3E50]/75 border-[#4A6E8D]/35 text-[#F0F0F0]/80 hover:text-[#F0F0F0]"
+                : "bg-[#1B3A57]/35 hover:bg-[#2C3E50]/55 border-[#4A6E8D]/25 text-[#F0F0F0]/80 hover:text-[#F0F0F0]"
             }`}
             title="Favorite"
             aria-label="Favorite"
@@ -411,7 +411,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
             className={`w-9 sm:w-10 h-9 sm:h-10 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all duration-200 active:scale-95 cursor-pointer shadow-lg ${
               watchlist[activeItem.id]
                 ? "bg-[#A4C8E1]/25 border-[#A4C8E1]/50 text-[#A4C8E1] scale-105"
-                : "bg-[#1B3A57]/60 hover:bg-[#2C3E50]/75 border-[#4A6E8D]/35 text-[#F0F0F0]/80 hover:text-[#F0F0F0]"
+                : "bg-[#1B3A57]/35 hover:bg-[#2C3E50]/55 border-[#4A6E8D]/25 text-[#F0F0F0]/80 hover:text-[#F0F0F0]"
             }`}
             title="Watchlist"
             aria-label="Watchlist"
@@ -427,7 +427,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
           <button
             type="button"
             onClick={() => showToast("Added to Playlist")}
-            className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-[#1B3A57]/60 hover:bg-[#2C3E50]/75 border border-[#4A6E8D]/35 backdrop-blur-xl flex items-center justify-center text-[#F0F0F0]/80 hover:text-[#F0F0F0] transition-all duration-200 active:scale-95 cursor-pointer shadow-lg"
+            className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-[#1B3A57]/35 hover:bg-[#2C3E50]/55 border border-[#4A6E8D]/25 backdrop-blur-xl flex items-center justify-center text-[#F0F0F0]/80 hover:text-[#F0F0F0] transition-all duration-200 active:scale-95 cursor-pointer shadow-lg"
             title="Add to Playlist"
             aria-label="Add to Playlist"
           >
