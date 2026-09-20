@@ -32,7 +32,7 @@ export function MovieRowSkeleton() {
         <div className="w-1.5 h-6 rounded-full bg-gradient-to-b from-[#A4C8E1] to-[#4A6E8D]" />
         <div className={`h-6 w-48 rounded-full ${shimmer}`} />
       </div>
-      <div className="flex gap-4 overflow-x-auto no-scrollbar py-2">
+      <div className="flex gap-0 overflow-x-auto no-scrollbar py-2">
         {Array.from({ length: 6 }).map((_, i) => (
           <PosterSkeleton key={i} />
         ))}

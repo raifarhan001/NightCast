@@ -397,7 +397,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
         </div>
 
         {/* Card Title & Subtitle */}
-        <div className="w-full min-w-0 pt-2.5 px-1 space-y-0.5 overflow-hidden">
+        <div className="w-full min-w-0 pt-2.5 px-2.5 sm:px-3 space-y-0.5 overflow-hidden">
           <h4 className="text-xs sm:text-sm font-sans font-semibold text-[#F0F0F0] truncate block w-full group-hover:text-[#A4C8E1] transition-colors duration-200">
             {title}
           </h4>

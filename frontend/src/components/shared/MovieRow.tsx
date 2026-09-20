@@ -53,7 +53,7 @@ function MovieRow({ title, subtitle, items, onRemoveItem }: MovieRowProps) {
 
         <div
           ref={scrollContainerRef}
-          className="flex items-start gap-3.5 sm:gap-4 md:gap-5 overflow-x-auto pt-16 pb-52 -mt-12 -mb-44 scrollbar-hide snap-x scroll-smooth no-scrollbar"
+          className="flex items-start gap-0 overflow-x-auto pt-16 pb-52 -mt-12 -mb-44 scrollbar-hide snap-x scroll-smooth no-scrollbar"
         >
           {items.map((item, idx) => (
             <div
