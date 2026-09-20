@@ -53,12 +53,13 @@ function MovieRow({ title, subtitle, items, onRemoveItem }: MovieRowProps) {
 
         <div
           ref={scrollContainerRef}
-          className="flex items-start gap-0 overflow-x-auto pt-16 pb-52 -mt-12 -mb-44 scrollbar-hide snap-x scroll-smooth no-scrollbar"
+          style={{ gap: 0 }}
+          className="flex items-start gap-0 sm:gap-0 md:gap-0 overflow-x-auto pt-16 pb-52 -mt-12 -mb-44 scrollbar-hide snap-x scroll-smooth no-scrollbar"
         >
           {items.map((item, idx) => (
             <div
               key={`${item.id}-${item.season || 0}-${item.episode || 0}-${idx}`}
-              className="snap-start shrink-0 w-[220px] sm:w-[250px] md:w-[270px] min-w-[220px] sm:min-w-[250px] md:min-w-[270px] max-w-[220px] sm:max-w-[250px] md:max-w-[270px] relative hover:z-50"
+              className="snap-start shrink-0 relative hover:z-50 m-0 p-0"
             >
               <MovieCard
                 item={item}
