@@ -3,7 +3,7 @@
 import React, { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Play, Star, Plus, Check, ThumbsUp, ChevronDown, X, Sparkles } from "lucide-react";
+import { Play, Plus, Check, ThumbsUp, ChevronDown, X, Sparkles } from "lucide-react";
 import { ImageService } from "../../lib/ImageService";
 import { soundFx } from "../../lib/soundEffects";
 import { useAmbientStore } from "../../store/ambientStore";
@@ -377,13 +377,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
             </button>
           )}
 
-          {/* IMDb Rating Tag Top Right */}
-          {rating && !onRemove && (
-            <div className="absolute top-2.5 right-2.5 z-20 px-2 py-0.5 rounded-full bg-[#1B3A57]/80 backdrop-blur-xl border border-[#4A6E8D]/40 text-[10px] font-sans font-semibold text-[#F0F0F0] flex items-center gap-1 shadow-sm">
-              <Star className="w-2.5 h-2.5 fill-current text-[#A4C8E1]" />
-              <span>{rating}</span>
-            </div>
-          )}
+
 
           {/* Progress Bar (if watched) */}
           {progress > 0 && (
