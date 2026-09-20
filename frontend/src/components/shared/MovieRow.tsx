@@ -59,7 +59,9 @@ function MovieRow({ title, subtitle, items, onRemoveItem }: MovieRowProps) {
           {items.map((item, idx) => (
             <div
               key={`${item.id}-${item.season || 0}-${item.episode || 0}-${idx}`}
-              className="snap-start shrink-0 relative hover:z-50 m-0 p-0"
+              className={`snap-start shrink-0 relative hover:z-50 transition-all duration-300 ${
+                idx !== 0 ? "-ml-7 sm:-ml-9 md:-ml-10" : ""
+              }`}
             >
               <MovieCard
                 item={item}

@@ -337,7 +337,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
         href={watchUrl}
         className="group block cursor-pointer transform-gpu will-change-transform"
       >
-        <div className="cinema-card-landscape w-full bg-[#1B3A57]/25 border border-[#4A6E8D]/30 rounded-2xl group-hover:border-[#A4C8E1]/60 group-hover:shadow-[0_16px_36px_-6px_rgba(11,19,27,0.9),0_0_24px_rgba(164,200,225,0.18)] transition-all duration-300 ease-out relative">
+        <div className="cinema-card-landscape w-full bg-[#1B3A57]/25 border border-[#4A6E8D]/30 rounded-2xl shadow-[-8px_0_24px_rgba(0,0,0,0.7),0_8px_24px_rgba(0,0,0,0.5)] group-hover:border-[#A4C8E1]/60 group-hover:shadow-[0_16px_36px_-6px_rgba(11,19,27,0.9),0_0_24px_rgba(164,200,225,0.18)] transition-all duration-300 ease-out relative">
           {imageUrl ? (
             <Image
               src={imageUrl}
