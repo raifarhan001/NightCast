@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,8 +11,6 @@ import { ImageService } from '../../../../lib/ImageService';
 import {
   Play,
   Star,
-  Download,
-  DownloadCloud,
   Globe,
   X,
   Check,
@@ -24,7 +23,9 @@ import {
   Tv,
   List,
   Keyboard,
-  Sparkles
+  Sparkles,
+  ShieldCheck,
+  ShieldAlert
 } from 'lucide-react';
 import { soundFx } from '../../../../lib/soundEffects';
 import AmbientGlow from '../../../../components/shared/AmbientGlow';
@@ -35,6 +36,54 @@ import NightCastPlayer from '../../../../components/player/NightCastPlayer';
 import MovieRow from '../../../../components/shared/MovieRow';
 import { PlayerSkeleton } from '../../../../components/shared/Skeletons';
 
+function attachTimestampToUrl(url: string, seconds: number): string {
+  if (!url) return url;
+  try {
+    const urlObj = new URL(url);
+    if (seconds > 5) {
+      const s = Math.floor(seconds).toString();
+      // VidLink uses 'start'
+      urlObj.searchParams.set('start', s);
+      // VidSrc and VidBolt use 't'
+      urlObj.searchParams.set('t', s);
+      // VidKing and others use 'progress'
+      urlObj.searchParams.set('progress', s);
+      // VidBolt uses 'startAt'
+      urlObj.searchParams.set('startAt', s);
+    }
+    if (url.includes('vidlink.pro')) {
+      if (!urlObj.searchParams.has('primaryColor')) {
+        urlObj.searchParams.set('primaryColor', '39AEA9');
+      }
+      if (!urlObj.searchParams.has('autoplay')) {
+        urlObj.searchParams.set('autoplay', 'true');
+      }
+    } else if (url.includes('vidbolt.xyz')) {
+      if (!urlObj.searchParams.has('theme')) {
+        urlObj.searchParams.set('theme', '39AEA9');
+      }
+    }
+    return urlObj.toString();
+  } catch {
+    if (seconds > 5) {
+      const sep = url.includes('?') ? '&' : '?';
+      return `${url}${sep}start=${Math.floor(seconds)}&t=${Math.floor(seconds)}`;
+    }
+    return url;
+  }
+}
+
+function formatDurationTime(totalSeconds: number): string {
+  const secs = Math.floor(totalSeconds);
+  const hrs = Math.floor(secs / 3600);
+  const mins = Math.floor((secs % 3600) / 60);
+  const remSecs = secs % 60;
+  if (hrs > 0) {
+    return `${hrs}:${mins < 10 ? '0' : ''}${mins}:${remSecs < 10 ? '0' : ''}${remSecs}`;
+  }
+  return `${mins}:${remSecs < 10 ? '0' : ''}${remSecs}`;
+}
+
 export default function WatchPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -44,55 +93,81 @@ export default function WatchPage() {
   const rawId = Array.isArray(params.id) ? params.id[0] : params.id;
   const id = getCleanMediaId(rawId);
 
-  const [currentSeason, setCurrentSeason] = useState(1);
-  const [currentEpisode, setCurrentEpisode] = useState(1);
+  const initialSeason = useMemo(() => {
+    const s = parseInt(searchParams.get('season') || '1', 10);
+    return isNaN(s) || s < 1 ? 1 : s;
+  }, [searchParams]);
+
+  const initialEpisode = useMemo(() => {
+    const ep = parseInt(searchParams.get('episode') || '1', 10);
+    return isNaN(ep) || ep < 1 ? 1 : ep;
+  }, [searchParams]);
+
+  const [currentSeason, setCurrentSeason] = useState(initialSeason);
+  const [currentEpisode, setCurrentEpisode] = useState(initialEpisode);
   const [isIframeLoaded, setIsIframeLoaded] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [meta, setMeta] = useState<any>(null);
   const [recommendations, setRecommendations] = useState<any[]>([]);
 
-  const [servers, setServers] = useState<any[]>(() => {
-    const defaultServers: any[] = [
+  const buildServers = useCallback((seasonNum: number, episodeNum: number) => {
+    return [
       {
         id: 'vidsrc',
         name: 'Server 1 (VidSrc)',
         url: type === 'tv'
-          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
+          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${seasonNum}&episode=${episodeNum}`
           : `https://vidsrc.me/embed/movie?tmdb=${id}`,
         type: 'iframe',
         language: 'en',
         language_name: 'vidsrc.me'
       },
       {
-        id: 'vidbolt',
-        name: 'Server 2 (VidBolt)',
+        id: 'vidsrc-to',
+        name: 'Server 2 (VidSrc VIP)',
         url: type === 'tv'
-          ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}`
+          ? `https://vidsrc.to/embed/tv/${id}/${seasonNum}/${episodeNum}`
+          : `https://vidsrc.to/embed/movie/${id}`,
+        type: 'iframe',
+        language: 'en',
+        language_name: 'vidsrc.to'
+      },
+      {
+        id: 'vidbolt',
+        name: 'Server 3 (VidBolt)',
+        url: type === 'tv'
+          ? `https://vidbolt.xyz/tv/${id}/${seasonNum}/${episodeNum}`
           : type === 'anime'
-          ? `https://vidbolt.xyz/anime/${id}/${currentEpisode}`
+          ? `https://vidbolt.xyz/anime/${id}/${episodeNum}`
           : `https://vidbolt.xyz/movie/${id}`,
         type: 'iframe',
         language: 'en',
         language_name: 'vidbolt.xyz'
       },
       {
-        id: 'vidking',
-        name: 'Server 3 (Vidking)',
+        id: 'vidlink',
+        name: 'Server 4 (VidLink Pro)',
         url: type === 'tv'
-          ? `https://www.vidking.net/embed/tv/${id}/${currentSeason}/${currentEpisode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true`
-          : `https://www.vidking.net/embed/movie/${id}?color=00f2fe&autoPlay=true`,
+          ? `https://vidlink.pro/tv/${id}/${seasonNum}/${episodeNum}?primaryColor=39AEA9&autoplay=true`
+          : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`,
         type: 'iframe',
         language: 'en',
-        language_name: 'vidking.net'
+        language_name: 'vidlink.pro'
       }
     ];
-    return defaultServers;
-  });
+  }, [type, id]);
+
+  const [servers, setServers] = useState<any[]>(() => buildServers(initialSeason, initialEpisode));
 
   const [activeServerId, setActiveServerId] = useState<string>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('nightcast_preferred_server');
-      if (saved && ['vidsrc', 'vidbolt', 'vidking'].includes(saved)) {
+      const saved = localStorage.getItem('nightcast_preferred_server_v2') || localStorage.getItem('nightcast_preferred_server');
+      if (saved && saved !== 'vidlink' && ['vidsrc', 'vidsrc-to', 'vidbolt', 'vidlink'].includes(saved)) {
         return saved;
       }
     }
@@ -102,10 +177,14 @@ export default function WatchPage() {
   const [resumeTime, setResumeTime] = useState<number>(() => {
     if (typeof window === 'undefined' || !id) return 0;
     const isTv = type === 'tv';
+    const queryTime = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('time') || new URLSearchParams(window.location.search).get('t') : null;
+    if (queryTime && parseInt(queryTime, 10) > 5) {
+      return parseInt(queryTime, 10);
+    }
     return getSavedTimestamp(
       id,
-      isTv ? 1 : undefined,
-      isTv ? 1 : undefined,
+      isTv ? initialSeason : undefined,
+      isTv ? initialEpisode : undefined,
       type as 'movie' | 'tv'
     );
   });
@@ -113,9 +192,19 @@ export default function WatchPage() {
   const [playerUrl, setPlayerUrl] = useState<string>(() => {
     if (!id) return "";
     const isTv = type === 'tv';
-    return isTv
-      ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=1&episode=1`
+    let defaultUrl = isTv
+      ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${initialSeason}&episode=${initialEpisode}`
       : `https://vidsrc.me/embed/movie?tmdb=${id}`;
+    let initSec = 0;
+    if (typeof window !== 'undefined') {
+      const queryTime = new URLSearchParams(window.location.search).get('time') || new URLSearchParams(window.location.search).get('t');
+      if (queryTime && parseInt(queryTime, 10) > 5) {
+        initSec = parseInt(queryTime, 10);
+      } else {
+        initSec = getSavedTimestamp(id, isTv ? initialSeason : undefined, isTv ? initialEpisode : undefined, type as 'movie' | 'tv');
+      }
+    }
+    return attachTimestampToUrl(defaultUrl, initSec);
   });
 
   const [seasonEpisodes, setSeasonEpisodes] = useState<any[]>([]);
@@ -138,15 +227,20 @@ export default function WatchPage() {
   const [selectedAudioTrack, setSelectedAudioTrack] = useState<number>(0);
   const [isAudioDropdownOpen, setIsAudioDropdownOpen] = useState(false);
 
-  // Download Modal state
-  const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
-  const [downloadOptions, setDownloadOptions] = useState<any[]>([]);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState<string | null>(null);
-  const [copiedDownloadId, setCopiedDownloadId] = useState<string | null>(null);
-
   // Luxury Cinema Experience States
   const [isTheaterMode, setIsTheaterMode] = useState(false);
+  const [isAdShieldActive, setIsAdShieldActive] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('nightcast_ad_shield');
+        const saved = localStorage.getItem('nightcast_ad_shield_v2');
+        if (saved !== null) {
+          return saved === 'true';
+        }
+      } catch {}
+    }
+    return false;
+  });
   const [isEpisodeDrawerOpen, setIsEpisodeDrawerOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
@@ -176,7 +270,47 @@ export default function WatchPage() {
     setNextCountdown(10);
   }, [id, currentSeason, currentEpisode]);
 
-  const rawActiveServer = servers.find(s => s.id === activeServerId) || servers[0];
+  const rawActiveServer = useMemo(() => {
+    const list = servers && servers.length > 0 ? servers : buildServers(currentSeason, currentEpisode);
+    const target = list.find((s: any) => s.id === activeServerId) || list[0];
+    if (target && target.type === 'iframe') {
+      if (target.id === 'vidlink') {
+        return {
+          ...target,
+          url: type === 'tv'
+            ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}?primaryColor=39AEA9&autoplay=true`
+            : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`
+        };
+      }
+      if (target.id === 'vidsrc-to') {
+        return {
+          ...target,
+          url: type === 'tv'
+            ? `https://vidsrc.to/embed/tv/${id}/${currentSeason}/${currentEpisode}`
+            : `https://vidsrc.to/embed/movie/${id}`
+        };
+      }
+      if (target.id === 'vidbolt') {
+        return {
+          ...target,
+          url: type === 'tv'
+            ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}`
+            : type === 'anime'
+            ? `https://vidbolt.xyz/anime/${id}/${currentEpisode}`
+            : `https://vidbolt.xyz/movie/${id}`
+        };
+      }
+      if (target.id === 'vidsrc') {
+        return {
+          ...target,
+          url: type === 'tv'
+            ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
+            : `https://vidsrc.me/embed/movie?tmdb=${id}`
+        };
+      }
+    }
+    return target;
+  }, [servers, buildServers, currentSeason, currentEpisode, activeServerId, type, id]);
   const isServerFailed = rawActiveServer && failedServerIds.includes(rawActiveServer.id);
 
   const activeServer = useMemo(() => {
@@ -185,13 +319,17 @@ export default function WatchPage() {
       let fallbackUrl = rawActiveServer.url;
       if (rawActiveServer.id === 'vidsrc') {
         fallbackUrl = type === 'tv'
+          ? `https://vidsrc.to/embed/tv/${id}/${currentSeason}/${currentEpisode}`
+          : `https://vidsrc.to/embed/movie/${id}`;
+      } else if (rawActiveServer.id === 'vidsrc-to') {
+        fallbackUrl = type === 'tv'
           ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}`
           : `https://vidbolt.xyz/movie/${id}`;
       } else if (rawActiveServer.id === 'vidbolt') {
         fallbackUrl = type === 'tv'
-          ? `https://www.vidking.net/embed/tv/${id}/${currentSeason}/${currentEpisode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true`
-          : `https://www.vidking.net/embed/movie/${id}?color=00f2fe&autoPlay=true`;
-      } else if (rawActiveServer.id === 'vidking') {
+          ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}?primaryColor=39AEA9&autoplay=true`
+          : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`;
+      } else if (rawActiveServer.id === 'vidlink') {
         fallbackUrl = type === 'tv'
           ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
           : `https://vidsrc.me/embed/movie?tmdb=${id}`;
@@ -275,8 +413,10 @@ export default function WatchPage() {
         );
         if (data?.servers && data.servers.length > 0) {
           setServers(data.servers);
-          const preferred = typeof window !== 'undefined' ? localStorage.getItem('nightcast_preferred_server') : null;
-          const preferredExists = preferred && data.servers.some((s: any) => s.id === preferred);
+          const preferred = typeof window !== 'undefined'
+            ? (localStorage.getItem('nightcast_preferred_server_v2') || localStorage.getItem('nightcast_preferred_server'))
+            : null;
+          const preferredExists = preferred && preferred !== 'vidlink' && data.servers.some((s: any) => s.id === preferred);
           const currentExists = data.servers.some((s: any) => s.id === activeServerId);
           if (preferredExists) {
             setActiveServerId(preferred!);
@@ -293,69 +433,32 @@ export default function WatchPage() {
 
   useEffect(() => {
     if (!activeServer) return;
-    let finalUrl = activeServer.url;
     const isTv = type === 'tv';
-    const seconds = getSavedTimestamp(
-      id,
-      isTv ? currentSeason : undefined,
-      isTv ? currentEpisode : undefined,
-      type as 'movie' | 'tv'
-    );
+    const queryTime = searchParams.get('time') || searchParams.get('t');
+    const parsedQuery = queryTime ? parseInt(queryTime, 10) : 0;
+    const seconds = parsedQuery > 5
+      ? parsedQuery
+      : getSavedTimestamp(
+          id,
+          isTv ? currentSeason : undefined,
+          isTv ? currentEpisode : undefined,
+          type as 'movie' | 'tv'
+        );
 
-    if (finalUrl.includes('vidking.net')) {
-      try {
-        const urlObj = new URL(finalUrl);
-        if (!urlObj.searchParams.has('color')) {
-          urlObj.searchParams.set('color', '00f2fe');
-        }
-        if (!urlObj.searchParams.has('autoPlay')) {
-          urlObj.searchParams.set('autoPlay', 'true');
-        }
-        if (isTv) {
-          if (!urlObj.searchParams.has('nextEpisode')) {
-            urlObj.searchParams.set('nextEpisode', 'true');
-          }
-          if (!urlObj.searchParams.has('episodeSelector')) {
-            urlObj.searchParams.set('episodeSelector', 'true');
-          }
-        }
-        if (seconds > 5) {
-          urlObj.searchParams.set('progress', Math.floor(seconds).toString());
-        }
-        finalUrl = urlObj.toString();
-      } catch (e) {
-        console.error("Vidking URL parameter setup error", e);
-      }
-    } else if (finalUrl.includes('vidbolt.xyz')) {
-      try {
-        const urlObj = new URL(finalUrl);
-        if (!urlObj.searchParams.has('theme')) {
-          urlObj.searchParams.set('theme', 'FA0037');
-        }
-        if (seconds > 5) {
-          urlObj.searchParams.set('startAt', Math.floor(seconds).toString());
-        }
-        finalUrl = urlObj.toString();
-      } catch (e) {
-        console.error("VidBolt URL parameter setup error", e);
-      }
-    }
-
+    const finalUrl = attachTimestampToUrl(activeServer.url, seconds);
     setPlayerUrl(finalUrl);
-    setIsIframeLoaded(false);
-  }, [activeServer, id, type, currentSeason, currentEpisode]);
-
-  useEffect(() => {
-    if (!id) return;
-    const isTv = type === 'tv';
-    const seconds = getSavedTimestamp(
-      id,
-      isTv ? currentSeason : undefined,
-      isTv ? currentEpisode : undefined,
-      type as 'movie' | 'tv'
-    );
     setResumeTime(seconds);
-  }, [id, activeServerId, currentSeason, currentEpisode, type]);
+    playbackSecondsRef.current = seconds;
+    setIsIframeLoaded(false);
+  }, [activeServer, id, type, currentSeason, currentEpisode, searchParams]);
+
+  // If iframe onLoad hasn't fired after 2 seconds (due to adblocker or sandbox), mark as loaded so heartbeat and progress can run
+  useEffect(() => {
+    const fallbackTimer = setTimeout(() => {
+      setIsIframeLoaded(true);
+    }, 2000);
+    return () => clearTimeout(fallbackTimer);
+  }, [playerUrl]);
 
   const movieTitle = meta?.title || meta?.name || "Loading Stream...";
   const releaseYear = meta?.release_date || meta?.first_air_date
@@ -411,8 +514,37 @@ export default function WatchPage() {
     setNextCountdown(10);
     setCurrentSeason(s);
     setCurrentEpisode(ep);
-    window.history.pushState(null, '', `/watch/tv/${id}?season=${s}&episode=${ep}`);
-  }, [id]);
+    playbackSecondsRef.current = 0;
+    watchDurationSecondsRef.current = 0;
+    hasRealPlayerEventsRef.current = false;
+    setIsIframeLoaded(false);
+    router.push(`/watch/tv/${id}?season=${s}&episode=${ep}`, { scroll: false });
+  }, [id, router]);
+
+  const handleRestartFromBeginning = useCallback(() => {
+    soundFx.playTap();
+    playbackSecondsRef.current = 0;
+    watchDurationSecondsRef.current = 0;
+    setResumeTime(0);
+    if (!id) return;
+    const isTv = type === 'tv';
+    saveWatchProgress({
+      id: id,
+      media_type: type as 'movie' | 'tv',
+      title: meta?.title || meta?.name || 'Untitled',
+      poster_path: meta?.poster_path || null,
+      backdrop_path: meta?.backdrop_path || null,
+      season: isTv ? currentSeason : undefined,
+      episode: isTv ? currentEpisode : undefined,
+      timestamp_seconds: 0,
+      duration_seconds: meta?.runtime ? meta.runtime * 60 : 7200,
+      progress_percent: 0,
+    });
+    if (activeServer) {
+      setPlayerUrl(attachTimestampToUrl(activeServer.url, 0));
+      setIsIframeLoaded(false);
+    }
+  }, [id, type, meta, currentSeason, currentEpisode, activeServer]);
 
   const triggerNextEpisodeOverlay = useCallback(() => {
     if (type === 'tv' && nextEpisodeInfo && !isAutoPlayDismissedRef.current && !showNextOverlayRef.current) {
@@ -577,7 +709,12 @@ export default function WatchPage() {
           dur = typeof data.duration === 'number' ? data.duration : undefined;
         }
 
-        if (curTime !== undefined && !isNaN(curTime) && curTime >= 10) {
+        // Guard: If user is resuming from > 30s, ignore initial 0-30s buffer events until player has sought or user has watched >= 10s
+        if (resumeTime > 30 && curTime !== undefined && curTime < 30 && watchDurationSecondsRef.current < 10) {
+          return;
+        }
+
+        if (curTime !== undefined && !isNaN(curTime) && curTime >= 5) {
           playbackSecondsRef.current = curTime;
           const validDur = (dur && !isNaN(dur) && dur > 0) ? dur : (meta?.runtime ? meta.runtime * 60 : 7200);
           handlePlayerProgress(curTime, validDur);
@@ -603,9 +740,9 @@ export default function WatchPage() {
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, [handlePlayerProgress, meta, type, triggerNextEpisodeOverlay]);
+  }, [handlePlayerProgress, meta, type, triggerNextEpisodeOverlay, resumeTime]);
 
-  // 4. Active Watcher Heartbeat: For iframe servers that do not emit postMessage (Server 1 VidSrc, Server 2 VidBolt, Server 3)
+  // 4. Active Watcher Heartbeat: For iframe servers that do not emit postMessage
   useEffect(() => {
     if (!id || !meta) return;
     const estDuration = meta?.runtime ? meta.runtime * 60 : 7200;
@@ -619,8 +756,8 @@ export default function WatchPage() {
       watchDurationSecondsRef.current += 5;
       playbackSecondsRef.current += 5;
 
-      // Only save once user has actually watched for >= 15 seconds
-      if (playbackSecondsRef.current >= 15) {
+      // Save once user has watched for >= 5 seconds
+      if (playbackSecondsRef.current >= 5) {
         handlePlayerProgress(playbackSecondsRef.current, estDuration);
       }
     }, 5000);
@@ -628,11 +765,29 @@ export default function WatchPage() {
     return () => clearInterval(timer);
   }, [id, meta, isIframeLoaded, handlePlayerProgress]);
 
+  // Initial save to establish Continue Watching entry once metadata is loaded
+  useEffect(() => {
+    if (!id || !meta) return;
+    const estDuration = meta?.runtime ? meta.runtime * 60 : 7200;
+    const saved = getSavedTimestamp(
+      id,
+      type === 'tv' ? currentSeason : undefined,
+      type === 'tv' ? currentEpisode : undefined,
+      type as 'movie' | 'tv'
+    );
+    if (saved > 5) {
+      const initialTimer = setTimeout(() => {
+        handlePlayerProgress(saved, estDuration);
+      }, 2000);
+      return () => clearTimeout(initialTimer);
+    }
+  }, [id, meta, type, currentSeason, currentEpisode, handlePlayerProgress]);
+
   // 5. Save progress on beforeunload / exit
   useEffect(() => {
     const handleBeforeUnload = () => {
       const curTime = playbackSecondsRef.current;
-      if (curTime >= 15 && meta && id) {
+      if (curTime >= 5 && meta && id) {
         const estDuration = meta?.runtime ? meta.runtime * 60 : 7200;
         handlePlayerProgress(curTime, estDuration);
       }
@@ -659,106 +814,6 @@ export default function WatchPage() {
     }
   }, [activeServer, servers, failedServerIds]);
 
-  const handleOpenDownloadModal = async () => {
-    setIsDownloadModalOpen(true);
-    setIsDownloading(false);
-    setDownloadProgress(null);
-    try {
-      const res = await apiFetch(`/api/tmdb/${type}/${id}/download?season=${currentSeason}&episode=${currentEpisode}`);
-      if (res?.downloads && res.downloads.length > 0) {
-        setDownloadOptions(res.downloads);
-      } else {
-        const fallbackOptions = [
-          {
-            id: "vidsrc-direct",
-            label: "Server 1 (VidSrc Primary Stream 1080p)",
-            url: type === 'tv'
-              ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
-              : `https://vidsrc.me/embed/movie?tmdb=${id}`,
-            quality: "1080p Full HD",
-            format: "mp4/stream",
-            type: "direct_stream"
-          },
-          {
-            id: "vidbolt-direct",
-            label: "Server 2 (VidBolt Ultra Fast Source 1080p Full HD)",
-            url: type === 'tv' ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}` : `https://vidbolt.xyz/movie/${id}`,
-            quality: "1080p Full HD",
-            format: "mp4/stream",
-            type: "direct_stream"
-          },
-          {
-            id: "vidking-direct",
-            label: "Server 3 (Vidking High-Speed Stream 1080p)",
-            url: type === 'tv'
-              ? `https://www.vidking.net/embed/tv/${id}/${currentSeason}/${currentEpisode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true`
-              : `https://www.vidking.net/embed/movie/${id}?color=00f2fe&autoPlay=true`,
-            quality: "1080p Full HD",
-            format: "mp4/stream",
-            type: "direct_stream"
-          }
-        ];
-        setDownloadOptions(fallbackOptions);
-      }
-    } catch (e) {
-      console.error("Failed to fetch download links", e);
-    }
-  };
-
-  const handleDownloadStream = (url: string, optionLabel?: string) => {
-    if (!url) return;
-    setIsDownloading(true);
-    setDownloadProgress(`Preparing ${optionLabel || "download"}...`);
-
-    const titleStr = meta?.title || meta?.name || "nightcast_video";
-    const cleanTitle = titleStr.replace(/[^a-zA-Z0-9_\-]/g, "_");
-    const filename = `${cleanTitle}_${type === 'tv' ? `S${currentSeason}E${currentEpisode}` : 'movie'}.mp4`;
-
-    const apiBase = API_BASE_URL.startsWith('http') ? API_BASE_URL : '';
-    const proxyDownloadUrl = `${apiBase}/api/v1/tmdb/download-proxy?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(filename)}`;
-
-    try {
-      const link = document.createElement('a');
-      link.href = proxyDownloadUrl;
-      link.setAttribute('download', filename);
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (e) {
-      window.open(proxyDownloadUrl, '_blank');
-    }
-
-    setTimeout(() => {
-      setIsDownloading(false);
-      setDownloadProgress(null);
-    }, 3000);
-  };
-
-  const handleOpenDirectStream = (url: string) => {
-    if (!url) return;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
-  const handleCopyLink = (url: string, optionId: string) => {
-    if (!url) return;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopiedDownloadId(optionId);
-      setTimeout(() => setCopiedDownloadId(null), 2000);
-    }).catch(() => {
-      // Fallback copy
-      const textArea = document.createElement("textarea");
-      textArea.value = url;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textArea);
-      setCopiedDownloadId(optionId);
-      setTimeout(() => setCopiedDownloadId(null), 2000);
-    });
-  };
-
   // Cycle Stream Servers (Server 1 -> Server 2 -> Server 3)
   const cycleNextServer = useCallback(() => {
     if (!servers || servers.length === 0) return;
@@ -768,6 +823,7 @@ export default function WatchPage() {
     if (nextServer && !failedServerIds.includes(nextServer.id)) {
       setActiveServerId(nextServer.id);
       if (typeof window !== 'undefined') {
+        localStorage.setItem('nightcast_preferred_server_v2', nextServer.id);
         localStorage.setItem('nightcast_preferred_server', nextServer.id);
       }
       soundFx.playTap();
@@ -782,6 +838,17 @@ export default function WatchPage() {
       handleEpisodeChange(nextEpisodeInfo.season, nextEpisodeInfo.episode);
     }
   }, [type, nextEpisodeInfo, handleEpisodeChange]);
+
+  const toggleNativeFullscreen = useCallback(() => {
+    if (typeof document === 'undefined') return;
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  }, []);
 
   // Keyboard Shortcuts Hook
   useEffect(() => {
@@ -810,10 +877,6 @@ export default function WatchPage() {
           soundFx.playChime();
           return;
         }
-        if (isDownloadModalOpen) {
-          setIsDownloadModalOpen(false);
-          return;
-        }
       }
 
       if (e.key === 't' || e.key === 'T') {
@@ -836,10 +899,10 @@ export default function WatchPage() {
           e.preventDefault();
           handleNextEpisodeShortcut();
         }
-      } else if (e.key === 'd' || e.key === 'D') {
+      } else if (e.key === 'f' || e.key === 'F') {
         e.preventDefault();
         soundFx.playTap();
-        handleOpenDownloadModal();
+        toggleNativeFullscreen();
       } else if (e.key === '?') {
         e.preventDefault();
         soundFx.playTap();
@@ -853,196 +916,295 @@ export default function WatchPage() {
     isTheaterMode,
     isEpisodeDrawerOpen,
     isShortcutsOpen,
-    isDownloadModalOpen,
     type,
     nextEpisodeInfo,
     cycleNextServer,
-    handleNextEpisodeShortcut
+    handleNextEpisodeShortcut,
+    toggleNativeFullscreen
   ]);
+
+  // Lock body scroll when theater mode is active
+  useEffect(() => {
+    if (isTheaterMode) {
+      const orig = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = orig;
+      };
+    }
+  }, [isTheaterMode]);
+
+  const renderPlayerScreen = (isTheater: boolean) => (
+    <div
+      className={`relative w-full ${
+        isTheater
+          ? 'max-w-7xl max-h-[85vh] aspect-video rounded-2xl'
+          : 'aspect-video rounded-2xl sm:rounded-3xl'
+      } overflow-hidden border border-white/[0.1] bg-[#0A0F11] shadow-[0_25px_70px_rgba(0,0,0,0.95),0_0_50px_rgba(57,174,169,0.2)]`}
+    >
+
+      {!isIframeLoaded && activeServer?.type !== 'hls' && (
+        <div className="absolute inset-0 z-20 pointer-events-none">
+          <PlayerSkeleton />
+        </div>
+      )}
+
+      {playerUrl ? (
+        activeServer?.type === 'hls' ? (
+          <NightCastPlayer
+            streamUrl={playerUrl}
+            isHls={true}
+            startAt={resumeTime}
+            onProgress={handlePlayerProgress}
+            onEnded={triggerNextEpisodeOverlay}
+            poster={meta?.backdrop_path ? `https://image.tmdb.org/t/p/original${meta.backdrop_path}` : undefined}
+            onError={handleHlsError}
+          />
+        ) : (
+          <iframe
+            key={`${activeServerId}-${id}-${type === 'tv' ? `s${currentSeason}e${currentEpisode}` : 'movie'}-${playerUrl}`}
+            src={playerUrl}
+            onLoad={() => setIsIframeLoaded(true)}
+            className="absolute top-0 left-0 w-full h-full border-0 rounded-2xl sm:rounded-3xl"
+            allowFullScreen
+            scrolling="no"
+            title="NightCast Media Player"
+            referrerPolicy="origin"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            sandbox={
+              isAdShieldActive
+                ? "allow-scripts allow-same-origin allow-forms allow-presentation"
+                : undefined
+            }
+          />
+        )
+      ) : (
+        <PlayerSkeleton />
+      )}
+
+      {/* Quick Floating Next Episode Button */}
+      {type === 'tv' && nextEpisodeInfo && !showNextOverlay && (
+        <button
+          onClick={() => handleEpisodeChange(nextEpisodeInfo.season, nextEpisodeInfo.episode)}
+          className="absolute bottom-12 right-3 sm:bottom-16 sm:right-6 z-30 flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#0A0F11]/90 hover:bg-[#0A0F11] backdrop-blur-xl border border-white/[0.2] hover:border-[#39AEA9] text-white text-xs font-sans font-semibold shadow-[0_8px_30px_rgba(0,0,0,0.85)] transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer group"
+          title={`Next: Season ${nextEpisodeInfo.season} Episode ${nextEpisodeInfo.episode} - ${nextEpisodeInfo.title}`}
+        >
+          <SkipForward className="w-3.5 h-3.5 text-[#A2D5AB] group-hover:scale-110 transition-transform" />
+          <span>Next Ep (S{nextEpisodeInfo.season} E{nextEpisodeInfo.episode})</span>
+        </button>
+      )}
+
+      {/* Up Next in 10s Countdown Overlay */}
+      {type === 'tv' && nextEpisodeInfo && showNextOverlay && (
+        <div className="absolute bottom-12 right-3 sm:bottom-16 sm:right-6 z-40 max-w-sm w-[calc(100%-1.5rem)] sm:w-88 bg-[#0A0F11]/95 backdrop-blur-2xl border border-[#39AEA9]/60 rounded-2xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.95),0_0_35px_rgba(57,174,169,0.35)] animate-in fade-in slide-in-from-bottom-3 duration-300">
+          <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-white/[0.08]">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#A2D5AB] animate-ping" />
+              <span className="text-[11px] font-sans font-bold tracking-wider uppercase text-[#A2D5AB]">
+                Up Next in {nextCountdown}s
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                setShowNextOverlay(false);
+                showNextOverlayRef.current = false;
+                setIsAutoPlayDismissed(true);
+                isAutoPlayDismissedRef.current = true;
+              }}
+              className="w-6 h-6 rounded-full bg-white/[0.08] hover:bg-white/[0.2] flex items-center justify-center text-white/70 hover:text-white transition-colors cursor-pointer"
+              title="Cancel auto-play"
+              aria-label="Cancel auto-play"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="py-2.5">
+            <div className="flex items-center gap-2 text-xs text-[#8FA8AD] font-sans font-medium mb-1">
+              <span className="px-1.5 py-0.5 rounded bg-[#39AEA9]/20 text-[#A2D5AB] text-[10px] font-semibold border border-[#39AEA9]/30">
+                S{nextEpisodeInfo.season} E{nextEpisodeInfo.episode}
+              </span>
+              <span>{nextEpisodeInfo.isNewSeason ? 'Next Season' : 'Next Chapter'}</span>
+            </div>
+            <h4 className="text-sm font-display font-bold text-white truncate">
+              {nextEpisodeInfo.title}
+            </h4>
+          </div>
+
+          {/* Linear Countdown Bar */}
+          <div className="w-full h-1.5 bg-white/[0.1] rounded-full overflow-hidden mb-3">
+            <div
+              className="h-full bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] transition-all duration-1000 ease-linear shadow-[0_0_10px_rgba(57,174,169,0.8)]"
+              style={{ width: `${Math.max(0, Math.min(100, (nextCountdown / 10) * 100))}%` }}
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleEpisodeChange(nextEpisodeInfo.season, nextEpisodeInfo.episode)}
+              className="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] hover:opacity-95 text-[#0A0F11] font-sans font-bold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>Play Now</span>
+            </button>
+            <button
+              onClick={() => {
+                setShowNextOverlay(false);
+                showNextOverlayRef.current = false;
+                setIsAutoPlayDismissed(true);
+                isAutoPlayDismissedRef.current = true;
+              }}
+              className="py-2 px-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#8FA8AD] hover:text-white font-sans font-medium text-xs border border-white/[0.08] transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="min-h-screen max-w-7xl mx-auto pt-20 pb-28 px-4 sm:px-6 md:px-12 relative select-none bg-[#0A0F11] text-[#E2E8F0]">
       <AmbientGlow />
-      <div className="space-y-6">
-        {/* Full Player Container with Theater Mode and Ambilight halo */}
-        <div
-          className={
-            isTheaterMode
-              ? "fixed inset-0 z-[100] w-screen h-screen bg-black/95 backdrop-blur-3xl flex flex-col justify-center items-center p-2 sm:p-6 md:p-8"
-              : "relative w-full"
-          }
-        >
-          {/* Ambilight Aurora Halo Behind Player */}
-          <div className="absolute -inset-4 sm:-inset-8 bg-gradient-to-r from-[#39AEA9]/20 via-[#5B8FB9]/15 to-[#A2D5AB]/20 rounded-[40px] blur-3xl -z-10 opacity-70 pointer-events-none transition-opacity duration-1000 animate-pulse" />
 
-          {/* In Theater Mode, show a sleek Top HUD Bar */}
-          {isTheaterMode && (
-            <div className="w-full max-w-7xl flex items-center justify-between pb-3 px-2 text-white animate-in fade-in">
-              <div className="flex items-center gap-3">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#39AEA9] animate-pulse" />
-                <h2 className="text-sm sm:text-base font-bold font-display text-white truncate max-w-md">
-                  {movieTitle} {type === 'tv' && <span className="text-[#A2D5AB] font-sans text-xs">S{currentSeason} E{currentEpisode}</span>}
-                </h2>
-                <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[10px] font-sans font-semibold bg-white/[0.08] text-[#8FA8AD] border border-white/[0.1]">
-                  {rawActiveServer?.name || "Server 1"}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
+      {/* 1. Fullscreen Theater Mode Overlay via React Portal directly into body */}
+      {mounted && isTheaterMode && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[99999] w-screen h-screen bg-[#070B0E]/98 backdrop-blur-3xl flex flex-col justify-between items-center p-3 sm:p-5 select-none animate-in fade-in duration-200">
+          {/* Top HUD Bar */}
+          <div className="w-full max-w-7xl flex items-center justify-between pb-2 px-2 sm:px-4 text-white z-20">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#39AEA9] animate-pulse shrink-0" />
+              <h2 className="text-sm sm:text-base font-bold font-display text-white truncate max-w-xs sm:max-w-md md:max-w-lg">
+                {movieTitle}
                 {type === 'tv' && (
-                  <button
-                    onClick={() => {
-                      soundFx.playTap();
-                      setIsEpisodeDrawerOpen(true);
-                    }}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#A2D5AB] text-xs font-sans font-medium border border-white/[0.1] transition-all cursor-pointer"
-                    title="Episodes [E]"
-                  >
-                    <List className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Episodes</span>
-                  </button>
+                  <span className="text-[#A2D5AB] font-sans text-xs ml-2 font-semibold px-2 py-0.5 rounded bg-white/[0.08] border border-white/[0.1]">
+                    S{currentSeason} E{currentEpisode}
+                  </span>
                 )}
+              </h2>
+              <span className="hidden md:inline-flex px-2 py-0.5 rounded-full text-[10px] font-sans font-semibold bg-white/[0.08] text-[#8FA8AD] border border-white/[0.1]">
+                {rawActiveServer?.name || "Server 1"}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {type === 'tv' && (
                 <button
                   onClick={() => {
                     soundFx.playTap();
-                    setIsShortcutsOpen(true);
+                    setIsEpisodeDrawerOpen(true);
                   }}
-                  className="p-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#8FA8AD] hover:text-white transition-all cursor-pointer"
-                  title="Shortcuts [?]"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#A2D5AB] text-xs font-sans font-medium border border-white/[0.1] transition-all cursor-pointer"
+                  title="Episodes [E]"
                 >
-                  <Keyboard className="w-4 h-4" />
+                  <List className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Episodes [E]</span>
                 </button>
-                <button
-                  onClick={() => {
-                    soundFx.playChime();
-                    setIsTheaterMode(false);
-                  }}
-                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11] font-bold text-xs shadow-lg hover:opacity-95 transition-all cursor-pointer"
-                  title="Exit Theater Mode [Esc or T]"
-                >
-                  <Minimize2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Exit Theater</span>
-                </button>
-              </div>
+              )}
+              <button
+                onClick={() => {
+                  soundFx.playTap();
+                  setIsAdShieldActive(prev => {
+                    const next = !prev;
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem('nightcast_ad_shield_v2', String(next));
+                    }
+                    setToastMessage(next ? "Ad-Shield ON: Sandbox enabled (Turn OFF if stream shows 'Playback Disabled')" : "Ad-Shield OFF: Full playback permissions restored");
+                    return next;
+                  });
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-sans font-medium transition-all cursor-pointer ${
+                  isAdShieldActive
+                    ? 'bg-[#39AEA9]/20 hover:bg-[#39AEA9]/30 text-[#A2D5AB] border-[#39AEA9]/40'
+                    : 'bg-white/[0.08] hover:bg-white/[0.15] text-[#8FA8AD] hover:text-white border-white/[0.1]'
+                }`}
+                title={isAdShieldActive ? "Ad-Shield is active (Turn off if stream blocks sandbox)" : "Ad-Shield is turned off"}
+              >
+                {isAdShieldActive ? (
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#A2D5AB]" />
+                ) : (
+                  <ShieldAlert className="w-3.5 h-3.5 text-[#8FA8AD]" />
+                )}
+                <span className="hidden sm:inline">
+                  {isAdShieldActive ? "Ad-Shield ON" : "Ad-Shield OFF"}
+                </span>
+              </button>
+              <button
+                onClick={cycleNextServer}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#8FA8AD] hover:text-white text-xs font-sans font-medium border border-white/[0.1] transition-all cursor-pointer"
+                title="Cycle Server [S]"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Server [S]</span>
+              </button>
+              <button
+                onClick={toggleNativeFullscreen}
+                className="p-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#8FA8AD] hover:text-white transition-all cursor-pointer"
+                title="Toggle Fullscreen [F]"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => {
+                  soundFx.playTap();
+                  setIsShortcutsOpen(true);
+                }}
+                className="p-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#8FA8AD] hover:text-white transition-all cursor-pointer"
+                title="Shortcuts [?]"
+              >
+                <Keyboard className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => {
+                  soundFx.playChime();
+                  setIsTheaterMode(false);
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11] font-bold text-xs shadow-lg hover:opacity-95 transition-all cursor-pointer"
+                title="Exit Theater Mode [Esc or T]"
+              >
+                <Minimize2 className="w-3.5 h-3.5" />
+                <span>Exit Theater [Esc]</span>
+              </button>
             </div>
-          )}
+          </div>
+
+          {/* Main Cinema Screen Box */}
+          <div className="w-full max-w-7xl max-h-[86vh] flex-1 flex items-center justify-center relative my-auto">
+            <div className="relative w-full h-full flex items-center justify-center">
+              {/* Ambilight Aurora Halo Behind Player */}
+              <div className="absolute -inset-4 sm:-inset-8 bg-gradient-to-r from-[#39AEA9]/25 via-[#5B8FB9]/20 to-[#A2D5AB]/25 rounded-[40px] blur-3xl -z-10 opacity-70 pointer-events-none" />
+              {renderPlayerScreen(true)}
+            </div>
+          </div>
+
+          <div className="text-[11px] text-[#8FA8AD] font-sans pb-1 text-center">
+            Press <kbd className="px-1.5 py-0.5 rounded bg-white/[0.1] text-[#A2D5AB] font-mono">T</kbd> or <kbd className="px-1.5 py-0.5 rounded bg-white/[0.1] text-[#A2D5AB] font-mono">Esc</kbd> to exit • <kbd className="px-1.5 py-0.5 rounded bg-white/[0.1] text-[#A2D5AB] font-mono">F</kbd> for fullscreen • <kbd className="px-1.5 py-0.5 rounded bg-white/[0.1] text-[#A2D5AB] font-mono">N</kbd> next episode
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* 2. Normal View Player Container */}
+      <div className="space-y-6">
+        <div className="relative w-full">
+          {/* Ambilight Aurora Halo Behind Player */}
+          <div className="absolute -inset-4 sm:-inset-8 bg-gradient-to-r from-[#39AEA9]/20 via-[#5B8FB9]/15 to-[#A2D5AB]/20 rounded-[40px] blur-3xl -z-10 opacity-70 pointer-events-none transition-opacity duration-1000 animate-pulse" />
 
           {/* Screen Box */}
-          <div className={`relative w-full ${isTheaterMode ? 'max-w-7xl max-h-[85vh] aspect-video rounded-2xl' : 'aspect-video rounded-3xl'} overflow-hidden border border-white/[0.08] bg-[#0A0F11] shadow-[0_25px_60px_rgba(0,0,0,0.95)]`}>
-          {!isIframeLoaded && activeServer?.type !== 'hls' && (
-            <div className="absolute inset-0 z-20 pointer-events-none">
-              <PlayerSkeleton />
+          {isTheaterMode ? (
+            <div className="relative w-full aspect-video rounded-2xl sm:rounded-3xl overflow-hidden border border-white/[0.08] bg-[#0A0F11] flex flex-col items-center justify-center gap-3 text-[#8FA8AD]">
+              <p className="text-sm font-sans font-medium text-white">Playing in Cinema Theater Mode</p>
+              <button
+                onClick={() => setIsTheaterMode(false)}
+                className="px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#A2D5AB] text-xs font-semibold transition cursor-pointer"
+              >
+                Return to Normal View
+              </button>
             </div>
-          )}
-
-          {playerUrl ? (
-            activeServer?.type === 'hls' ? (
-              <NightCastPlayer
-                streamUrl={playerUrl}
-                isHls={true}
-                startAt={resumeTime}
-                onProgress={handlePlayerProgress}
-                onEnded={triggerNextEpisodeOverlay}
-                poster={meta?.backdrop_path ? `https://image.tmdb.org/t/p/original${meta.backdrop_path}` : undefined}
-                onError={handleHlsError}
-              />
-            ) : (
-              <iframe
-                key={`${activeServerId}-${id}-${type === 'tv' ? `s${currentSeason}e${currentEpisode}` : 'movie'}`}
-                src={playerUrl}
-                onLoad={() => setIsIframeLoaded(true)}
-                className="absolute top-0 left-0 w-full h-full border-0 rounded-3xl"
-                allowFullScreen
-                scrolling="no"
-                title="NightCast Media Player"
-                referrerPolicy="origin"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              />
-            )
           ) : (
-            <PlayerSkeleton />
+            renderPlayerScreen(false)
           )}
-
-          {/* Quick Floating Next Episode Button (Positioned above player bottom controls) */}
-          {type === 'tv' && nextEpisodeInfo && !showNextOverlay && (
-            <button
-              onClick={() => handleEpisodeChange(nextEpisodeInfo.season, nextEpisodeInfo.episode)}
-              className="absolute bottom-14 right-4 sm:bottom-16 sm:right-6 z-30 flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#0A0F11]/90 hover:bg-[#0A0F11] backdrop-blur-xl border border-white/[0.2] hover:border-[#39AEA9] text-white text-xs font-sans font-semibold shadow-[0_8px_30px_rgba(0,0,0,0.85)] transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer group"
-              title={`Next: Season ${nextEpisodeInfo.season} Episode ${nextEpisodeInfo.episode} - ${nextEpisodeInfo.title}`}
-            >
-              <SkipForward className="w-3.5 h-3.5 text-[#A2D5AB] group-hover:scale-110 transition-transform" />
-              <span>Next Ep (S{nextEpisodeInfo.season} E{nextEpisodeInfo.episode})</span>
-            </button>
-          )}
-
-          {/* Up Next in 10s Countdown Overlay (Positioned above player bottom controls) */}
-          {type === 'tv' && nextEpisodeInfo && showNextOverlay && (
-            <div className="absolute bottom-14 right-4 sm:bottom-16 sm:right-6 z-40 max-w-sm w-[calc(100%-2rem)] sm:w-88 bg-[#0A0F11]/95 backdrop-blur-2xl border border-[#39AEA9]/60 rounded-2xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.95),0_0_35px_rgba(57,174,169,0.35)] animate-in fade-in slide-in-from-bottom-3 duration-300">
-              <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-white/[0.08]">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#A2D5AB] animate-ping" />
-                  <span className="text-[11px] font-sans font-bold tracking-wider uppercase text-[#A2D5AB]">
-                    Up Next in {nextCountdown}s
-                  </span>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowNextOverlay(false);
-                    showNextOverlayRef.current = false;
-                    setIsAutoPlayDismissed(true);
-                    isAutoPlayDismissedRef.current = true;
-                  }}
-                  className="w-6 h-6 rounded-full bg-white/[0.08] hover:bg-white/[0.2] flex items-center justify-center text-white/70 hover:text-white transition-colors cursor-pointer"
-                  title="Cancel auto-play"
-                  aria-label="Cancel auto-play"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="py-2.5">
-                <div className="flex items-center gap-2 text-xs text-[#8FA8AD] font-sans font-medium mb-1">
-                  <span className="px-1.5 py-0.5 rounded bg-[#39AEA9]/20 text-[#A2D5AB] text-[10px] font-semibold border border-[#39AEA9]/30">
-                    S{nextEpisodeInfo.season} E{nextEpisodeInfo.episode}
-                  </span>
-                  <span>{nextEpisodeInfo.isNewSeason ? 'Next Season' : 'Next Chapter'}</span>
-                </div>
-                <h4 className="text-sm font-display font-bold text-white truncate">
-                  {nextEpisodeInfo.title}
-                </h4>
-              </div>
-
-              {/* Linear Countdown Bar */}
-              <div className="w-full h-1.5 bg-white/[0.1] rounded-full overflow-hidden mb-3">
-                <div
-                  className="h-full bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] transition-all duration-1000 ease-linear shadow-[0_0_10px_rgba(57,174,169,0.8)]"
-                  style={{ width: `${Math.max(0, Math.min(100, (nextCountdown / 10) * 100))}%` }}
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleEpisodeChange(nextEpisodeInfo.season, nextEpisodeInfo.episode)}
-                  className="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] hover:opacity-95 text-[#0A0F11] font-sans font-bold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
-                >
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Play Now</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setShowNextOverlay(false);
-                    showNextOverlayRef.current = false;
-                    setIsAutoPlayDismissed(true);
-                    isAutoPlayDismissedRef.current = true;
-                  }}
-                  className="py-2 px-3 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#8FA8AD] hover:text-white font-sans font-medium text-xs border border-white/[0.08] transition-all cursor-pointer"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-          </div>
         </div>
 
         {/* Source Error / Fallback Notification Toast */}
@@ -1057,6 +1219,31 @@ export default function WatchPage() {
               className="text-[#A2D5AB] hover:text-white text-xs font-sans font-semibold px-2.5 py-1 rounded-full hover:bg-[#39AEA9]/20 transition-all cursor-pointer"
             >
               Dismiss
+            </button>
+          </div>
+        )}
+
+        {/* Ad-Shield Sandbox Warning Banner when Active */}
+        {isAdShieldActive && (
+          <div className="p-3.5 px-5 bg-amber-500/10 border border-amber-500/35 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-sans text-amber-200 shadow-xl animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-2.5">
+              <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>
+                <strong>Ad-Shield Sandbox Active:</strong> Some stream servers (VidSrc/VidBolt) block playback when sandbox is enabled. If player says &quot;Playback Disabled&quot; or &quot;Please Disable Sandbox&quot;, click here:
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                soundFx.playTap();
+                setIsAdShieldActive(false);
+                if (typeof window !== 'undefined') {
+                  localStorage.setItem('nightcast_ad_shield_v2', 'false');
+                }
+                setToastMessage("Ad-Shield disabled. Full playback permissions restored.");
+              }}
+              className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-[#0A0F11] font-bold text-xs shadow-md transition-all cursor-pointer shrink-0"
+            >
+              Disable Sandbox &amp; Play
             </button>
           </div>
         )}
@@ -1088,6 +1275,7 @@ export default function WatchPage() {
                         soundFx.playTap();
                         setActiveServerId(srv.id);
                         if (typeof window !== 'undefined') {
+                          localStorage.setItem('nightcast_preferred_server_v2', srv.id);
                           localStorage.setItem('nightcast_preferred_server', srv.id);
                         }
                       }
@@ -1107,8 +1295,38 @@ export default function WatchPage() {
               })}
             </div>
 
-            {/* Quick Action Pill Controls (Theater Mode, Episode Drawer, Shortcuts) */}
+            {/* Quick Action Pill Controls (Ad-Shield, Theater Mode, Episode Drawer, Shortcuts) */}
             <div className="flex items-center gap-2">
+              {/* Ad-Shield Toggle Button */}
+              <button
+                onClick={() => {
+                  soundFx.playTap();
+                  setIsAdShieldActive(prev => {
+                    const next = !prev;
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem('nightcast_ad_shield_v2', String(next));
+                    }
+                    setToastMessage(next ? "Ad-Shield ON: Sandbox enabled (Turn OFF if stream shows 'Playback Disabled')" : "Ad-Shield OFF: Full stream permissions restored");
+                    return next;
+                  });
+                }}
+                className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs font-sans font-medium transition-all active:scale-95 cursor-pointer ${
+                  isAdShieldActive
+                    ? 'bg-[#39AEA9]/15 hover:bg-[#39AEA9]/25 text-[#A2D5AB] border-[#39AEA9]/40 shadow-[0_0_12px_rgba(57,174,169,0.25)]'
+                    : 'bg-white/[0.08] hover:bg-white/[0.14] text-[#8FA8AD] hover:text-white border-white/[0.1]'
+                }`}
+                title={isAdShieldActive ? "Ad-Shield is active (Turn off if stream blocks sandbox)" : "Ad-Shield is turned off (Allow all permissions)"}
+              >
+                {isAdShieldActive ? (
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#A2D5AB]" />
+                ) : (
+                  <ShieldAlert className="w-3.5 h-3.5 text-[#8FA8AD]" />
+                )}
+                <span className="hidden sm:inline font-semibold">
+                  {isAdShieldActive ? "Ad Shield: ON" : "Ad Shield: OFF"}
+                </span>
+              </button>
+
               {/* Theater Mode Button */}
               <button
                 onClick={() => {
@@ -1169,113 +1387,12 @@ export default function WatchPage() {
               </button>
             )}
 
-            {/* Direct Download Button */}
-            <button
-              onClick={() => {
-                soundFx.playTap();
-                handleOpenDownloadModal();
-              }}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-[#E2E8F0] hover:text-white font-sans font-medium text-xs border border-white/[0.1] shadow-lg transition-all active:scale-95 cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5 text-[#A2D5AB]" />
-              <span>Download Offline [D]</span>
-            </button>
           </div>
         </div>
 
-        {/* Download Options Modal Popup */}
-        {isDownloadModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0A0F11]/85 backdrop-blur-2xl p-4 animate-in fade-in">
-            <div className="bg-[#121A1D]/95 border border-white/[0.1] rounded-3xl p-6 max-w-lg w-full shadow-2xl relative space-y-4">
-              <button
-                onClick={() => setIsDownloadModalOpen(false)}
-                className="absolute top-4 right-4 text-[#8FA8AD] hover:text-white transition-colors cursor-pointer"
-                aria-label="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
-
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-[#39AEA9]/20 border border-[#39AEA9]/40 text-[#A2D5AB] rounded-2xl">
-                  <DownloadCloud className="w-6 h-6 text-[#A2D5AB]" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg text-[#F8FAFC] font-display">Offline Download Hub</h3>
-                  <p className="text-xs text-[#8FA8AD] font-sans">Select a direct high-speed stream to save or download</p>
-                </div>
-              </div>
-
-              {/* Downloading Progress Banner */}
-              {downloadProgress && (
-                <div className="p-3 bg-[#39AEA9]/20 border border-[#39AEA9]/50 rounded-xl flex items-center gap-2.5 text-xs text-white font-sans font-medium shadow-lg animate-pulse">
-                  <Loader2 className="w-4 h-4 animate-spin shrink-0 text-[#A2D5AB]" />
-                  <span>{downloadProgress}</span>
-                </div>
-              )}
-
-              <div className="space-y-2.5 max-h-72 overflow-y-auto no-scrollbar pt-2">
-                {downloadOptions.map((opt, idx) => {
-                  const isCopied = copiedDownloadId === (opt.id || `opt-${idx}`);
-                  return (
-                    <div
-                      key={opt.id || idx}
-                      className="bg-[#0A0F11] p-3.5 rounded-2xl border border-white/[0.08] hover:border-[#39AEA9]/60 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-inner"
-                    >
-                      <div className="space-y-1 min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-sans font-semibold bg-[#39AEA9]/20 text-[#A2D5AB] border border-[#39AEA9]/40">
-                            {opt.quality || "1080p HD"}
-                          </span>
-                          <p className="font-semibold text-xs text-[#F8FAFC] truncate font-sans">{opt.label || `Option ${idx + 1}`}</p>
-                        </div>
-                        <p className="text-[10px] text-[#8FA8AD] font-sans truncate">{movieTitle} • {type === 'tv' ? `S${currentSeason}E${currentEpisode}` : 'Full Movie'}</p>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                        <button
-                          onClick={() => handleCopyLink(opt.url, opt.id || `opt-${idx}`)}
-                          className="px-2.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-[#8FA8AD] hover:text-white border border-white/[0.08] text-xs font-sans transition-all flex items-center gap-1 cursor-pointer"
-                          title="Copy direct stream link"
-                        >
-                          {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Globe className="w-3.5 h-3.5" />}
-                          <span>{isCopied ? "Copied" : "Copy"}</span>
-                        </button>
-                        <button
-                          onClick={() => handleOpenDirectStream(opt.url)}
-                          className="px-2.5 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-[#E2E8F0] hover:text-white border border-white/[0.08] text-xs font-sans transition-all flex items-center gap-1 cursor-pointer"
-                          title="Open stream in new tab"
-                        >
-                          <Play className="w-3 h-3 text-[#A2D5AB]" />
-                          <span>Open</span>
-                        </button>
-                        <button
-                          onClick={() => handleDownloadStream(opt.url, opt.label)}
-                          className="px-3.5 py-1.5 bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] hover:opacity-95 text-[#0A0F11] text-xs font-sans font-semibold rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          <span>Download</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="pt-2 border-t border-white/[0.08]">
-                <button
-                  onClick={() => setIsDownloadModalOpen(false)}
-                  className="w-full py-2.5 bg-white/[0.06] hover:bg-white/[0.1] text-[#8FA8AD] hover:text-white text-xs font-sans font-medium rounded-xl transition-all border border-white/[0.08] cursor-pointer"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Slide-over Episode Drawer for Quick TV Navigation */}
-        {isEpisodeDrawerOpen && type === 'tv' && (
-          <div className="fixed inset-0 z-[120] flex justify-end bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+        {mounted && isEpisodeDrawerOpen && type === 'tv' && typeof document !== 'undefined' && createPortal(
+          <div className="fixed inset-0 z-[100001] flex justify-end bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
             <div
               className="fixed inset-0 cursor-pointer"
               onClick={() => setIsEpisodeDrawerOpen(false)}
@@ -1395,12 +1512,13 @@ export default function WatchPage() {
                 )}
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* Keyboard Shortcuts HUD modal */}
-        {isShortcutsOpen && (
-          <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+        {mounted && isShortcutsOpen && typeof document !== 'undefined' && createPortal(
+          <div className="fixed inset-0 z-[100002] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
             <div
               className="fixed inset-0 cursor-pointer"
               onClick={() => setIsShortcutsOpen(false)}
@@ -1435,6 +1553,12 @@ export default function WatchPage() {
                     T
                   </kbd>
                 </div>
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
+                  <span className="text-[#E2E8F0] font-medium">Toggle Native Fullscreen</span>
+                  <kbd className="px-2.5 py-1 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                    F
+                  </kbd>
+                </div>
                 {type === 'tv' && (
                   <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
                     <span className="text-[#E2E8F0] font-medium">Toggle Episode Drawer</span>
@@ -1457,12 +1581,6 @@ export default function WatchPage() {
                     </kbd>
                   </div>
                 )}
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
-                  <span className="text-[#E2E8F0] font-medium">Direct Offline Download Hub</span>
-                  <kbd className="px-2.5 py-1 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
-                    D
-                  </kbd>
-                </div>
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
                   <span className="text-[#E2E8F0] font-medium">Toggle This Shortcuts Cheat Sheet</span>
                   <kbd className="px-2.5 py-1 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
@@ -1489,7 +1607,8 @@ export default function WatchPage() {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* TV Season & Episode Selector */}

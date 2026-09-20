@@ -164,8 +164,11 @@ export function getContinueWatchingList(): LocalProgressItem[] {
         continue;
       }
 
-      // 2. Purge unstarted ghost items (< 1.5% and < 15s)
-      if (current < 15 && progress < 1.5) {
+      // 2. Preserve valid "Up Next" episodes (e.g. advance to S1E2 with progress_percent 1%)
+      const isUpNextMarker = item.media_type === 'tv' && item.season !== undefined && item.episode !== undefined && progress >= 1;
+      const hasWatchedContent = current >= 5 || progress >= 1.5;
+
+      if (!isUpNextMarker && !hasWatchedContent) {
         const itemKey = item.media_type === 'tv'
           ? `${cleanId}_s${item.season || 1}e${item.episode || 1}`
           : cleanId;

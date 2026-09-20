@@ -1,12 +1,15 @@
 "use client";
 
-import React, { useState, useRef, useMemo, useEffect } from "react";
+import React, { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Play, Star, Plus, Check, ThumbsUp, ChevronDown, X, Sparkles } from "lucide-react";
 import { ImageService } from "../../lib/ImageService";
 import { soundFx } from "../../lib/soundEffects";
 import { useAmbientStore } from "../../store/ambientStore";
+import { useUserStore } from "../../store/userStore";
+import { apiFetch } from "../../lib/api";
+import { triggerToast } from "../common/ToastNotification";
 import PlatformBadge from "./PlatformBadge";
 
 export const TMDB_GENRES: Record<number, string> = {
@@ -68,7 +71,31 @@ interface MovieCardProps {
 }
 
 function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps) {
-  const [added, setAdded] = useState(false);
+  const [added, setAdded] = useState<boolean>(() => {
+    if (typeof window !== "undefined" && item.id) {
+      try {
+        const stored = localStorage.getItem("nightcast_watchlist");
+        if (stored) {
+          const map = JSON.parse(stored);
+          const val = map[String(item.id)];
+          if (val) return true;
+        }
+      } catch {}
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const handleSync = (e: Event) => {
+      const customEvent = e as CustomEvent<{ id: string | number; added: boolean }>;
+      if (customEvent.detail && String(customEvent.detail.id) === String(item.id)) {
+        setAdded(customEvent.detail.added);
+      }
+    };
+    window.addEventListener("nightcast:watchlist-update", handleSync);
+    return () => window.removeEventListener("nightcast:watchlist-update", handleSync);
+  }, [item.id]);
+
   const [liked, setLiked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [align, setAlign] = useState<"left" | "center" | "right">("center");
@@ -161,12 +188,72 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
     return ratings[numId % ratings.length];
   }, [item.adult, item.id]);
 
-  const handleWatchlistClick = (e: React.MouseEvent) => {
+  const handleWatchlistClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     soundFx.playTap();
-    setAdded(!added);
-  };
+
+    const nextState = !added;
+    setAdded(nextState);
+
+    // 1. Update localStorage nightcast_watchlist
+    try {
+      const stored = localStorage.getItem("nightcast_watchlist");
+      const map = stored ? JSON.parse(stored) : {};
+      const cleanId = String(item.id);
+
+      if (nextState) {
+        map[cleanId] = {
+          id: item.id,
+          media_id: cleanId,
+          title: title,
+          poster_path: item.poster_path || null,
+          backdrop_path: item.backdrop_path || null,
+          media_type: type,
+          vote_average: item.vote_average || 0,
+          release_date: item.release_date || item.first_air_date,
+        };
+      } else {
+        delete map[cleanId];
+      }
+      localStorage.setItem("nightcast_watchlist", JSON.stringify(map));
+    } catch (err) {
+      console.error("Failed to update local watchlist:", err);
+    }
+
+    // 2. Call backend /api/user/favorites if logged in
+    const activeProfile = useUserStore.getState().activeProfile;
+    if (activeProfile && item.id) {
+      const cleanId = String(item.id);
+      if (nextState) {
+        apiFetch("/api/user/favorites", {
+          method: "POST",
+          headers: { "X-Profile-ID": activeProfile.id },
+          body: JSON.stringify({
+            media_id: cleanId,
+            media_type: type,
+            title: title,
+            poster_path: item.poster_path || "",
+          }),
+        }).catch((err) => console.error("Failed to save backend favorite:", err));
+      } else {
+        apiFetch(`/api/user/favorites/${cleanId}`, {
+          method: "DELETE",
+          headers: { "X-Profile-ID": activeProfile.id },
+        }).catch((err) => console.error("Failed to delete backend favorite:", err));
+      }
+    }
+
+    // 3. Dispatch real-time custom event for all cards and pages
+    window.dispatchEvent(
+      new CustomEvent("nightcast:watchlist-update", {
+        detail: { id: item.id, added: nextState },
+      })
+    );
+
+    // 4. Trigger visual feedback toast
+    triggerToast(nextState ? `Added "${title}" to Watchlist` : `Removed "${title}" from Watchlist`, "success");
+  }, [added, item, title, type]);
 
   const handleLikeClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -214,7 +301,16 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
     setIsHovered(false);
   };
 
-  const watchUrl = `/watch/${type}/${item.id}` + (item.season ? `?season=${item.season}&episode=${item.episode || 1}` : "");
+  const watchUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    if (item.season) params.set("season", item.season.toString());
+    if (item.episode) params.set("episode", (item.episode || 1).toString());
+    if (item.timestamp_seconds && Number(item.timestamp_seconds) > 5) {
+      params.set("time", Math.floor(Number(item.timestamp_seconds)).toString());
+    }
+    const qs = params.toString();
+    return `/watch/${type}/${item.id}${qs ? `?${qs}` : ""}`;
+  }, [type, item.id, item.season, item.episode, item.timestamp_seconds]);
   const detailUrl = `/${type}/${item.id}`;
 
   const positionClasses = useMemo(() => {

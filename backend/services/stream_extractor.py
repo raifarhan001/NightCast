@@ -136,7 +136,7 @@ class StreamExtractor:
         language_pref: Optional[str] = None
     ) -> Dict[str, Any]:
         """Main entry point. Resolves direct HLS streams, parses audio track metadata, and provides iframe fallbacks."""
-        cache_key = f"streams:v6:{media_type}:{tmdb_id}:{season}:{episode}:{language_pref or 'all'}"
+        cache_key = f"streams:v8:{media_type}:{tmdb_id}:{season}:{episode}:{language_pref or 'all'}"
         cached = redis_cache.get(cache_key)
         if cached:
             logger.info(f"Cache hit for {cache_key}")
@@ -144,16 +144,19 @@ class StreamExtractor:
 
         if media_type == "movie":
             s1_vidsrc = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
-            s2_vidbolt = f"https://vidbolt.xyz/movie/{tmdb_id}"
-            s3_vidking = f"https://www.vidking.net/embed/movie/{tmdb_id}?color=00f2fe&autoPlay=true"
+            s2_vidsrc_to = f"https://vidsrc.to/embed/movie/{tmdb_id}"
+            s3_vidbolt = f"https://vidbolt.xyz/movie/{tmdb_id}"
+            s4_vidlink = f"https://vidlink.pro/movie/{tmdb_id}?primaryColor=39AEA9&autoplay=true"
         elif media_type == "anime":
             s1_vidsrc = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
-            s2_vidbolt = f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}"
-            s3_vidking = f"https://www.vidking.net/embed/tv/{tmdb_id}/{season}/{episode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true"
+            s2_vidsrc_to = f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}"
+            s3_vidbolt = f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}"
+            s4_vidlink = f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=39AEA9&autoplay=true"
         else:
             s1_vidsrc = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
-            s2_vidbolt = f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}"
-            s3_vidking = f"https://www.vidking.net/embed/tv/{tmdb_id}/{season}/{episode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true"
+            s2_vidsrc_to = f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}"
+            s3_vidbolt = f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}"
+            s4_vidlink = f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=39AEA9&autoplay=true"
 
         all_servers = [
             {
@@ -165,20 +168,28 @@ class StreamExtractor:
                 "language_name": "vidsrc.me"
             },
             {
+                "id": "vidsrc-to",
+                "name": "Server 2 (VidSrc VIP)",
+                "url": s2_vidsrc_to,
+                "type": "iframe",
+                "language": "en",
+                "language_name": "vidsrc.to"
+            },
+            {
                 "id": "vidbolt",
-                "name": "Server 2 (VidBolt)",
-                "url": s2_vidbolt,
+                "name": "Server 3 (VidBolt)",
+                "url": s3_vidbolt,
                 "type": "iframe",
                 "language": "en",
                 "language_name": "vidbolt.xyz"
             },
             {
-                "id": "vidking",
-                "name": "Server 3 (Vidking)",
-                "url": s3_vidking,
+                "id": "vidlink",
+                "name": "Server 4 (VidLink Pro)",
+                "url": s4_vidlink,
                 "type": "iframe",
                 "language": "en",
-                "language_name": "vidking.net"
+                "language_name": "vidlink.pro"
             }
         ]
 
@@ -259,101 +270,6 @@ class StreamExtractor:
             logger.error(f"autoembed extraction failed: {e}")
             return []
 
-    async def extract_download_streams(
-        self,
-        media_type: str,
-        tmdb_id: str,
-        season: int = 1,
-        episode: int = 1,
-    ) -> Dict[str, Any]:
-        """Resolves direct downloadable links and stream endpoints for offline saving with immediate response."""
-        download_options = []
-
-        if media_type == "movie":
-            download_options.append({
-                "id": "vidsrc-download",
-                "label": "Server 1 (VidSrc Primary HD Source 1080p)",
-                "url": f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}",
-                "quality": "1080p",
-                "format": "mp4/stream",
-                "type": "direct_stream"
-            })
-            download_options.append({
-                "id": "vidbolt-download",
-                "label": "Server 2 (VidBolt Stream 1080p)",
-                "url": f"https://vidbolt.xyz/movie/{tmdb_id}",
-                "quality": "1080p Full HD",
-                "format": "mp4/stream",
-                "type": "direct_stream"
-            })
-            download_options.append({
-                "id": "vidking-download",
-                "label": "Server 3 (Vidking Ultra Fast Source 1080p)",
-                "url": f"https://www.vidking.net/embed/movie/{tmdb_id}?color=00f2fe&autoPlay=true",
-                "quality": "1080p Full HD",
-                "format": "mp4/stream",
-                "type": "direct_stream"
-            })
-        elif media_type == "anime":
-            download_options.append({
-                "id": "vidsrc-download",
-                "label": f"Server 1 (VidSrc Primary Stream Ep {episode} 1080p)",
-                "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
-                "quality": "1080p",
-                "format": "mp4/stream",
-                "type": "direct_stream"
-            })
-            download_options.append({
-                "id": "vidbolt-download",
-                "label": f"Server 2 (VidBolt Anime Stream Ep {episode} 1080p)",
-                "url": f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}",
-                "quality": "1080p Full HD",
-                "format": "mp4/stream",
-                "type": "direct_stream"
-            })
-            download_options.append({
-                "id": "vidking-download",
-                "label": f"Server 3 (Vidking Anime Stream Ep {episode} 1080p)",
-                "url": f"https://www.vidking.net/embed/tv/{tmdb_id}/{season}/{episode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true",
-                "quality": "1080p Full HD",
-                "format": "mp4/stream",
-                "type": "direct_stream"
-            })
-        else:
-            download_options.append({
-                "id": "vidsrc-download",
-                "label": f"Server 1 (VidSrc Primary Stream S{season}E{episode} 1080p)",
-                "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
-                "quality": "1080p",
-                "format": "mp4/stream",
-                "type": "direct_stream"
-            })
-            download_options.append({
-                "id": "vidbolt-download",
-                "label": f"Server 2 (VidBolt Stream S{season}E{episode} 1080p)",
-                "url": f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}",
-                "quality": "1080p Full HD",
-                "format": "mp4/stream",
-                "type": "direct_stream"
-            })
-            download_options.append({
-                "id": "vidking-download",
-                "label": f"Server 3 (Vidking Stream S{season}E{episode} 1080p)",
-                "url": f"https://www.vidking.net/embed/tv/{tmdb_id}/{season}/{episode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true",
-                "quality": "1080p Full HD",
-                "format": "mp4/stream",
-                "type": "direct_stream"
-            })
-
-        return {
-            "status": "success",
-            "tmdb_id": tmdb_id,
-            "media_type": media_type,
-            "season": season,
-            "episode": episode,
-            "downloads": download_options
-        }
-
     def _get_iframe_fallbacks(
         self, media_type: str, tmdb_id: str, season: int, episode: int
     ) -> List[Dict[str, Any]]:
@@ -367,15 +283,21 @@ class StreamExtractor:
                     "type": "iframe",
                 },
                 {
+                    "id": "vidsrc-to",
+                    "name": "Server 2 (VidSrc VIP)",
+                    "url": f"https://vidsrc.to/embed/movie/{tmdb_id}",
+                    "type": "iframe",
+                },
+                {
                     "id": "vidbolt",
-                    "name": "Server 2 (VidBolt)",
+                    "name": "Server 3 (VidBolt)",
                     "url": f"https://vidbolt.xyz/movie/{tmdb_id}",
                     "type": "iframe",
                 },
                 {
-                    "id": "vidking",
-                    "name": "Server 3 (Vidking)",
-                    "url": f"https://www.vidking.net/embed/movie/{tmdb_id}?color=00f2fe&autoPlay=true",
+                    "id": "vidlink",
+                    "name": "Server 4 (VidLink Pro)",
+                    "url": f"https://vidlink.pro/movie/{tmdb_id}?primaryColor=39AEA9&autoplay=true",
                     "type": "iframe",
                 },
             ]
@@ -388,15 +310,21 @@ class StreamExtractor:
                     "type": "iframe",
                 },
                 {
+                    "id": "vidsrc-to",
+                    "name": "Server 2 (VidSrc VIP)",
+                    "url": f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}",
+                    "type": "iframe",
+                },
+                {
                     "id": "vidbolt",
-                    "name": "Server 2 (VidBolt)",
+                    "name": "Server 3 (VidBolt)",
                     "url": f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}",
                     "type": "iframe",
                 },
                 {
-                    "id": "vidking",
-                    "name": "Server 3 (Vidking)",
-                    "url": f"https://www.vidking.net/embed/tv/{tmdb_id}/{season}/{episode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true",
+                    "id": "vidlink",
+                    "name": "Server 4 (VidLink Pro)",
+                    "url": f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=39AEA9&autoplay=true",
                     "type": "iframe",
                 },
             ]
@@ -409,15 +337,21 @@ class StreamExtractor:
                     "type": "iframe",
                 },
                 {
+                    "id": "vidsrc-to",
+                    "name": "Server 2 (VidSrc VIP)",
+                    "url": f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}",
+                    "type": "iframe",
+                },
+                {
                     "id": "vidbolt",
-                    "name": "Server 2 (VidBolt)",
+                    "name": "Server 3 (VidBolt)",
                     "url": f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}",
                     "type": "iframe",
                 },
                 {
-                    "id": "vidking",
-                    "name": "Server 3 (Vidking)",
-                    "url": f"https://www.vidking.net/embed/tv/{tmdb_id}/{season}/{episode}?color=00f2fe&autoPlay=true&nextEpisode=true&episodeSelector=true",
+                    "id": "vidlink",
+                    "name": "Server 4 (VidLink Pro)",
+                    "url": f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=39AEA9&autoplay=true",
                     "type": "iframe",
                 },
             ]

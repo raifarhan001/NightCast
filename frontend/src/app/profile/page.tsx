@@ -23,7 +23,7 @@ export default function ProfilePage() {
   const [profileCreateError, setProfileCreateError] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [localContinueWatching, setLocalContinueWatching] = useState<LocalProgressItem[]>([]);
-  const [localWatchlist, setLocalWatchlist] = useState<Record<string, boolean>>({});
+  const [localWatchlist, setLocalWatchlist] = useState<Record<string, any>>({});
 
   useEffect(() => {
     const refreshList = () => {
@@ -31,20 +31,30 @@ export default function ProfilePage() {
       try {
         const stored = localStorage.getItem('nightcast_watchlist');
         if (stored) setLocalWatchlist(JSON.parse(stored));
-      } catch {}
+        else setLocalWatchlist({});
+      } catch {
+        setLocalWatchlist({});
+      }
     };
     refreshList();
+
+    const handleWatchlistUpdate = () => {
+      refreshList();
+      queryClient.invalidateQueries({ queryKey: ['profile-favorites'] });
+    };
 
     window.addEventListener("focus", refreshList);
     window.addEventListener("storage", refreshList);
     window.addEventListener("nightcast:progress-update", refreshList);
+    window.addEventListener("nightcast:watchlist-update", handleWatchlistUpdate);
 
     return () => {
       window.removeEventListener("focus", refreshList);
       window.removeEventListener("storage", refreshList);
       window.removeEventListener("nightcast:progress-update", refreshList);
+      window.removeEventListener("nightcast:watchlist-update", handleWatchlistUpdate);
     };
-  }, []);
+  }, [queryClient]);
 
   const { data: favorites = [] } = useQuery<any[]>({
     queryKey: ['profile-favorites', activeProfile?.id],
@@ -73,9 +83,12 @@ export default function ProfilePage() {
       const seconds = Number(c.timestamp_seconds ?? 0);
       const duration = Number(c.duration_seconds ?? 0);
 
-      // Filter out completed (>= 92%) or unstarted (< 1.5% and < 15s)
+      // Filter out completed (>= 92%)
       if (percent >= 92.0 || (duration > 60 && seconds >= duration - 30)) return;
-      if (seconds < 15 && percent < 1.5) return;
+      
+      const isUpNextMarker = (c.media_type === 'tv' || c.season) && c.episode !== undefined && percent >= 1;
+      const hasWatchedContent = seconds >= 5 || percent >= 1.5;
+      if (!isUpNextMarker && !hasWatchedContent) return;
 
       const existing = map.get(cleanId);
       const cTime = c.updated_at ? new Date(c.updated_at).getTime() : 0;
@@ -114,6 +127,47 @@ export default function ProfilePage() {
       return timeB - timeA;
     });
   }, [localContinueWatching, backendContinueWatching]);
+
+  const mergedWatchlist = useMemo(() => {
+    const map = new Map<string, any>();
+
+    // 1. Add local watchlist items
+    Object.entries(localWatchlist).forEach(([key, val]) => {
+      if (val && typeof val === "object") {
+        map.set(String(key), {
+          id: val.id || key,
+          media_id: String(val.media_id || val.id || key),
+          media_type: val.media_type || "movie",
+          title: val.title || "Untitled",
+          poster_path: val.poster_path || null,
+          backdrop_path: val.backdrop_path || null,
+          vote_average: val.vote_average || 0,
+        });
+      } else if (val) {
+        map.set(String(key), {
+          id: key,
+          media_id: String(key),
+          media_type: "movie",
+          title: "Saved Title",
+          poster_path: null,
+        });
+      }
+    });
+
+    // 2. Add backend favorites
+    for (const fav of favorites) {
+      const cleanId = String(fav.media_id || fav.id);
+      map.set(cleanId, {
+        id: fav.media_id || fav.id,
+        media_id: cleanId,
+        media_type: fav.media_type || "movie",
+        title: fav.title || "Untitled",
+        poster_path: fav.poster_path || null,
+      });
+    }
+
+    return Array.from(map.values());
+  }, [localWatchlist, favorites]);
 
   const handleRemoveContinueWatching = async (item: any) => {
     const cleanId = getCleanMediaId(item.id);
@@ -218,7 +272,7 @@ export default function ProfilePage() {
   });
 
   return (
-    <div className="w-full min-h-screen bg-[#0B131B] text-[#F0F0F0] relative overflow-hidden pb-28 pt-8">
+    <div className="w-full min-h-screen bg-[#0B131B] text-[#F0F0F0] relative overflow-hidden pb-28 pt-24 sm:pt-28">
       {/* Dynamic Ambient Background Glow */}
       <AmbientGlow />
 
@@ -226,9 +280,16 @@ export default function ProfilePage() {
         {/* Top Header Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#4A6E8D]/25">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-[#F0F0F0] tracking-tight">
-              {user ? 'My Library & Profile' : 'My List & Watchlist'}
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl sm:text-3xl font-black text-[#F0F0F0] tracking-tight">
+                {user ? 'My Library & Profile' : 'My List & Watchlist'}
+              </h1>
+              {user && (
+                <span className="px-2.5 py-0.5 rounded-full bg-[#39AEA9]/20 border border-[#39AEA9]/35 text-[#A2D5AB] text-[11px] font-semibold">
+                  Active
+                </span>
+              )}
+            </div>
             <p className="text-xs sm:text-sm text-[#4A6E8D] mt-1">
               {user
                 ? `Logged in as ${user.email}`
@@ -236,25 +297,27 @@ export default function ProfilePage() {
             </p>
           </div>
 
-          {!user ? (
-            <button
-              type="button"
-              onClick={() => setShowAuthCard((prev) => !prev)}
-              className="px-5 py-2.5 rounded-full bg-[#F0F0F0] text-[#0B131B] font-semibold text-xs tracking-wide flex items-center gap-2 hover:bg-[#A4C8E1] active:scale-95 transition-all shadow-lg cursor-pointer w-fit"
-            >
-              <LogIn className="w-4 h-4" />
-              <span>{showAuthCard ? 'Close Sign In' : 'Sign In to Sync'}</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => logout()}
-              className="px-5 py-2.5 rounded-full bg-[#1B3A57]/60 hover:bg-[#2C3E50]/80 border border-[#4A6E8D]/35 text-[#F0F0F0]/80 hover:text-[#F0F0F0] font-medium text-xs tracking-wide flex items-center gap-2 transition cursor-pointer w-fit"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Sign Out</span>
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {!user ? (
+              <button
+                type="button"
+                onClick={() => setShowAuthCard((prev) => !prev)}
+                className="px-5 py-2.5 rounded-full bg-[#F0F0F0] text-[#0B131B] font-semibold text-xs tracking-wide flex items-center gap-2 hover:bg-[#A4C8E1] active:scale-95 transition-all shadow-lg cursor-pointer w-fit"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>{showAuthCard ? 'Close Sign In' : 'Sign In / Register'}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => logout()}
+                className="px-5 py-2.5 rounded-full bg-[#1B3A57]/60 hover:bg-rose-500/20 hover:border-rose-500/40 hover:text-rose-300 border border-[#4A6E8D]/35 text-[#F0F0F0]/80 font-medium text-xs tracking-wide flex items-center gap-2 transition cursor-pointer w-fit"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Inline Auth Form Dropdown for Guest Users */}
@@ -367,17 +430,12 @@ export default function ProfilePage() {
             <h2 className="text-lg font-bold text-[#F0F0F0] tracking-wide">Watchlist & Favorites</h2>
           </div>
 
-          {favorites.length > 0 ? (
+          {mergedWatchlist.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5">
-              {favorites.map((fav) => (
+              {mergedWatchlist.map((item) => (
                 <MovieCard
-                  key={fav.id}
-                  item={{
-                    id: fav.media_id,
-                    media_type: fav.media_type as any,
-                    title: fav.title,
-                    poster_path: fav.poster_path,
-                  }}
+                  key={item.id || item.media_id}
+                  item={item}
                 />
               ))}
             </div>

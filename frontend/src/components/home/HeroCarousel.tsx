@@ -8,6 +8,7 @@ import { Play, Heart, Bookmark, Plus, X, Film } from "lucide-react";
 import { MediaItem, apiFetch } from "../../lib/api";
 import { ImageService } from "../../lib/ImageService";
 import { useAmbientStore } from "../../store/ambientStore";
+import { useUserStore } from "../../store/userStore";
 
 interface HeroCarouselProps {
   items: MediaItem[];
@@ -61,15 +62,31 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
   const [isLoadingTrailer, setIsLoadingTrailer] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Load saved favorites & watchlist from localStorage
+  // Load saved favorites & watchlist from localStorage and listen for updates
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try {
-      const storedFavs = localStorage.getItem("nightcast_favorites");
-      if (storedFavs) setFavorites(JSON.parse(storedFavs));
-      const storedWl = localStorage.getItem("nightcast_watchlist");
-      if (storedWl) setWatchlist(JSON.parse(storedWl));
-    } catch {}
+    const refreshStates = () => {
+      try {
+        const storedFavs = localStorage.getItem("nightcast_favorites");
+        if (storedFavs) setFavorites(JSON.parse(storedFavs));
+        const storedWl = localStorage.getItem("nightcast_watchlist");
+        if (storedWl) setWatchlist(JSON.parse(storedWl));
+      } catch {}
+    };
+    refreshStates();
+
+    const handleWatchlistSync = (e: Event) => {
+      const customEvent = e as CustomEvent<{ id: string | number; added: boolean }>;
+      if (customEvent.detail) {
+        setWatchlist((prev) => ({
+          ...prev,
+          [customEvent.detail.id]: customEvent.detail.added,
+        }));
+      }
+    };
+
+    window.addEventListener("nightcast:watchlist-update", handleWatchlistSync);
+    return () => window.removeEventListener("nightcast:watchlist-update", handleWatchlistSync);
   }, []);
 
   const displayItems = useMemo(() => {
@@ -117,16 +134,77 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
     });
   };
 
-  const toggleWatchlist = (id: string | number) => {
-    setWatchlist((prev) => {
-      const updated = !prev[id];
-      const nextMap = { ...prev, [id]: updated };
-      try {
-        localStorage.setItem("nightcast_watchlist", JSON.stringify(nextMap));
-      } catch {}
-      showToast(updated ? "Added to Watchlist" : "Removed from Watchlist");
-      return nextMap;
-    });
+  const toggleWatchlist = (itemToToggle: MediaItem) => {
+    const cleanId = String(itemToToggle.id);
+    const currentlyAdded = !!watchlist[itemToToggle.id] || !!watchlist[cleanId];
+    const nextState = !currentlyAdded;
+
+    setWatchlist((prev) => ({
+      ...prev,
+      [itemToToggle.id]: nextState,
+      [cleanId]: nextState,
+    }));
+
+    // 1. Update localStorage nightcast_watchlist with rich metadata
+    try {
+      const stored = localStorage.getItem("nightcast_watchlist");
+      const map = stored ? JSON.parse(stored) : {};
+      const itemTitle = itemToToggle.title || itemToToggle.name || "Untitled";
+      const itemType = itemToToggle.media_type || (itemToToggle.first_air_date ? "tv" : "movie");
+
+      if (nextState) {
+        map[cleanId] = {
+          id: itemToToggle.id,
+          media_id: cleanId,
+          title: itemTitle,
+          poster_path: itemToToggle.poster_path || null,
+          backdrop_path: itemToToggle.backdrop_path || null,
+          media_type: itemType,
+          vote_average: itemToToggle.vote_average || 0,
+          release_date: itemToToggle.release_date || itemToToggle.first_air_date,
+        };
+      } else {
+        delete map[cleanId];
+        delete map[String(itemToToggle.id)];
+      }
+      localStorage.setItem("nightcast_watchlist", JSON.stringify(map));
+    } catch (err) {
+      console.error("Failed to update local watchlist:", err);
+    }
+
+    // 2. Cloud Sync: backend /api/user/favorites if logged in
+    const activeProfile = useUserStore.getState().activeProfile;
+    if (activeProfile && itemToToggle.id) {
+      const itemTitle = itemToToggle.title || itemToToggle.name || "Untitled";
+      const itemType = itemToToggle.media_type || (itemToToggle.first_air_date ? "tv" : "movie");
+
+      if (nextState) {
+        apiFetch("/api/user/favorites", {
+          method: "POST",
+          headers: { "X-Profile-ID": activeProfile.id },
+          body: JSON.stringify({
+            media_id: cleanId,
+            media_type: itemType,
+            title: itemTitle,
+            poster_path: itemToToggle.poster_path || "",
+          }),
+        }).catch((err) => console.error("Failed to sync favorite to backend:", err));
+      } else {
+        apiFetch(`/api/user/favorites/${cleanId}`, {
+          method: "DELETE",
+          headers: { "X-Profile-ID": activeProfile.id },
+        }).catch((err) => console.error("Failed to delete favorite from backend:", err));
+      }
+    }
+
+    // 3. Dispatch real-time global event
+    window.dispatchEvent(
+      new CustomEvent("nightcast:watchlist-update", {
+        detail: { id: itemToToggle.id, added: nextState },
+      })
+    );
+
+    showToast(nextState ? `Added "${itemToToggle.title || itemToToggle.name || 'Title'}" to Watchlist` : `Removed from Watchlist`);
   };
 
   const handleOpenTrailer = async (item: MediaItem) => {
@@ -329,7 +407,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
           {/* Bookmark / Watchlist Button */}
           <button
             type="button"
-            onClick={() => toggleWatchlist(activeItem.id)}
+            onClick={() => toggleWatchlist(activeItem)}
             className={`w-9 sm:w-10 h-9 sm:h-10 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all duration-200 active:scale-95 cursor-pointer shadow-lg ${
               watchlist[activeItem.id]
                 ? "bg-[#A4C8E1]/25 border-[#A4C8E1]/50 text-[#A4C8E1] scale-105"

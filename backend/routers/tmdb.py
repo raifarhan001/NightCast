@@ -1,12 +1,82 @@
+import asyncio
 from fastapi import APIRouter, Depends, Query, Response, HTTPException
 from typing import List, Dict, Any
 from services.tmdb_service import tmdb_client, MOCK_TV, MOCK_MOVIES
 from services.stream_extractor import stream_extractor
+from services.redis_service import redis_cache
 from fastapi.responses import HTMLResponse
 import httpx
 from urllib.parse import urlparse
 
 router = APIRouter(prefix="/tmdb", tags=["tmdb"])
+
+@router.get("/home_feed")
+async def get_home_feed():
+    """Returns an aggregated and cached composite feed of all core categories for instant home page loading."""
+    cache_key = "tmdb:home_feed:v2"
+    cached = redis_cache.get(cache_key)
+    if cached:
+        return cached
+
+    async def fetch_category(coro):
+        try:
+            return await coro
+        except Exception:
+            return []
+
+    results = await asyncio.gather(
+        fetch_category(tmdb_client.get_trending("all", "week")),
+        fetch_category(tmdb_client.get_request("/movie/now_playing")),
+        fetch_category(tmdb_client.get_popular("tv")),
+        fetch_category(tmdb_client.get_request("/discover/movie", {"with_genres": "28"})),
+        fetch_category(tmdb_client.get_request("/discover/movie", {"with_genres": "35"})),
+        fetch_category(tmdb_client.get_request("/discover/movie", {"with_genres": "18"})),
+        fetch_category(tmdb_client.get_request("/discover/movie", {"with_genres": "27"})),
+        fetch_category(tmdb_client.get_request("/discover/movie", {"with_genres": "878"})),
+        fetch_category(tmdb_client.get_request("/discover/movie", {"with_genres": "53"})),
+        fetch_category(tmdb_client.get_request("/discover/movie", {"with_genres": "10749"})),
+        fetch_category(tmdb_client.get_request("/discover/movie", {"with_genres": "16"})),
+        fetch_category(tmdb_client.get_request("/discover/movie", {"with_genres": "80"})),
+        fetch_category(tmdb_client.get_request("/discover/movie", {"with_genres": "99"})),
+    )
+
+    mock_movie_list = [{**m, "media_type": "movie"} for m in MOCK_MOVIES.values()]
+    mock_tv_list = [{**t, "media_type": "tv"} for t in MOCK_TV.values()]
+
+    def extract_items(data, default_type="movie"):
+        if isinstance(data, list):
+            items = data
+        elif isinstance(data, dict):
+            items = data.get("results", [])
+        else:
+            items = []
+        if not items:
+            items = mock_tv_list if default_type == "tv" else mock_movie_list
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            if "media_type" not in item:
+                item["media_type"] = default_type
+        return items
+
+    feed = {
+        "top_picks": extract_items(results[0], "all"),
+        "new_movies": extract_items(results[1], "movie"),
+        "popular_tv": extract_items(results[2], "tv"),
+        "action_movies": extract_items(results[3], "movie"),
+        "comedy_movies": extract_items(results[4], "movie"),
+        "drama_movies": extract_items(results[5], "movie"),
+        "horror_movies": extract_items(results[6], "movie"),
+        "scifi_movies": extract_items(results[7], "movie"),
+        "thriller_movies": extract_items(results[8], "movie"),
+        "romance_movies": extract_items(results[9], "movie"),
+        "animation_movies": extract_items(results[10], "movie"),
+        "crime_movies": extract_items(results[11], "movie"),
+        "documentary_movies": extract_items(results[12], "movie"),
+    }
+
+    redis_cache.set(cache_key, feed, expire_seconds=900)
+    return feed
 
 @router.get("/trending")
 async def get_trending(
@@ -174,89 +244,6 @@ async def get_streams(
 import asyncio
 from fastapi.responses import HTMLResponse, StreamingResponse, JSONResponse
 
-@router.get("/{media_type}/{tmdb_id}/download")
-async def get_download_streams(
-    media_type: str,
-    tmdb_id: str,
-    season: int = 1,
-    episode: int = 1
-):
-    try:
-        return await asyncio.wait_for(
-            stream_extractor.extract_download_streams(
-                media_type=media_type,
-                tmdb_id=tmdb_id,
-                season=season,
-                episode=episode
-            ),
-            timeout=4.0
-        )
-    except asyncio.TimeoutError:
-        if media_type == "movie":
-            fallback_url = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
-        else:
-            fallback_url = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
-            
-        return {
-            "status": "fallback",
-            "tmdb_id": tmdb_id,
-            "downloads": [
-                {
-                    "label": "VIDSRC Primary Video Stream (1080p)",
-                    "url": fallback_url,
-                    "quality": "1080p",
-                    "format": "mp4",
-                    "type": "stream_fallback"
-                }
-            ]
-        }
-    except Exception as e:
-        return {"downloads": [], "error": str(e)}
-
-from fastapi.responses import RedirectResponse
-
-@router.get("/download-proxy")
-async def download_proxy(url: str, filename: str = Query("nightcast_video.mp4")):
-    """Proxies and streams video binary data with attachment disposition for offline saving."""
-    if not url or not url.startswith("http"):
-        raise HTTPException(status_code=400, detail="Invalid URL specified")
-    try:
-        client = httpx.AsyncClient(follow_redirects=True, verify=False, timeout=6.0)
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "*/*",
-        }
-        
-        req = client.build_request("GET", url, headers=headers)
-        res = await client.send(req, stream=True)
-
-        content_type = res.headers.get("content-type", "").lower()
-
-        if res.status_code >= 400 or "text/html" in content_type:
-            await res.aclose()
-            await client.aclose()
-            return RedirectResponse(url=url, status_code=307)
-
-        safe_filename = filename.replace('"', '').replace("'", "")
-        if not safe_filename.endswith(".mp4"):
-            safe_filename += ".mp4"
-
-        headers_out = {
-            "Content-Disposition": f'attachment; filename="{safe_filename}"',
-            "Content-Type": content_type or "video/mp4",
-        }
-
-        async def stream_generator():
-            try:
-                async for chunk in res.aiter_bytes(chunk_size=65536):
-                    yield chunk
-            finally:
-                await res.aclose()
-                await client.aclose()
-
-        return StreamingResponse(stream_generator(), headers=headers_out, status_code=200)
-    except Exception:
-        return RedirectResponse(url=url, status_code=307)
 
 @router.get("/proxy-stream")
 async def proxy_stream(url: str):

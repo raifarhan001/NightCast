@@ -233,6 +233,12 @@ app.include_router(discover.router, prefix="/api/v1")
 app.include_router(f1.router, prefix="/api/v1")
 app.include_router(streams.router, prefix="/api/v1")
 
+# Also mount under /api for backwards and unversioned proxy compatibility
+app.include_router(auth.router, prefix="/api")
+app.include_router(tmdb.router, prefix="/api")
+app.include_router(user.router, prefix="/api")
+app.include_router(progress.router, prefix="/api")
+
 @app.get("/api/f1/2026-data")
 async def get_f1_2026_direct():
     return await f1.get_2026_f1_data()

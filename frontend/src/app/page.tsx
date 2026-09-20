@@ -37,11 +37,40 @@ function HomePageContent() {
     };
   }, []);
 
-  // 1. Trending Right Now (Mixed Trending)
-  const { data: topPicks = [], isLoading: topPicksLoading } = useQuery<MediaItem[]>({
-    queryKey: ["top-picks"],
-    queryFn: () => apiFetch("/api/tmdb/trending?media_type=all&time_window=week"),
+  // 1. Aggregated Composite Home Feed (1 single cached request replacing 13 individual queries)
+  const { data: homeFeed, isLoading: isFeedLoading } = useQuery<{
+    top_picks?: MediaItem[];
+    new_movies?: MediaItem[];
+    popular_tv?: MediaItem[];
+    action_movies?: MediaItem[];
+    comedy_movies?: MediaItem[];
+    drama_movies?: MediaItem[];
+    horror_movies?: MediaItem[];
+    scifi_movies?: MediaItem[];
+    thriller_movies?: MediaItem[];
+    romance_movies?: MediaItem[];
+    animation_movies?: MediaItem[];
+    crime_movies?: MediaItem[];
+    documentary_movies?: MediaItem[];
+  }>({
+    queryKey: ["home-feed"],
+    queryFn: () => apiFetch("/api/tmdb/home_feed"),
+    staleTime: 1000 * 60 * 10,
   });
+
+  const topPicks = homeFeed?.top_picks || [];
+  const newMovies = homeFeed?.new_movies || [];
+  const popularTvShows = homeFeed?.popular_tv || [];
+  const actionMovies = homeFeed?.action_movies || [];
+  const comedyMovies = homeFeed?.comedy_movies || [];
+  const dramaMovies = homeFeed?.drama_movies || [];
+  const horrorMovies = homeFeed?.horror_movies || [];
+  const sciFiMovies = homeFeed?.scifi_movies || [];
+  const thrillerMovies = homeFeed?.thriller_movies || [];
+  const romanceMovies = homeFeed?.romance_movies || [];
+  const animationMovies = homeFeed?.animation_movies || [];
+  const crimeMovies = homeFeed?.crime_movies || [];
+  const documentaryMovies = homeFeed?.documentary_movies || [];
 
   // Auto-scroll to #top10 if hash is present
   React.useEffect(() => {
@@ -53,78 +82,6 @@ function HomePageContent() {
       return () => clearTimeout(timer);
     }
   }, [topPicks]);
-
-  // 2. New Movies (Now Playing)
-  const { data: newMovies = [] } = useQuery<MediaItem[]>({
-    queryKey: ["new-movies"],
-    queryFn: () => apiFetch("/api/tmdb/now_playing"),
-  });
-
-  // 3. Popular TV Shows
-  const { data: popularTvShows = [] } = useQuery<MediaItem[]>({
-    queryKey: ["popular-tv-shows"],
-    queryFn: () => apiFetch("/api/tmdb/popular?media_type=tv"),
-  });
-
-  // 4. Action (Genre 28)
-  const { data: actionMovies = [] } = useQuery<MediaItem[]>({
-    queryKey: ["action-movies"],
-    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=28"),
-  });
-
-  // 5. Comedy (Genre 35)
-  const { data: comedyMovies = [] } = useQuery<MediaItem[]>({
-    queryKey: ["comedy-movies"],
-    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=35"),
-  });
-
-  // 6. Drama (Genre 18)
-  const { data: dramaMovies = [] } = useQuery<MediaItem[]>({
-    queryKey: ["drama-movies"],
-    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=18"),
-  });
-
-  // 7. Horror (Genre 27)
-  const { data: horrorMovies = [] } = useQuery<MediaItem[]>({
-    queryKey: ["horror-movies"],
-    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=27"),
-  });
-
-  // 8. Sci-Fi (Genre 878)
-  const { data: sciFiMovies = [] } = useQuery<MediaItem[]>({
-    queryKey: ["scifi-movies"],
-    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=878"),
-  });
-
-  // 9. Thriller (Genre 53)
-  const { data: thrillerMovies = [] } = useQuery<MediaItem[]>({
-    queryKey: ["thriller-movies"],
-    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=53"),
-  });
-
-  // 10. Romance (Genre 10749)
-  const { data: romanceMovies = [] } = useQuery<MediaItem[]>({
-    queryKey: ["romance-movies"],
-    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=10749"),
-  });
-
-  // 11. Animation (Genre 16)
-  const { data: animationMovies = [] } = useQuery<MediaItem[]>({
-    queryKey: ["animation-movies"],
-    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=16"),
-  });
-
-  // 12. Crime (Genre 80)
-  const { data: crimeMovies = [] } = useQuery<MediaItem[]>({
-    queryKey: ["crime-movies"],
-    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=80"),
-  });
-
-  // 13. Documentary (Genre 99)
-  const { data: documentaryMovies = [] } = useQuery<MediaItem[]>({
-    queryKey: ["documentary-movies"],
-    queryFn: () => apiFetch("/api/tmdb/discover/movie?with_genres=99"),
-  });
 
   // Backend Continue Watching History
   const { data: continueWatching = [] } = useQuery<ContinueWatchingItem[]>({
@@ -147,9 +104,12 @@ function HomePageContent() {
       const seconds = Number(c.timestamp_seconds ?? 0);
       const duration = Number(c.duration_seconds ?? 0);
 
-      // Filter out completed (>= 92%) or unstarted (< 1.5% and < 15s)
+      // Filter out completed (>= 92%)
       if (percent >= 92.0 || (duration > 60 && seconds >= duration - 30)) return;
-      if (seconds < 15 && percent < 1.5) return;
+      
+      const isUpNextMarker = (c.media_type === 'tv' || c.season) && c.episode !== undefined && percent >= 1;
+      const hasWatchedContent = seconds >= 5 || percent >= 1.5;
+      if (!isUpNextMarker && !hasWatchedContent) return;
 
       const existing = map.get(cleanId);
       const cTime = c.updated_at ? new Date(c.updated_at).getTime() : 0;
@@ -213,7 +173,7 @@ function HomePageContent() {
   // Dynamic Hero Carousel items
   const heroItems = topPicks.length > 0 ? topPicks.slice(0, 7) : newMovies.slice(0, 7);
 
-  if (topPicksLoading) {
+  if (isFeedLoading && !homeFeed) {
     return (
       <div className="w-full min-h-screen bg-[#0B131B]">
         <HeroSkeleton />
