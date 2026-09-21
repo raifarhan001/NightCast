@@ -59,6 +59,107 @@ def remove_favorite(
     db.commit()
     return {"message": "Removed from favorites"}
 
+# --- Bidirectional Cloud Sync ---
+@router.post("/sync", response_model=schemas.UserSyncResponse)
+def sync_user_data(
+    payload: schemas.UserSyncPayload,
+    active_profile: models.Profile = Depends(auth.get_active_profile),
+    db: Session = Depends(get_db)
+):
+    # 1. Ingest incoming continue_watching
+    if payload.continue_watching:
+        for item in payload.continue_watching:
+            raw_id = str(item.media_id or item.id or '').strip()
+            if not raw_id:
+                continue
+            clean_id = raw_id.split('_s')[0].split('-s')[0].split('_')[0].strip()
+            progress = float(item.progress_percent or 0)
+            seconds = float(item.timestamp_seconds or 0)
+            duration = float(item.duration_seconds or 0)
+
+            # Skip completed items or empty items
+            if progress >= 92.0 or (duration > 60 and seconds >= duration - 30):
+                continue
+            if progress < 1.0 and seconds < 5.0:
+                continue
+
+            existing = db.query(models.ContinueWatching).filter(
+                models.ContinueWatching.profile_id == active_profile.id,
+                models.ContinueWatching.media_id == clean_id,
+                models.ContinueWatching.season == item.season,
+                models.ContinueWatching.episode == item.episode
+            ).first()
+
+            if existing:
+                if seconds > (existing.timestamp_seconds or 0) or progress > (existing.progress_percent or 0):
+                    existing.progress_percent = progress
+                    existing.timestamp_seconds = seconds
+                    existing.duration_seconds = duration
+            else:
+                new_cw = models.ContinueWatching(
+                    profile_id=active_profile.id,
+                    media_id=clean_id,
+                    media_type=item.media_type or "movie",
+                    title=item.title or "Untitled",
+                    poster_path=item.poster_path,
+                    season=item.season,
+                    episode=item.episode,
+                    progress_percent=progress,
+                    timestamp_seconds=seconds,
+                    duration_seconds=duration
+                )
+                db.add(new_cw)
+        db.commit()
+
+    # 2. Ingest incoming watchlist (favorites)
+    if payload.watchlist:
+        for item in payload.watchlist:
+            raw_id = str(item.media_id or item.id or '').strip()
+            if not raw_id:
+                continue
+            clean_id = raw_id.split('_s')[0].split('-s')[0].split('_')[0].strip()
+
+            existing_fav = db.query(models.Favorite).filter(
+                models.Favorite.profile_id == active_profile.id,
+                models.Favorite.media_id == clean_id
+            ).first()
+
+            if not existing_fav:
+                new_fav = models.Favorite(
+                    profile_id=active_profile.id,
+                    media_id=clean_id,
+                    media_type=item.media_type or "movie",
+                    title=item.title or "Untitled",
+                    poster_path=item.poster_path
+                )
+                db.add(new_fav)
+        db.commit()
+
+    # 3. Retrieve consolidated latest database state
+    cw_items = db.query(models.ContinueWatching).filter(
+        models.ContinueWatching.profile_id == active_profile.id
+    ).order_by(models.ContinueWatching.updated_at.desc()).all()
+
+    seen_media = set()
+    consolidated_cw = []
+    for cw in cw_items:
+        clean_id = cw.media_id.split('_s')[0].split('-s')[0].split('_')[0].strip()
+        if cw.progress_percent >= 92.0:
+            continue
+        if clean_id not in seen_media:
+            seen_media.add(clean_id)
+            cw.media_id = clean_id
+            consolidated_cw.append(cw)
+
+    fav_items = db.query(models.Favorite).filter(
+        models.Favorite.profile_id == active_profile.id
+    ).order_by(models.Favorite.created_at.desc()).all()
+
+    return {
+        "continue_watching": consolidated_cw,
+        "watchlist": fav_items
+    }
+
 # --- Reviews ---
 @router.post("/reviews", response_model=schemas.ReviewResponse)
 def create_review(

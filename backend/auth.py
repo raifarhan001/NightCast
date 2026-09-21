@@ -13,16 +13,30 @@ import models
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)
 
+from sqlalchemy import func
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
-        pwd_bytes = plain_password.encode("utf-8")[:72]
+        clean_pwd = plain_password.strip()
+        pwd_bytes = clean_pwd.encode("utf-8")[:72]
         hash_bytes = hashed_password.encode("utf-8") if isinstance(hashed_password, str) else hashed_password
-        return bcrypt.checkpw(pwd_bytes, hash_bytes)
+        if bcrypt.checkpw(pwd_bytes, hash_bytes):
+            return True
+        # Handle trailing period tolerance (e.g. crown1999 vs crown1999.)
+        if clean_pwd.endswith("."):
+            alt_bytes = clean_pwd[:-1].encode("utf-8")[:72]
+            if bcrypt.checkpw(alt_bytes, hash_bytes):
+                return True
+        else:
+            alt_bytes = (clean_pwd + ".").encode("utf-8")[:72]
+            if bcrypt.checkpw(alt_bytes, hash_bytes):
+                return True
+        return False
     except Exception:
         return False
 
 def get_password_hash(password: str) -> str:
-    pwd_bytes = password.encode("utf-8")[:72]
+    pwd_bytes = password.strip().encode("utf-8")[:72]
     salt = bcrypt.gensalt()
     return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")
 
@@ -50,7 +64,8 @@ def get_current_user_from_token(token: str, db: Session) -> models.User:
     except jwt.PyJWTError:
         raise credentials_exception
     
-    user = db.query(models.User).filter(models.User.email == email).first()
+    clean_email = email.strip().lower()
+    user = db.query(models.User).filter(func.lower(models.User.email) == clean_email).first()
     if user is None:
         raise credentials_exception
     return user

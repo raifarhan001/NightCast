@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUserStore } from '../../store/userStore';
 import { apiFetch, setStoredToken } from '../../lib/api';
+import { syncUserDataWithCloud } from '../../lib/sync';
 import MovieCard from '../../components/shared/MovieCard';
 import AmbientGlow from '../../components/shared/AmbientGlow';
 import { getContinueWatchingList, removeWatchProgress, getCleanMediaId, LocalProgressItem } from '../../lib/progress';
@@ -203,26 +204,35 @@ export default function ProfilePage() {
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanPassword = password.trim();
+
     try {
       if (authMode === 'login') {
-        const loginRes = await apiFetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+        const loginRes = await apiFetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email: cleanEmail, password: cleanPassword }) });
         if (loginRes?.access_token) setStoredToken(loginRes.access_token);
         const me = await apiFetch('/api/auth/me');
         setUser(me);
         queryClient.invalidateQueries({ queryKey: ['trending'] });
         await fetchProfiles();
         const freshProfiles = useUserStore.getState().profiles;
-        if (freshProfiles.length > 0) setActiveProfile(freshProfiles[0]);
+        if (freshProfiles.length > 0) {
+          setActiveProfile(freshProfiles[0]);
+          await syncUserDataWithCloud(freshProfiles[0].id);
+        }
       } else {
-        await apiFetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ email, password }) });
+        await apiFetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ email: cleanEmail, password: cleanPassword }) });
         setAuthMode('login');
-        const loginRes = await apiFetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+        const loginRes = await apiFetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email: cleanEmail, password: cleanPassword }) });
         if (loginRes?.access_token) setStoredToken(loginRes.access_token);
         const me = await apiFetch('/api/auth/me');
         setUser(me);
         await fetchProfiles();
         const freshProfiles = useUserStore.getState().profiles;
-        if (freshProfiles.length > 0) setActiveProfile(freshProfiles[0]);
+        if (freshProfiles.length > 0) {
+          setActiveProfile(freshProfiles[0]);
+          await syncUserDataWithCloud(freshProfiles[0].id);
+        }
       }
       setShowAuthCard(false);
     } catch (err: any) {
@@ -369,8 +379,12 @@ export default function ProfilePage() {
                   <input
                     type="email"
                     required
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    onBlur={() => setEmail((prev) => prev.trim().toLowerCase())}
                     placeholder="name@domain.com"
                     className="w-full pl-10 pr-4 py-2.5 bg-[#0B131B]/80 rounded-xl border border-[#4A6E8D]/40 text-[#F0F0F0] placeholder-[#4A6E8D] text-xs focus:outline-none focus:border-[#A4C8E1]/60 transition"
                   />
@@ -384,6 +398,9 @@ export default function ProfilePage() {
                   <input
                     type="password"
                     required
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"

@@ -233,42 +233,22 @@ export function getSavedTimestamp(
   try {
     const cleanId = getCleanMediaId(id);
     const raw = localStorage.getItem(STORAGE_KEY);
+    const isTv = mediaType === 'tv' || (season !== undefined && episode !== undefined);
+
     if (raw) {
       const map: Record<string, LocalProgressItem> = JSON.parse(raw);
 
-      // 1. If mediaType is 'movie' OR neither season nor episode is specified:
-      if (mediaType === 'movie' || (!season && !episode)) {
-        const entry = map[cleanId] || map[String(id)];
-        if (entry && Number(entry.timestamp_seconds) > 5) {
-          return Math.floor(Number(entry.timestamp_seconds));
-        }
-        // Also check any legacy/composite keys matching cleanId
-        for (const [k, item] of Object.entries(map)) {
-          if (getCleanMediaId(k) === cleanId && Number(item.timestamp_seconds) > 5) {
-            return Math.floor(Number(item.timestamp_seconds));
-          }
-        }
-      }
-
-      // 2. If season and episode are provided (TV series):
-      if (season && episode) {
+      // 1. If TV series with season and episode:
+      if (isTv && season && episode) {
         const specificKey = `${cleanId}_s${season}e${episode}`;
         const entry = map[specificKey];
         if (entry && Number(entry.timestamp_seconds) > 5) {
           return Math.floor(Number(entry.timestamp_seconds));
         }
-      }
 
-      // 3. Fallback: check base cleanId directly
-      const baseEntry = map[cleanId] || map[String(id)];
-      if (baseEntry && Number(baseEntry.timestamp_seconds) > 5) {
-        return Math.floor(Number(baseEntry.timestamp_seconds));
-      }
-
-      // 4. If looking for matching season & episode across map entries
-      if (season && episode) {
+        // Match exact season & episode across map entries
         for (const [k, item] of Object.entries(map)) {
-          if (k.startsWith(`${cleanId}_`)) {
+          if (getCleanMediaId(k) === cleanId) {
             if (item.season === season && item.episode === episode) {
               if (Number(item.timestamp_seconds) > 5) {
                 return Math.floor(Number(item.timestamp_seconds));
@@ -276,29 +256,48 @@ export function getSavedTimestamp(
             }
           }
         }
+
+        // Strictly do NOT fall back to another episode's timestamp for TV shows!
+        return 0;
       }
 
-      // 5. Ultimate fallback: any entry with cleanId matching
-      for (const [k, item] of Object.entries(map)) {
-        if (getCleanMediaId(k) === cleanId && Number(item.timestamp_seconds) > 5) {
-          return Math.floor(Number(item.timestamp_seconds));
+      // 2. If movie (or media without specific season/episode):
+      if (!isTv) {
+        const entry = map[cleanId] || map[String(id)];
+        if (entry && Number(entry.timestamp_seconds) > 5) {
+          return Math.floor(Number(entry.timestamp_seconds));
+        }
+
+        for (const [k, item] of Object.entries(map)) {
+          if (getCleanMediaId(k) === cleanId && (item.media_type === 'movie' || !item.season) && Number(item.timestamp_seconds) > 5) {
+            return Math.floor(Number(item.timestamp_seconds));
+          }
         }
       }
     }
 
-    // Legacy fallback check
+    // Legacy fallback check (apply same TV isolation rule)
     const rawLegacy = localStorage.getItem(LEGACY_STORAGE_KEY);
     if (rawLegacy) {
       const mapLegacy = JSON.parse(rawLegacy);
-      const specificKey = season && episode ? `${cleanId}_s${season}e${episode}` : cleanId;
-      const entry = mapLegacy[specificKey] || mapLegacy[cleanId];
-      const watched = entry?.watched ?? entry?.progress?.watched ?? 0;
-      if (watched > 5) return Math.floor(watched);
+      if (isTv && season && episode) {
+        const specificKey = `${cleanId}_s${season}e${episode}`;
+        const entry = mapLegacy[specificKey];
+        const watched = entry?.watched ?? entry?.progress?.watched ?? 0;
+        if (watched > 5) return Math.floor(watched);
+        return 0;
+      }
 
-      for (const [k, v] of Object.entries<any>(mapLegacy)) {
-        if (getCleanMediaId(k) === cleanId) {
-          const w = v?.watched ?? v?.progress?.watched ?? 0;
-          if (w > 5) return Math.floor(w);
+      if (!isTv) {
+        const entry = mapLegacy[cleanId];
+        const watched = entry?.watched ?? entry?.progress?.watched ?? 0;
+        if (watched > 5) return Math.floor(watched);
+
+        for (const [k, v] of Object.entries<any>(mapLegacy)) {
+          if (getCleanMediaId(k) === cleanId) {
+            const w = v?.watched ?? v?.progress?.watched ?? 0;
+            if (w > 5) return Math.floor(w);
+          }
         }
       }
     }

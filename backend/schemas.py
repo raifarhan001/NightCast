@@ -159,3 +159,26 @@ class SemanticSearchQuery(BaseModel):
 class AIRecommendQuery(BaseModel):
     profile_id: UUID
     limit: Optional[int] = 12
+
+# --- Bidirectional Cloud Sync Schemas ---
+class SyncItem(BaseModel):
+    id: Optional[str] = None
+    media_id: Optional[str] = None
+    media_type: str = "movie"
+    title: str = "Untitled"
+    poster_path: Optional[str] = None
+    backdrop_path: Optional[str] = None
+    season: Optional[int] = None
+    episode: Optional[int] = None
+    progress_percent: Optional[float] = 0.0
+    timestamp_seconds: Optional[float] = 0.0
+    duration_seconds: Optional[float] = 0.0
+    updated_at: Optional[str] = None
+
+class UserSyncPayload(BaseModel):
+    continue_watching: Optional[List[SyncItem]] = []
+    watchlist: Optional[List[SyncItem]] = []
+
+class UserSyncResponse(BaseModel):
+    continue_watching: List[ContinueWatchingResponse] = []
+    watchlist: List[FavoriteResponse] = []

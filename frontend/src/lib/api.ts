@@ -164,13 +164,23 @@ export function setStoredToken(token: string | null): void {
   } catch {}
 }
 
+export function getBaseUrl(): string {
+  let base = API_BASE_URL;
+  if (!IS_SERVER && typeof window !== 'undefined') {
+    if (base.includes('localhost') && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      base = base.replace('localhost', window.location.hostname);
+    }
+  }
+  return base;
+}
+
 export async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<any> {
   // Gracefully rewrite old api endpoints to API v1 prefix
   const cleanEndpoint = endpoint.startsWith('/api/') && !endpoint.startsWith('/api/v1/')
     ? endpoint.replace('/api/', '/api/v1/')
     : endpoint;
     
-  const url = `${API_BASE_URL}${cleanEndpoint}`;
+  const url = `${getBaseUrl()}${cleanEndpoint}`;
   
   options.credentials = 'include';
   const headers: Record<string, string> = {

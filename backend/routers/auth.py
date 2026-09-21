@@ -8,11 +8,14 @@ import models
 import schemas
 import auth
 
+from sqlalchemy import func
+
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def register(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
-    existing_user = db.query(models.User).filter(models.User.email == user_data.email).first()
+    clean_email = user_data.email.strip().lower()
+    existing_user = db.query(models.User).filter(func.lower(models.User.email) == clean_email).first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -25,7 +28,7 @@ def register(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
 
     hashed_password = auth.get_password_hash(user_data.password)
     new_user = models.User(
-        email=user_data.email,
+        email=clean_email,
         hashed_password=hashed_password,
         is_admin=is_admin
     )
@@ -52,7 +55,8 @@ def register(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=schemas.Token)
 def login(response: Response, login_data: schemas.UserLogin, db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.email == login_data.email).first()
+    clean_email = login_data.email.strip().lower()
+    user = db.query(models.User).filter(func.lower(models.User.email) == clean_email).first()
     if not user or not auth.verify_password(login_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -60,7 +64,7 @@ def login(response: Response, login_data: schemas.UserLogin, db: Session = Depen
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    access_token = auth.create_access_token(data={"sub": user.email})
+    access_token = auth.create_access_token(data={"sub": user.email.strip().lower()})
     
     # Store token in cookie
     response.set_cookie(

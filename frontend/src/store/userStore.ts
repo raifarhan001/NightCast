@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { apiFetch, Profile, Settings, setStoredToken } from '../lib/api';
+import { syncUserDataWithCloud } from '../lib/sync';
 
 interface UserState {
   user: any | null;
@@ -73,6 +74,9 @@ export const useUserStore = create<UserState>((set, get) => ({
       }).then(settings => {
         set({ settings });
       }).catch(() => {});
+
+      // Bidirectionally synchronize Continue Watching and Watchlist with cloud
+      syncUserDataWithCloud(profile.id).catch(() => {});
     } else {
       localStorage.removeItem('active_profile');
       document.cookie = `profile_id=; path=/; max-age=0`;
