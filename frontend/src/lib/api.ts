@@ -201,7 +201,13 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
     let errorDetail = 'API Request Failed';
     try {
       const errJson = await response.json();
-      errorDetail = errJson.detail || errorDetail;
+      if (typeof errJson.detail === 'string') {
+        errorDetail = errJson.detail;
+      } else if (Array.isArray(errJson.detail)) {
+        errorDetail = errJson.detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ');
+      } else if (errJson.detail) {
+        errorDetail = JSON.stringify(errJson.detail);
+      }
     } catch (_) {}
     throw new Error(errorDetail);
   }

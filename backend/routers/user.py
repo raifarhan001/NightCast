@@ -83,11 +83,14 @@ def sync_user_data(
             if progress < 1.0 and seconds < 5.0:
                 continue
 
+            s_num = int(item.season) if item.season is not None and str(item.season).isdigit() else None
+            ep_num = int(item.episode) if item.episode is not None and str(item.episode).isdigit() else None
+
             existing = db.query(models.ContinueWatching).filter(
                 models.ContinueWatching.profile_id == active_profile.id,
                 models.ContinueWatching.media_id == clean_id,
-                models.ContinueWatching.season == item.season,
-                models.ContinueWatching.episode == item.episode
+                models.ContinueWatching.season == s_num,
+                models.ContinueWatching.episode == ep_num
             ).first()
 
             if existing:
@@ -102,8 +105,8 @@ def sync_user_data(
                     media_type=item.media_type or "movie",
                     title=item.title or "Untitled",
                     poster_path=item.poster_path,
-                    season=item.season,
-                    episode=item.episode,
+                    season=s_num,
+                    episode=ep_num,
                     progress_percent=progress,
                     timestamp_seconds=seconds,
                     duration_seconds=duration

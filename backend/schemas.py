@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List
+from typing import Optional, List, Union, Any
 from uuid import UUID
 from datetime import datetime
 
@@ -162,18 +162,21 @@ class AIRecommendQuery(BaseModel):
 
 # --- Bidirectional Cloud Sync Schemas ---
 class SyncItem(BaseModel):
-    id: Optional[str] = None
-    media_id: Optional[str] = None
-    media_type: str = "movie"
-    title: str = "Untitled"
+    id: Optional[Union[str, int, float]] = None
+    media_id: Optional[Union[str, int, float]] = None
+    media_type: Optional[str] = "movie"
+    title: Optional[str] = "Untitled"
     poster_path: Optional[str] = None
     backdrop_path: Optional[str] = None
-    season: Optional[int] = None
-    episode: Optional[int] = None
-    progress_percent: Optional[float] = 0.0
-    timestamp_seconds: Optional[float] = 0.0
-    duration_seconds: Optional[float] = 0.0
+    season: Optional[Union[int, str]] = None
+    episode: Optional[Union[int, str]] = None
+    progress_percent: Optional[Union[float, int]] = 0.0
+    timestamp_seconds: Optional[Union[float, int]] = 0.0
+    duration_seconds: Optional[Union[float, int]] = 0.0
     updated_at: Optional[str] = None
+
+    class Config:
+        extra = "ignore"
 
 class UserSyncPayload(BaseModel):
     continue_watching: Optional[List[SyncItem]] = []

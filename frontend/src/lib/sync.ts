@@ -14,12 +14,27 @@ export async function syncUserDataWithCloud(profileId?: string): Promise<void> {
     if (rawCw) {
       try {
         const parsed = JSON.parse(rawCw);
-        localCw = Object.values(parsed).filter((item: any) => {
-          if (!item || !item.id) return false;
-          const prog = Number(item.progress_percent || 0);
-          const secs = Number(item.timestamp_seconds || 0);
-          return (prog >= 1.0 || secs >= 5.0) && prog < 92.0;
-        });
+        localCw = Object.values(parsed)
+          .filter((item: any) => item && (item.id || item.media_id))
+          .map((item: any) => ({
+            id: String(item.id || item.media_id || ''),
+            media_id: String(item.media_id || item.id || ''),
+            media_type: String(item.media_type || 'movie'),
+            title: String(item.title || item.name || 'Untitled'),
+            poster_path: item.poster_path ? String(item.poster_path) : null,
+            backdrop_path: item.backdrop_path ? String(item.backdrop_path) : null,
+            season: item.season !== undefined && item.season !== null ? Number(item.season) : null,
+            episode: item.episode !== undefined && item.episode !== null ? Number(item.episode) : null,
+            progress_percent: Number(item.progress_percent || 0),
+            timestamp_seconds: Number(item.timestamp_seconds || 0),
+            duration_seconds: Number(item.duration_seconds || 0),
+            updated_at: item.updated_at ? String(item.updated_at) : new Date().toISOString(),
+          }))
+          .filter((item: any) => {
+            const prog = item.progress_percent;
+            const secs = item.timestamp_seconds;
+            return (prog >= 1.0 || secs >= 5.0) && prog < 92.0;
+          });
       } catch {}
     }
 
@@ -29,7 +44,15 @@ export async function syncUserDataWithCloud(profileId?: string): Promise<void> {
     if (rawWl) {
       try {
         const parsed = JSON.parse(rawWl);
-        localWl = Object.values(parsed).filter((item: any) => item && (item.id || item.media_id));
+        localWl = Object.values(parsed)
+          .filter((item: any) => item && (item.id || item.media_id))
+          .map((item: any) => ({
+            id: String(item.id || item.media_id || ''),
+            media_id: String(item.media_id || item.id || ''),
+            media_type: String(item.media_type || 'movie'),
+            title: String(item.title || item.name || 'Untitled'),
+            poster_path: item.poster_path ? String(item.poster_path) : null,
+          }));
       } catch {}
     }
 
