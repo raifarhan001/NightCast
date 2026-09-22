@@ -2,7 +2,7 @@
 
 import React, { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUserStore } from "../store/userStore";
 import { apiFetch, MediaItem, ContinueWatchingItem } from "../lib/api";
 import { getContinueWatchingList, removeWatchProgress, getCleanMediaId, LocalProgressItem } from "../lib/progress";
@@ -17,12 +17,16 @@ function HomePageContent() {
   const searchParams = useSearchParams();
   const activeTab = searchParams.get("tab") || "foryou";
   const { activeProfile } = useUserStore();
+  const queryClient = useQueryClient();
 
   const [localContinueWatching, setLocalContinueWatching] = React.useState<LocalProgressItem[]>([]);
 
   React.useEffect(() => {
     const refreshList = () => {
       setLocalContinueWatching(getContinueWatchingList());
+      if (activeProfile) {
+        queryClient.invalidateQueries({ queryKey: ["continue-watching", activeProfile.id] });
+      }
     };
     refreshList();
 
@@ -35,7 +39,7 @@ function HomePageContent() {
       window.removeEventListener("storage", refreshList);
       window.removeEventListener("nightcast:progress-update", refreshList);
     };
-  }, []);
+  }, [activeProfile, queryClient]);
 
   // 1. Aggregated Composite Home Feed (1 single cached request replacing 13 individual queries)
   const { data: homeFeed, isLoading: isFeedLoading } = useQuery<{
@@ -154,6 +158,12 @@ function HomePageContent() {
     removeWatchProgress(cleanId, item.season, item.episode);
     setLocalContinueWatching(getContinueWatchingList());
 
+    // Immediately remove from React Query cache so UI updates instantly
+    queryClient.setQueryData<ContinueWatchingItem[]>(
+      ["continue-watching", activeProfile?.id],
+      (old) => old ? old.filter((x: any) => getCleanMediaId(x.media_id || x.id) !== cleanId) : []
+    );
+
     if (activeProfile) {
       try {
         const queryParams = new URLSearchParams();
@@ -164,11 +174,12 @@ function HomePageContent() {
           method: "DELETE",
           headers: { "X-Profile-ID": activeProfile.id },
         });
+        queryClient.invalidateQueries({ queryKey: ["continue-watching", activeProfile.id] });
       } catch (err) {
         console.error("Failed to delete continue watching from backend", err);
       }
     }
-  }, [activeProfile]);
+  }, [activeProfile, queryClient]);
 
   // Dynamic Hero Carousel items
   const heroItems = topPicks.length > 0 ? topPicks.slice(0, 7) : newMovies.slice(0, 7);

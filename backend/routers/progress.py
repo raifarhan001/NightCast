@@ -29,6 +29,12 @@ def update_progress(
         existing.progress_percent = payload.progress
         existing.timestamp_seconds = payload.current_time
         existing.duration_seconds = payload.duration
+        if payload.title:
+            existing.title = payload.title
+        if payload.poster_path:
+            existing.poster_path = payload.poster_path
+        if payload.backdrop_path:
+            existing.backdrop_path = payload.backdrop_path
     else:
         new_cw = models.ContinueWatching(
             profile_id=active_profile.id,
@@ -36,6 +42,7 @@ def update_progress(
             media_type=payload.media_type,
             title=payload.title,
             poster_path=payload.poster_path,
+            backdrop_path=payload.backdrop_path,
             season=payload.season,
             episode=payload.episode,
             progress_percent=payload.progress,
@@ -101,7 +108,9 @@ def get_continue_watching(
         clean_id = item.media_id.split('_s')[0].split('-s')[0].split('_')[0].strip()
         if item.progress_percent >= 92.0:
             continue
-        if item.progress_percent < 1.5 and (item.timestamp_seconds or 0) < 15.0:
+        is_up_next = (item.season is not None and item.episode is not None and item.progress_percent >= 1.0)
+        has_watched = (item.progress_percent >= 1.5 or (item.timestamp_seconds or 0) >= 5.0)
+        if not is_up_next and not has_watched:
             continue
         if clean_id not in seen_media:
             seen_media.add(clean_id)

@@ -89,6 +89,7 @@ export async function syncUserDataWithCloud(profileId?: string): Promise<void> {
             media_type: (item.media_type || 'movie') as 'movie' | 'tv',
             title: item.title || 'Untitled',
             poster_path: item.poster_path || null,
+            backdrop_path: item.backdrop_path || cwMap[key]?.backdrop_path || null,
             season: item.season,
             episode: item.episode,
             timestamp_seconds: Number(item.timestamp_seconds || 0),

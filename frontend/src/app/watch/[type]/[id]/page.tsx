@@ -6,7 +6,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { apiFetch, API_BASE_URL } from '../../../../lib/api';
-import { saveWatchProgress, getSavedTimestamp, getCleanMediaId } from '../../../../lib/progress';
+import { saveWatchProgress, getSavedTimestamp, getCleanMediaId, getContinueWatchingList, LocalProgressItem } from '../../../../lib/progress';
 import { ImageService } from '../../../../lib/ImageService';
 import {
   Play,
@@ -94,14 +94,32 @@ export default function WatchPage() {
   const id = getCleanMediaId(rawId);
 
   const initialSeason = useMemo(() => {
-    const s = parseInt(searchParams.get('season') || '1', 10);
-    return isNaN(s) || s < 1 ? 1 : s;
-  }, [searchParams]);
+    const fromQuery = searchParams.get('season');
+    if (fromQuery) {
+      const s = parseInt(fromQuery, 10);
+      if (!isNaN(s) && s >= 1) return s;
+    }
+    if (typeof window !== 'undefined' && type === 'tv' && id) {
+      const savedList = getContinueWatchingList();
+      const match = savedList.find((x: LocalProgressItem) => getCleanMediaId(x.id) === id && x.season);
+      if (match && match.season) return match.season;
+    }
+    return 1;
+  }, [searchParams, type, id]);
 
   const initialEpisode = useMemo(() => {
-    const ep = parseInt(searchParams.get('episode') || '1', 10);
-    return isNaN(ep) || ep < 1 ? 1 : ep;
-  }, [searchParams]);
+    const fromQuery = searchParams.get('episode');
+    if (fromQuery) {
+      const ep = parseInt(fromQuery, 10);
+      if (!isNaN(ep) && ep >= 1) return ep;
+    }
+    if (typeof window !== 'undefined' && type === 'tv' && id) {
+      const savedList = getContinueWatchingList();
+      const match = savedList.find((x: LocalProgressItem) => getCleanMediaId(x.id) === id && x.episode);
+      if (match && match.episode) return match.episode;
+    }
+    return 1;
+  }, [searchParams, type, id]);
 
   const [currentSeason, setCurrentSeason] = useState(initialSeason);
   const [currentEpisode, setCurrentEpisode] = useState(initialEpisode);
@@ -227,6 +245,8 @@ export default function WatchPage() {
   const playbackSecondsRef = useRef<number>(0);
   const watchDurationSecondsRef = useRef<number>(0);
   const hasRealPlayerEventsRef = useRef<boolean>(false);
+  const lastRealPlayerEventTimeRef = useRef<number>(0);
+  const lastBackendSaveTimeRef = useRef<number>(0);
 
   // Audio track switching state
   const [hlsAudioTracks, setHlsAudioTracks] = useState<Array<{ id: number; name: string; lang?: string }>>([
@@ -608,7 +628,12 @@ export default function WatchPage() {
         }
       }
 
-      if (activeProfile && meta) {
+      const now = Date.now();
+      const isFinishing = progressPercent >= 92.0 || currentTime >= duration - 25;
+      const shouldSaveBackend = (now - lastBackendSaveTimeRef.current >= 12000) || isFinishing;
+
+      if (activeProfile && meta && shouldSaveBackend) {
+        lastBackendSaveTimeRef.current = now;
         apiFetch('/api/progress/update', {
           method: 'POST',
           headers: { 'X-Profile-ID': activeProfile.id },
@@ -622,7 +647,8 @@ export default function WatchPage() {
             episode: type === 'tv' ? currentEpisode : undefined,
             event: 'progress',
             title: meta.title || meta.name || 'Movie',
-            posterPath: meta.poster_path
+            posterPath: meta.poster_path,
+            backdropPath: meta.backdrop_path,
           })
         }).catch(console.error);
       }
@@ -725,6 +751,8 @@ export default function WatchPage() {
         }
 
         if (curTime !== undefined && !isNaN(curTime) && curTime >= 5) {
+          lastRealPlayerEventTimeRef.current = Date.now();
+          hasRealPlayerEventsRef.current = true;
           playbackSecondsRef.current = curTime;
           const validDur = (dur && !isNaN(dur) && dur > 0) ? dur : (meta?.runtime ? meta.runtime * 60 : 7200);
           handlePlayerProgress(curTime, validDur);
@@ -752,15 +780,15 @@ export default function WatchPage() {
     };
   }, [handlePlayerProgress, meta, type, triggerNextEpisodeOverlay, resumeTime]);
 
-  // 4. Active Watcher Heartbeat: For iframe servers that do not emit postMessage
+  // 4. Active Watcher Heartbeat: For iframe servers that do not emit continuous postMessage
   useEffect(() => {
     if (!id || !meta) return;
     const estDuration = meta?.runtime ? meta.runtime * 60 : 7200;
 
     const timer = setInterval(() => {
       if (document.hidden) return;
-      // If player is reporting real events via postMessage, don't simulate
-      if (hasRealPlayerEventsRef.current) return;
+      // Only skip heartbeat if we received a real player postMessage in the last 10 seconds
+      if (Date.now() - lastRealPlayerEventTimeRef.current < 10000) return;
       if (!isIframeLoaded) return;
 
       watchDurationSecondsRef.current += 5;

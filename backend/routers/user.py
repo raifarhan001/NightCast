@@ -98,6 +98,10 @@ def sync_user_data(
                     existing.progress_percent = progress
                     existing.timestamp_seconds = seconds
                     existing.duration_seconds = duration
+                if item.backdrop_path:
+                    existing.backdrop_path = item.backdrop_path
+                if item.poster_path:
+                    existing.poster_path = item.poster_path
             else:
                 new_cw = models.ContinueWatching(
                     profile_id=active_profile.id,
@@ -105,6 +109,7 @@ def sync_user_data(
                     media_type=item.media_type or "movie",
                     title=item.title or "Untitled",
                     poster_path=item.poster_path,
+                    backdrop_path=item.backdrop_path,
                     season=s_num,
                     episode=ep_num,
                     progress_percent=progress,
@@ -203,11 +208,15 @@ def get_reviews_for_media(
     media_id: str,
     db: Session = Depends(get_db)
 ):
-    reviews = db.query(models.Review).filter(models.Review.media_id == media_id).all()
-    # Populate profile names
+    reviews_with_profiles = (
+        db.query(models.Review, models.Profile.name)
+        .outerjoin(models.Profile, models.Review.profile_id == models.Profile.id)
+        .filter(models.Review.media_id == media_id)
+        .order_by(models.Review.created_at.desc())
+        .all()
+    )
     results = []
-    for r in reviews:
-        prof = db.query(models.Profile).filter(models.Profile.id == r.profile_id).first()
-        r.profile_name = prof.name if prof else "Anonymous"
+    for r, prof_name in reviews_with_profiles:
+        r.profile_name = prof_name or "Anonymous"
         results.append(r)
     return results

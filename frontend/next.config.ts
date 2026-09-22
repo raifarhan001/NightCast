@@ -26,11 +26,15 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001';
+    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.BACKEND_URL || 'http://localhost:8001';
     return [
       {
+        source: '/api/v1/:path*',
+        destination: `${backendUrl}/api/v1/:path*`,
+      },
+      {
         source: '/api/:path*',
-        destination: `${backendUrl}/api/:path*`,
+        destination: `${backendUrl}/api/v1/:path*`,
       },
     ];
   },

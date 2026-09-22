@@ -64,6 +64,7 @@ class ContinueWatching(Base):
     media_type = Column(String, nullable=False)  # 'movie' or 'tv'
     title = Column(String, nullable=False)
     poster_path = Column(String, nullable=True)
+    backdrop_path = Column(String, nullable=True)
     season = Column(Integer, nullable=True)      # TV only
     episode = Column(Integer, nullable=True)     # TV only
     progress_percent = Column(Float, default=0.0)

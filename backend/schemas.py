@@ -117,6 +117,7 @@ class ProgressUpdatePayload(BaseModel):
     event: str
     title: str
     poster_path: Optional[str] = Field(None, alias="posterPath")
+    backdrop_path: Optional[str] = Field(None, alias="backdropPath")
 
     class Config:
         populate_by_name = True
@@ -128,6 +129,7 @@ class ContinueWatchingResponse(BaseModel):
     media_type: str
     title: str
     poster_path: Optional[str] = None
+    backdrop_path: Optional[str] = None
     season: Optional[int] = None
     episode: Optional[int] = None
     progress_percent: float
