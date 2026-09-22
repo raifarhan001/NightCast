@@ -4,10 +4,11 @@ import React, { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Search, SlidersHorizontal, X, Star } from "lucide-react";
+import { Search, SlidersHorizontal, X, Star, User } from "lucide-react";
 import ProfileSelectorModal from "../profile/ProfileSelectorModal";
 import { apiFetch, MediaItem } from "../../lib/api";
 import { ImageService } from "../../lib/ImageService";
+import { useUserStore } from "../../store/userStore";
 
 const GENRES = [
   { id: "28", name: "Action" },
@@ -28,6 +29,7 @@ function HeaderContent() {
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const { user, activeProfile } = useUserStore();
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -142,8 +144,8 @@ function HeaderContent() {
 
   return (
     <>
-      {/* Floating Top-Right Search Capsule (Matching Reference UI) */}
-      <div className="fixed top-3 sm:top-5 right-3 sm:right-8 md:right-12 z-40 pointer-events-auto">
+      {/* Floating Top-Right Search & Profile Capsule */}
+      <div className="fixed top-3 sm:top-5 right-3 sm:right-8 md:right-12 z-40 pointer-events-auto flex items-center gap-2">
         <div ref={searchContainerRef} className="relative">
           {/* Frosted Search Pill Capsule - Highly Transparent & Compact Glass */}
           <form
@@ -283,6 +285,31 @@ function HeaderContent() {
             </div>
           )}
         </div>
+
+        {/* Profile / Account Trigger */}
+        <button
+          type="button"
+          onClick={() => {
+            if (user) {
+              setIsProfileModalOpen(true);
+            } else {
+              router.push("/profile");
+            }
+          }}
+          className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-white/[0.07] hover:bg-white/[0.14] backdrop-blur-md border border-white/15 shadow-[0_4px_20px_rgba(0,0,0,0.2)] text-[#F0F0F0] text-xs font-medium transition cursor-pointer active:scale-95"
+          title={user ? (activeProfile?.name || "Switch Profile") : "Sign In / Register"}
+        >
+          {user && activeProfile ? (
+            <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#A4C8E1] text-[#0B131B] text-[10px] font-bold flex items-center justify-center uppercase shrink-0">
+              {activeProfile.name.slice(0, 1)}
+            </div>
+          ) : (
+            <User className="w-3.5 h-3.5 text-white/80 shrink-0" />
+          )}
+          <span className="hidden sm:inline text-xs font-medium">
+            {user ? (activeProfile?.name || "Profile") : "Sign In"}
+          </span>
+        </button>
       </div>
 
       {/* Profile Selector Modal */}

@@ -220,6 +220,11 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
   if (response.status === 204) return null;
   const rawData = await response.json();
   
+  if (rawData && typeof rawData === 'object' && rawData.status === 'error') {
+    const errorMsg = rawData.message || rawData.detail || 'API Error';
+    throw new Error(errorMsg);
+  }
+  
   // Apply Zod validation schemas to protect the UI components from undefined keys
   if (cleanEndpoint.includes('/tmdb/')) {
     // 1. Movie Detail endpoint

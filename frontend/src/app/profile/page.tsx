@@ -210,8 +210,12 @@ export default function ProfilePage() {
     try {
       if (authMode === 'login') {
         const loginRes = await apiFetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email: cleanEmail, password: cleanPassword }) });
-        if (loginRes?.access_token) setStoredToken(loginRes.access_token);
+        if (!loginRes?.access_token) {
+          throw new Error('Invalid email or password');
+        }
+        setStoredToken(loginRes.access_token);
         const me = await apiFetch('/api/auth/me');
+        if (!me || !me.id) throw new Error('Failed to load user profile');
         setUser(me);
         queryClient.invalidateQueries({ queryKey: ['trending'] });
         await fetchProfiles();
@@ -222,9 +226,11 @@ export default function ProfilePage() {
         }
       } else {
         await apiFetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ email: cleanEmail, password: cleanPassword }) });
-        setAuthMode('login');
         const loginRes = await apiFetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email: cleanEmail, password: cleanPassword }) });
-        if (loginRes?.access_token) setStoredToken(loginRes.access_token);
+        if (!loginRes?.access_token) {
+          throw new Error('Account created, but sign in failed. Please sign in manually.');
+        }
+        setStoredToken(loginRes.access_token);
         const me = await apiFetch('/api/auth/me');
         setUser(me);
         await fetchProfiles();
@@ -445,7 +451,7 @@ export default function ProfilePage() {
           </div>
 
           {mergedContinueWatching.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5">
+            <div className="flex flex-wrap gap-4 sm:gap-6 items-start">
               {mergedContinueWatching.map((cw, idx) => (
                 <MovieCard
                   key={`cw-${cw.id}-${cw.season || 0}-${cw.episode || 0}-${idx}`}
@@ -472,7 +478,7 @@ export default function ProfilePage() {
           </div>
 
           {mergedWatchlist.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-5">
+            <div className="flex flex-wrap gap-4 sm:gap-6 items-start">
               {mergedWatchlist.map((item) => (
                 <MovieCard
                   key={item.id || item.media_id}

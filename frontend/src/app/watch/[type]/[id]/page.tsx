@@ -551,6 +551,20 @@ export default function WatchPage() {
     router.push(`/watch/tv/${id}?season=${s}&episode=${ep}`, { scroll: false });
   }, [id, router]);
 
+  const getEstimatedDuration = useCallback((): number => {
+    if (type === 'movie') {
+      if (meta?.runtime && meta.runtime > 0) return meta.runtime * 60;
+      return 7200;
+    }
+    const epData = seasonEpisodes.find((ep) => ep.episode_number === currentEpisode);
+    if (epData?.runtime && epData.runtime > 0) return epData.runtime * 60;
+
+    if (Array.isArray(meta?.episode_run_time) && meta.episode_run_time.length > 0 && meta.episode_run_time[0] > 0) {
+      return meta.episode_run_time[0] * 60;
+    }
+    return 2700;
+  }, [type, meta, seasonEpisodes, currentEpisode]);
+
   const handleRestartFromBeginning = useCallback(() => {
     soundFx.playTap();
     playbackSecondsRef.current = 0;
@@ -567,14 +581,14 @@ export default function WatchPage() {
       season: isTv ? currentSeason : undefined,
       episode: isTv ? currentEpisode : undefined,
       timestamp_seconds: 0,
-      duration_seconds: meta?.runtime ? meta.runtime * 60 : 7200,
+      duration_seconds: getEstimatedDuration(),
       progress_percent: 0,
     });
     if (activeServer) {
       setPlayerUrl(attachTimestampToUrl(activeServer.url, 0));
       setIsIframeLoaded(false);
     }
-  }, [id, type, meta, currentSeason, currentEpisode, activeServer]);
+  }, [id, type, meta, currentSeason, currentEpisode, activeServer, getEstimatedDuration]);
 
   const triggerNextEpisodeOverlay = useCallback(() => {
     if (type === 'tv' && nextEpisodeInfo && !isAutoPlayDismissedRef.current && !showNextOverlayRef.current) {
@@ -661,17 +675,21 @@ export default function WatchPage() {
   useEffect(() => {
     if (!id) return;
     const isTv = type === 'tv';
-    const initialSeconds = getSavedTimestamp(
-      id,
-      isTv ? currentSeason : undefined,
-      isTv ? currentEpisode : undefined,
-      type as 'movie' | 'tv'
-    );
+    const queryTime = searchParams.get('time') || searchParams.get('t');
+    const parsedQuery = queryTime ? parseInt(queryTime, 10) : 0;
+    const initialSeconds = parsedQuery > 5
+      ? parsedQuery
+      : getSavedTimestamp(
+          id,
+          isTv ? currentSeason : undefined,
+          isTv ? currentEpisode : undefined,
+          type as 'movie' | 'tv'
+        );
     playbackSecondsRef.current = initialSeconds;
     watchDurationSecondsRef.current = 0;
     hasRealPlayerEventsRef.current = false;
     setResumeTime(initialSeconds);
-  }, [id, currentSeason, currentEpisode, type]);
+  }, [id, currentSeason, currentEpisode, type, searchParams]);
 
   // 2. When TMDB meta loads, ensure metadata in localStorage is updated with high-quality backdrop & title
   useEffect(() => {
@@ -714,7 +732,7 @@ export default function WatchPage() {
           const pData = data.data;
           const curTime = Number(pData.currentTime ?? pData.timestamp);
           const dur = Number(pData.duration);
-          const estDur = (!isNaN(dur) && dur > 0) ? dur : (meta?.runtime ? meta.runtime * 60 : 7200);
+          const estDur = (!isNaN(dur) && dur > 0) ? dur : getEstimatedDuration();
 
           if (!isNaN(curTime) && curTime >= 10) {
             playbackSecondsRef.current = curTime;
@@ -746,7 +764,7 @@ export default function WatchPage() {
         }
 
         // Guard: If user is resuming from > 30s, ignore initial 0-30s buffer events until player has sought or user has watched >= 10s
-        if (resumeTime > 30 && curTime !== undefined && curTime < 30 && watchDurationSecondsRef.current < 10) {
+        if (resumeTime > 30 && curTime !== undefined && curTime < 30 && watchDurationSecondsRef.current < 20) {
           return;
         }
 
@@ -754,7 +772,7 @@ export default function WatchPage() {
           lastRealPlayerEventTimeRef.current = Date.now();
           hasRealPlayerEventsRef.current = true;
           playbackSecondsRef.current = curTime;
-          const validDur = (dur && !isNaN(dur) && dur > 0) ? dur : (meta?.runtime ? meta.runtime * 60 : 7200);
+          const validDur = (dur && !isNaN(dur) && dur > 0) ? dur : getEstimatedDuration();
           handlePlayerProgress(curTime, validDur);
         }
 
@@ -778,12 +796,12 @@ export default function WatchPage() {
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, [handlePlayerProgress, meta, type, triggerNextEpisodeOverlay, resumeTime]);
+  }, [handlePlayerProgress, meta, type, triggerNextEpisodeOverlay, resumeTime, getEstimatedDuration]);
 
   // 4. Active Watcher Heartbeat: For iframe servers that do not emit continuous postMessage
   useEffect(() => {
     if (!id || !meta) return;
-    const estDuration = meta?.runtime ? meta.runtime * 60 : 7200;
+    const estDuration = getEstimatedDuration();
 
     const timer = setInterval(() => {
       if (document.hidden) return;
@@ -801,12 +819,12 @@ export default function WatchPage() {
     }, 5000);
 
     return () => clearInterval(timer);
-  }, [id, meta, isIframeLoaded, handlePlayerProgress]);
+  }, [id, meta, isIframeLoaded, handlePlayerProgress, getEstimatedDuration]);
 
   // Initial save to establish Continue Watching entry once metadata is loaded
   useEffect(() => {
     if (!id || !meta) return;
-    const estDuration = meta?.runtime ? meta.runtime * 60 : 7200;
+    const estDuration = getEstimatedDuration();
     const saved = getSavedTimestamp(
       id,
       type === 'tv' ? currentSeason : undefined,
@@ -819,14 +837,14 @@ export default function WatchPage() {
       }, 2000);
       return () => clearTimeout(initialTimer);
     }
-  }, [id, meta, type, currentSeason, currentEpisode, handlePlayerProgress]);
+  }, [id, meta, type, currentSeason, currentEpisode, handlePlayerProgress, getEstimatedDuration]);
 
   // 5. Save progress on beforeunload / exit
   useEffect(() => {
     const handleBeforeUnload = () => {
       const curTime = playbackSecondsRef.current;
       if (curTime >= 5 && meta && id) {
-        const estDuration = meta?.runtime ? meta.runtime * 60 : 7200;
+        const estDuration = getEstimatedDuration();
         handlePlayerProgress(curTime, estDuration);
       }
     };
@@ -836,7 +854,7 @@ export default function WatchPage() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       handleBeforeUnload();
     };
-  }, [id, meta, handlePlayerProgress]);
+  }, [id, meta, handlePlayerProgress, getEstimatedDuration]);
 
   const handleHlsError = useCallback(() => {
     if (activeServer) {

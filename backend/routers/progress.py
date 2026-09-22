@@ -149,15 +149,14 @@ def delete_continue_item(
     db: Session = Depends(get_db)
 ):
     clean_id = media_id.split('_s')[0].split('-s')[0].split('_')[0].strip()
+    # When a title is dismissed, purge all entries for that show/movie so older episodes don't resurrect
     query = db.query(models.ContinueWatching).filter(
         models.ContinueWatching.profile_id == active_profile.id,
-        (models.ContinueWatching.media_id == media_id) | (models.ContinueWatching.media_id == clean_id)
+        (models.ContinueWatching.media_id == media_id) | 
+        (models.ContinueWatching.media_id == clean_id) |
+        (models.ContinueWatching.media_id.like(f"{clean_id}%"))
     )
-    if season is not None:
-        query = query.filter(models.ContinueWatching.season == season)
-    if episode is not None:
-        query = query.filter(models.ContinueWatching.episode == episode)
-    query.delete()
+    query.delete(synchronize_session=False)
     db.commit()
     return {"status": "deleted"}
 

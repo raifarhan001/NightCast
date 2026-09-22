@@ -4,9 +4,11 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import time
-from fastapi import FastAPI, Request, Response, status
+from fastapi import FastAPI, Request, Response, status, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse, HTMLResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from contextlib import asynccontextmanager
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy import text
@@ -52,6 +54,17 @@ app = FastAPI(
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     print(f"Handled Error on {request.url}: {exc}")
+    if isinstance(exc, (HTTPException, StarletteHTTPException)):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+            headers=getattr(exc, "headers", None)
+        )
+    if isinstance(exc, RequestValidationError):
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={"detail": exc.errors()}
+        )
     if "proxy-embed" in str(request.url) or "proxy-stream" in str(request.url):
         return HTMLResponse(
             content=f"""
@@ -74,8 +87,8 @@ async def global_exception_handler(request: Request, exc: Exception):
             status_code=200
         )
     return JSONResponse(
-        status_code=200,
-        content={"status": "error", "results": [], "message": str(exc)}
+        status_code=500,
+        content={"status": "error", "results": [], "detail": str(exc), "message": str(exc)}
     )
 
 # Custom Rate Limiting Middleware

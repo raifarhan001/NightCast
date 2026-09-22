@@ -30,17 +30,24 @@ export const useUserStore = create<UserState>((set, get) => ({
   initialize: async () => {
     try {
       const user = await apiFetch('/api/auth/me');
+      if (!user || !user.id || !user.email) {
+        throw new Error('Unauthenticated');
+      }
       set({ user });
       
-      const profiles = await apiFetch('/api/auth/profiles');
+      const rawProfiles = await apiFetch('/api/auth/profiles');
+      const profiles = Array.isArray(rawProfiles) ? rawProfiles : [];
       set({ profiles });
       
       // Load active profile from localStorage or choose first
       const storedProfile = localStorage.getItem('active_profile');
-      let active = null;
+      let active: Profile | null = null;
       if (storedProfile) {
         try {
           active = JSON.parse(storedProfile);
+          if (active && !profiles.some((p: Profile) => p.id === active?.id)) {
+            active = null;
+          }
         } catch (_) {}
       }
       
@@ -88,9 +95,12 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   fetchProfiles: async () => {
     try {
-      const profiles = await apiFetch('/api/auth/profiles');
+      const rawProfiles = await apiFetch('/api/auth/profiles');
+      const profiles = Array.isArray(rawProfiles) ? rawProfiles : [];
       set({ profiles });
-    } catch (_) {}
+    } catch (_) {
+      set({ profiles: [] });
+    }
   },
 
   updateSettings: async (newSettings) => {
