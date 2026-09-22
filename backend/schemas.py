@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional, List, Union, Any
 from uuid import UUID
 from datetime import datetime
@@ -175,8 +175,7 @@ class SyncItem(BaseModel):
     duration_seconds: Optional[Union[float, int]] = 0.0
     updated_at: Optional[str] = None
 
-    class Config:
-        extra = "ignore"
+    model_config = ConfigDict(extra="ignore")
 
 class UserSyncPayload(BaseModel):
     continue_watching: Optional[List[SyncItem]] = []

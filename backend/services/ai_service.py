@@ -212,6 +212,11 @@ async def ingest_media_metadata(db: Session, media_id: str, media_type: str, tit
 async def populate_mock_embeddings(db: Session):
     """Pre-populates the vector index with mock catalog items so semantic search is instantly live."""
     try:
+        existing_count = db.query(models.SemanticMetadata.media_id).count()
+        if existing_count >= (len(MOCK_MOVIES) + len(MOCK_TV)):
+            logger.info("Semantic metadata already populated, skipping mock insertion.")
+            return
+
         for m_id, m in MOCK_MOVIES.items():
             genres = [g["name"] for g in m.get("genres", [])]
             await ingest_media_metadata(db, str(m["id"]), "movie", m["title"], m["overview"], genres)

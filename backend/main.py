@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import time
 from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import JSONResponse, HTMLResponse
 from contextlib import asynccontextmanager
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy import text
@@ -18,33 +19,31 @@ from config import settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup actions
-    try:
-        init_db()
-    except Exception as e:
-        print(f"init_db startup warning: {e}")
+    import asyncio
     
-    # Clear cache to flush old configurations
-    try:
-        redis_cache.clear()
-    except Exception as e:
-        print(f"Failed to clear cache: {e}")
-    
-    # Pre-populate pgvector database with mock embeddings so it works immediately
-    try:
-        db = SessionLocal()
+    # Run DB schema check and vector pre-population in background so Uvicorn starts INSTANTLY (< 1 second)
+    async def background_startup():
         try:
-            await populate_mock_embeddings(db)
-        finally:
-            db.close()
-    except Exception as e:
-        print(f"populate_mock_embeddings startup warning: {e}")
-        
+            init_db()
+        except Exception as e:
+            print(f"init_db startup warning: {e}")
+            
+        try:
+            db = SessionLocal()
+            try:
+                await populate_mock_embeddings(db)
+            finally:
+                db.close()
+        except Exception as e:
+            print(f"Background embeddings task warning: {e}")
+            
+    asyncio.create_task(background_startup())
+    
     yield
     # Shutdown actions
 
 app = FastAPI(
-    title="Vidking Premium Streaming API",
+    title="NightCast Streaming API",
     description="FastAPI service for the ultimate luxury movie and TV streaming experience.",
     version="1.0.0",
     lifespan=lifespan
@@ -104,6 +103,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 )
             self.requests[client_ip].append(now)
             
+        # Periodic cleanup of stale IPs to prevent memory leak
+        if len(self.requests) > 500:
+            now = time.time()
+            self.requests = {
+                ip: ts for ip, ts in self.requests.items()
+                if any(now - t < self.limit_seconds for t in ts)
+            }
+            
         return await call_next(request)
 
 # Custom Helmet Security Headers Middleware
@@ -114,7 +121,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["X-Frame-Options"] = "SAMEORIGIN"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        # CSP frame allows embedding Vidking Player and YouTube Preview players
+        # CSP frame allows embedding NightCast Player and YouTube Preview players
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.youtube.com; "
@@ -126,97 +133,24 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         )
         return response
 
-
-from fastapi.responses import HTMLResponse
-import httpx
-from urllib.parse import urlparse
-
-@app.get("/api/tmdb/proxy-stream")
-@app.get("/api/v1/tmdb/proxy-stream")
-async def global_proxy_stream(url: str):
-    try:
-        async with httpx.AsyncClient(follow_redirects=True, verify=False) as client:
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.5",
-            }
-            response = await client.get(url, headers=headers, timeout=12.0)
-            if response.status_code != 200:
-                return HTMLResponse(content=f"<h1>Proxy Error: Status {response.status_code}</h1>", status_code=response.status_code)
-            
-            html = response.text
-            parsed = urlparse(url)
-            base_url = f"{parsed.scheme}://{parsed.netloc}/"
-            
-            base_tag = f'<base href="{base_url}">'
-            if "<head>" in html:
-                html = html.replace("<head>", f"<head>{base_tag}", 1)
-            else:
-                html = f"<html><head>{base_tag}</head>{html}"
-                
-            return HTMLResponse(content=html, status_code=200)
-    except Exception as e:
-        return HTMLResponse(content=f"<h1>Proxy Error: {str(e)}</h1>", status_code=500)
-
-
-@app.get("/api/tmdb/proxy-embed")
-@app.get("/api/v1/tmdb/proxy-embed")
-async def global_proxy_embed(url: str):
-    try:
-        async with httpx.AsyncClient(follow_redirects=True, verify=False, timeout=5.0) as client:
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            }
-            res = await client.get(url, headers=headers)
-            
-            if res.status_code >= 400:
-                return HTMLResponse(
-                    content=f"""
-                    <!DOCTYPE html><html><head><meta charset="utf-8"><style>
-                    body {{ background-color:#090A0F; color:#fff; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; }}
-                    .box {{ background:#12141F; border:1px solid rgba(255,255,255,0.1); padding:20px; border-radius:14px; text-align:center; max-width:380px; }}
-                    </style></head><body>
-                    <div class="box"><h4 style="color:#f59e0b;margin:0 0 6px 0;">Embed Unavailable ({res.status_code})</h4><p style="color:#aaa;font-size:12px;margin:0;">The provider blocked or refused the stream connection. Please select another server.</p></div>
-                    </body></html>
-                    """,
-                    media_type="text/html",
-                    status_code=200
-                )
-
-            html = res.text
-            parsed = urlparse(url)
-            base_url = f"{parsed.scheme}://{parsed.netloc}/"
-            
-            base_tag = f'<base href="{base_url}">'
-            if "<head>" in html:
-                html = html.replace("<head>", f"<head>{base_tag}", 1)
-            else:
-                html = f"<html><head>{base_tag}</head>{html}"
-                
-            return HTMLResponse(content=html, media_type="text/html", status_code=200)
-    except Exception as e:
-        return HTMLResponse(
-            content=f"""
-            <!DOCTYPE html><html><head><meta charset="utf-8"><style>
-            body {{ background-color:#090A0F; color:#fff; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; }}
-            .box {{ background:#12141F; border:1px solid rgba(255,255,255,0.1); padding:20px; border-radius:14px; text-align:center; max-width:380px; }}
-            </style></head><body>
-            <div class="box"><h4 style="color:#ef4444;margin:0 0 6px 0;">Stream Embed Connection Timeout</h4><p style="color:#aaa;font-size:12px;margin:0;">{str(e)}</p></div>
-            </body></html>
-            """,
-            media_type="text/html",
-            status_code=200
-        )
-
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
-# CORS configuration
+# CORS configuration — specific origins and regex allow credentials without throwing Starlette AssertionError
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://localhost:8001",
+    "http://127.0.0.1:8001",
+    "https://night-cast.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -298,7 +232,7 @@ def health_check():
 def read_root():
     return {
         "status": "healthy",
-        "service": "Vidking Streaming Engine",
+        "service": "NightCast Streaming Engine",
         "version": "1.0.0"
     }
 

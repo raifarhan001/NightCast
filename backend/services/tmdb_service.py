@@ -180,8 +180,7 @@ class TMDBClient:
             # Trigger fallback immediately
             raise ValueError("TMDB API Key not configured")
 
-        if not params:
-            params = {}
+        params = dict(params) if params else {}
         params["api_key"] = self.api_key
 
         url = f"{TMDB_BASE_URL}{endpoint}"
@@ -199,8 +198,8 @@ class TMDBClient:
         import logging
         logger = logging.getLogger("tmdb")
         
-        backoffs = [1.0, 2.0, 5.0]
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        backoffs = [0.5]
+        async with httpx.AsyncClient(timeout=5.0) as client:
             for attempt, delay in enumerate(backoffs + [0], start=1):
                 try:
                     response = await client.get(url, params=params)
@@ -213,10 +212,10 @@ class TMDBClient:
                     return data
                 except httpx.HTTPError as e:
                     if attempt <= len(backoffs):
-                        logger.warning(f"TMDB request failed (attempt {attempt}/4). Retrying in {delay}s... Error: {str(e)}")
+                        logger.warning(f"TMDB request retry ({attempt}). Error: {str(e)}")
                         await asyncio.sleep(delay)
                     else:
-                        logger.error(f"TMDB request failed after max retries. Error: {str(e)}")
+                        logger.error(f"TMDB request failed. Error: {str(e)}")
                         raise e
         return {}
 
@@ -258,21 +257,13 @@ class TMDBClient:
     async def get_details(self, media_type: str, tmdb_id: str) -> Dict[str, Any]:
         try:
             endpoint = f"/{media_type}/{tmdb_id}"
-            details = await self.get_request(endpoint)
-            # Fetch credits
-            try:
-                credits = await self.get_request(f"{endpoint}/credits")
-                details["cast"] = credits.get("cast", [])[:10]
-                details["crew"] = credits.get("crew", [])[:5]
-            except Exception:
-                details["cast"] = []
-                details["crew"] = []
+            # Fetch details, credits, and videos in ONE single HTTP request using append_to_response!
+            details = await self.get_request(endpoint, {"append_to_response": "credits,videos"})
             
-            # Fetch trailers
-            try:
-                videos = await self.get_request(f"{endpoint}/videos")
-                details["videos"] = videos
-            except Exception:
+            credits = details.get("credits", {})
+            details["cast"] = credits.get("cast", [])[:10]
+            details["crew"] = credits.get("crew", [])[:5]
+            if "videos" not in details or not details["videos"]:
                 details["videos"] = {"results": []}
                 
             return details

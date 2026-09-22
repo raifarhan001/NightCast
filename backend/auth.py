@@ -20,18 +20,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         clean_pwd = plain_password.strip()
         pwd_bytes = clean_pwd.encode("utf-8")[:72]
         hash_bytes = hashed_password.encode("utf-8") if isinstance(hashed_password, str) else hashed_password
-        if bcrypt.checkpw(pwd_bytes, hash_bytes):
-            return True
-        # Handle trailing period tolerance (e.g. crown1999 vs crown1999.)
-        if clean_pwd.endswith("."):
-            alt_bytes = clean_pwd[:-1].encode("utf-8")[:72]
-            if bcrypt.checkpw(alt_bytes, hash_bytes):
-                return True
-        else:
-            alt_bytes = (clean_pwd + ".").encode("utf-8")[:72]
-            if bcrypt.checkpw(alt_bytes, hash_bytes):
-                return True
-        return False
+        return bcrypt.checkpw(pwd_bytes, hash_bytes)
     except Exception:
         return False
 

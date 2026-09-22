@@ -11,17 +11,23 @@ class RedisCache:
         self.enabled = False
         self.client = None
         self.local_fallback = {}  # In-memory dictionary fallback
+        self._tested = False
 
+    def _ensure_connected(self):
+        if self._tested:
+            return
+        self._tested = True
         try:
-            self.client = redis.from_url(settings.REDIS_URL, socket_timeout=2.0)
-            # Test connection
+            self.client = redis.from_url(settings.REDIS_URL, socket_timeout=0.3, socket_connect_timeout=0.3)
             self.client.ping()
             self.enabled = True
             logger.info("Connected to Redis successfully.")
         except Exception as e:
-            logger.warning(f"Failed to connect to Redis: {e}. Falling back to in-memory cache.")
+            self.enabled = False
+            logger.info(f"Redis not available on localhost, using in-memory cache.")
 
     def get(self, key: str) -> Optional[Any]:
+        self._ensure_connected()
         if self.enabled:
             try:
                 data = self.client.get(key)
@@ -34,6 +40,7 @@ class RedisCache:
         return self.local_fallback.get(key)
 
     def set(self, key: str, value: Any, expire_seconds: int = 3600) -> bool:
+        self._ensure_connected()
         if self.enabled:
             try:
                 serialized = json.dumps(value)
@@ -48,6 +55,7 @@ class RedisCache:
         return True
 
     def delete(self, key: str) -> bool:
+        self._ensure_connected()
         if self.enabled:
             try:
                 self.client.delete(key)
@@ -61,6 +69,7 @@ class RedisCache:
         return False
 
     def clear(self):
+        self._ensure_connected()
         if self.enabled:
             try:
                 self.client.flushdb()

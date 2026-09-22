@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8001';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.BACKEND_URL || 'http://127.0.0.1:8001';
 
 function buildForwardHeaders(req: NextRequest): Record<string, string> {
   const headers: Record<string, string> = {
@@ -33,14 +33,11 @@ export async function GET(req: NextRequest) {
       headers: buildForwardHeaders(req),
       cache: 'no-store',
     });
-    if (!res.ok) {
-      return createProxiedResponse(res, { results: [] }, res.status);
-    }
-    const data = await res.json();
-    return createProxiedResponse(res, data, 200);
-  } catch (err) {
+    const data = await res.json().catch(() => ({ detail: res.statusText }));
+    return createProxiedResponse(res, data, res.status);
+  } catch (err: any) {
     console.error("Proxy GET error:", err);
-    return NextResponse.json({ results: [] }, { status: 500 });
+    return NextResponse.json({ detail: err?.message || "Proxy GET failed", results: [] }, { status: 502 });
   }
 }
 
@@ -55,10 +52,11 @@ export async function POST(req: NextRequest) {
       headers: buildForwardHeaders(req),
       body: JSON.stringify(body),
     });
-    const data = await res.json().catch(() => ({}));
+    const data = await res.json().catch(() => ({ detail: res.statusText }));
     return createProxiedResponse(res, data, res.status);
-  } catch (err) {
-    return NextResponse.json({ status: "error" }, { status: 500 });
+  } catch (err: any) {
+    console.error("Proxy POST error:", err);
+    return NextResponse.json({ detail: err?.message || "Proxy POST failed", status: "error" }, { status: 502 });
   }
 }
 
@@ -73,10 +71,11 @@ export async function PUT(req: NextRequest) {
       headers: buildForwardHeaders(req),
       body: JSON.stringify(body),
     });
-    const data = await res.json().catch(() => ({}));
+    const data = await res.json().catch(() => ({ detail: res.statusText }));
     return createProxiedResponse(res, data, res.status);
-  } catch (err) {
-    return NextResponse.json({ status: "error" }, { status: 500 });
+  } catch (err: any) {
+    console.error("Proxy PUT error:", err);
+    return NextResponse.json({ detail: err?.message || "Proxy PUT failed", status: "error" }, { status: 502 });
   }
 }
 
@@ -89,9 +88,10 @@ export async function DELETE(req: NextRequest) {
       method: 'DELETE',
       headers: buildForwardHeaders(req),
     });
-    const data = await res.json().catch(() => ({}));
+    const data = await res.json().catch(() => ({ detail: res.statusText }));
     return createProxiedResponse(res, data, res.status);
-  } catch (err) {
-    return NextResponse.json({ status: "error" }, { status: 500 });
+  } catch (err: any) {
+    console.error("Proxy DELETE error:", err);
+    return NextResponse.json({ detail: err?.message || "Proxy DELETE failed", status: "error" }, { status: 502 });
   }
 }

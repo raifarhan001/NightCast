@@ -14,13 +14,15 @@ def get_db_engine():
     global is_sqlite
     if "postgresql" in DATABASE_URL:
         try:
-            probe_engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 10})
-            with probe_engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
-            logger.info("Connected to PostgreSQL successfully.")
-            return create_engine(DATABASE_URL, pool_size=20, max_overflow=10, pool_pre_ping=True)
+            return create_engine(
+                DATABASE_URL,
+                pool_size=10,
+                max_overflow=5,
+                pool_pre_ping=True,
+                connect_args={"connect_timeout": 5}
+            )
         except Exception as e:
-            logger.warning(f"PostgreSQL connection failed: {e}. Falling back to SQLite.")
+            logger.warning(f"PostgreSQL engine setup failed: {e}. Falling back to SQLite.")
     
     is_sqlite = True
     backend_dir = os.path.dirname(os.path.abspath(__file__))

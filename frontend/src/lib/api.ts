@@ -149,29 +149,34 @@ export interface SystemLog {
 }
 
 // Token storage for cross-origin auth (SameSite=Lax blocks cookie on fetch)
-const TOKEN_KEY = 'vidking_access_token';
+const TOKEN_KEY = 'nightcast_access_token';
 
 export function getStoredToken(): string | null {
   if (typeof window === 'undefined') return null;
-  try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+  try {
+    return localStorage.getItem(TOKEN_KEY) || localStorage.getItem('vidking_access_token');
+  } catch { return null; }
 }
 
 export function setStoredToken(token: string | null): void {
   if (typeof window === 'undefined') return;
   try {
-    if (token) { localStorage.setItem(TOKEN_KEY, token); }
-    else { localStorage.removeItem(TOKEN_KEY); }
+    if (token) {
+      localStorage.setItem(TOKEN_KEY, token);
+    } else {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem('vidking_access_token');
+    }
   } catch {}
 }
 
 export function getBaseUrl(): string {
-  let base = API_BASE_URL;
-  if (!IS_SERVER && typeof window !== 'undefined') {
-    if (base.includes('localhost') && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      base = base.replace('localhost', window.location.hostname);
-    }
+  // On server-side (SSR), use absolute API_BASE_URL to communicate directly with backend
+  if (IS_SERVER) {
+    return API_BASE_URL;
   }
-  return base;
+  // On client-side (browser), use relative URL so calls route through Next.js proxy without CORS or cookie issues
+  return '';
 }
 
 export async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<any> {
