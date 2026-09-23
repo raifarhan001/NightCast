@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUserStore } from '../../store/userStore';
 import { apiFetch, setStoredToken } from '../../lib/api';
@@ -11,21 +11,31 @@ import { getContinueWatchingList, removeWatchProgress, getCleanMediaId, LocalPro
 import { Sparkles, User, Settings as SettingsIcon, LogOut, Trash2, Plus, Bookmark, Clock, Eye, ShieldCheck, Mail, Lock, PlayCircle, Film, LogIn } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
-export default function ProfilePage() {
+function ProfilePageContent() {
   const queryClient = useQueryClient();
   const { user, activeProfile, profiles, settings, fetchProfiles, setActiveProfile, updateSettings, logout, setUser } = useUserStore();
+  const searchParams = useSearchParams();
 
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
-  const [showAuthCard, setShowAuthCard] = useState(false);
+  // Auto-open login form if ?signin=1 is in URL
+  const [showAuthCard, setShowAuthCard] = useState(() => searchParams.get('signin') === '1');
   const [newProfileName, setNewProfileName] = useState('');
   const [profileCreateError, setProfileCreateError] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [localContinueWatching, setLocalContinueWatching] = useState<LocalProgressItem[]>([]);
   const [localWatchlist, setLocalWatchlist] = useState<Record<string, any>>({});
+
+  // If user gets logged in while ?signin=1 was in URL, close the auth card
+  useEffect(() => {
+    if (user && showAuthCard) {
+      setShowAuthCard(false);
+    }
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const refreshList = () => {
@@ -695,5 +705,13 @@ export default function ProfilePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={null}>
+      <ProfilePageContent />
+    </Suspense>
   );
 }

@@ -71,9 +71,9 @@ def login(response: Response, login_data: schemas.UserLogin, db: Session = Depen
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
-        max_age=86400, # 1 day
+        max_age=2592000,  # 30 days
         samesite="lax",
-        secure=False  # Set to True in production
+        secure=True  # HTTPS on Vercel/production
     )
 
     return {

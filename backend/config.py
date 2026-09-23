@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     TMDB_API_KEY: str = "8b36fc4dff6127d090085bcebf286978"
     JWT_SECRET: str = "supersecretjwtkey123!"
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 1 day
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 43200  # 30 days
     OPENAI_API_KEY: str = ""
 
     class Config:

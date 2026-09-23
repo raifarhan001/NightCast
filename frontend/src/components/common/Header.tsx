@@ -293,7 +293,7 @@ function HeaderContent() {
             if (user) {
               setIsProfileModalOpen(true);
             } else {
-              router.push("/profile");
+              router.push("/profile?signin=1");
             }
           }}
           className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-white/[0.07] hover:bg-white/[0.14] backdrop-blur-md border border-white/15 shadow-[0_4px_20px_rgba(0,0,0,0.2)] text-[#F0F0F0] text-xs font-medium transition cursor-pointer active:scale-95"
