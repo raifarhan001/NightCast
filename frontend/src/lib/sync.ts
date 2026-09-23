@@ -74,8 +74,10 @@ export async function syncUserDataWithCloud(profileId?: string): Promise<void> {
     if (!response) return;
 
     // 4. Update local continue watching with cloud items
+    // Smart merge: for each show, keep only the HIGHEST episode entry
     if (Array.isArray(response.continue_watching)) {
       const cwMap: Record<string, LocalProgressItem> = rawCw ? JSON.parse(rawCw) : {};
+
       for (const item of response.continue_watching) {
         const cleanId = getCleanMediaId(item.media_id || item.id);
         if (!cleanId) continue;
@@ -83,13 +85,39 @@ export async function syncUserDataWithCloud(profileId?: string): Promise<void> {
           ? `${cleanId}_s${item.season}e${item.episode}`
           : cleanId;
 
-        if (!cwMap[key] || Number(item.timestamp_seconds) >= Number(cwMap[key].timestamp_seconds || 0)) {
+        const cloudEpScore = ((item.season || 1) * 1000) + (item.episode || 1);
+        const cloudTime = item.updated_at ? new Date(item.updated_at).getTime() : 0;
+
+        // Find the best existing local entry for this same show (any episode)
+        let bestLocalKey: string | null = null;
+        let bestLocalEpScore = -1;
+        let bestLocalTime = 0;
+        for (const [k, v] of Object.entries(cwMap)) {
+          if (getCleanMediaId(v.id) === cleanId) {
+            const localEpScore = ((v.season || 1) * 1000) + (v.episode || 1);
+            const localTime = v.updated_at ? new Date(v.updated_at).getTime() : 0;
+            if (localEpScore > bestLocalEpScore || (localEpScore === bestLocalEpScore && localTime > bestLocalTime)) {
+              bestLocalKey = k;
+              bestLocalEpScore = localEpScore;
+              bestLocalTime = localTime;
+            }
+          }
+        }
+
+        // Only add cloud entry if it has a higher episode, or no local entry exists
+        if (bestLocalKey === null || cloudEpScore > bestLocalEpScore || (cloudEpScore === bestLocalEpScore && cloudTime > bestLocalTime)) {
+          // Remove all old entries for this show before inserting the better one
+          for (const k of Object.keys(cwMap)) {
+            if (getCleanMediaId(cwMap[k].id) === cleanId) {
+              delete cwMap[k];
+            }
+          }
           cwMap[key] = {
             id: cleanId,
             media_type: (item.media_type || 'movie') as 'movie' | 'tv',
             title: item.title || 'Untitled',
             poster_path: item.poster_path || null,
-            backdrop_path: item.backdrop_path || cwMap[key]?.backdrop_path || null,
+            backdrop_path: item.backdrop_path || null,
             season: item.season,
             episode: item.episode,
             timestamp_seconds: Number(item.timestamp_seconds || 0),
@@ -98,6 +126,7 @@ export async function syncUserDataWithCloud(profileId?: string): Promise<void> {
             updated_at: item.updated_at || new Date().toISOString(),
           };
         }
+        // else: local has higher or equal episode — keep local, skip cloud old entry
       }
       localStorage.setItem(STORAGE_CW_KEY, JSON.stringify(cwMap));
     }
