@@ -1,14 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Cookie
-from sqlalchemy.orm import Session
-from typing import List, Optional
+import os
+from typing import List
 from uuid import UUID
+from fastapi import APIRouter, Depends, HTTPException, status, Response
+from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 from database import get_db
 import models
 import schemas
 import auth
-
-from sqlalchemy import func
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -67,13 +67,14 @@ def login(response: Response, login_data: schemas.UserLogin, db: Session = Depen
     access_token = auth.create_access_token(data={"sub": user.email.strip().lower()})
     
     # Store token in cookie
+    is_prod = bool(os.getenv("VERCEL") or os.getenv("RENDER") or os.getenv("ENVIRONMENT") == "production")
     response.set_cookie(
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
         max_age=2592000,  # 30 days
         samesite="lax",
-        secure=True  # HTTPS on Vercel/production
+        secure=is_prod
     )
 
     return {

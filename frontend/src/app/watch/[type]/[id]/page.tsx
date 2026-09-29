@@ -5,25 +5,23 @@ import { createPortal } from 'react-dom';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { apiFetch, API_BASE_URL } from '../../../../lib/api';
-import { saveWatchProgress, getSavedTimestamp, getCleanMediaId, getContinueWatchingList, LocalProgressItem } from '../../../../lib/progress';
+import { apiFetch, getStoredToken } from '../../../../lib/api';
+import { saveWatchProgress, getSavedTimestamp, getCleanMediaId, getContinueWatchingList, getStorageKey, LocalProgressItem } from '../../../../lib/progress';
 import { ImageService } from '../../../../lib/ImageService';
 import {
   Play,
-  Star,
-  Globe,
   X,
-  Check,
-  Loader2,
   AlertTriangle,
   RotateCcw,
   SkipForward,
+  FastForward,
+  Rewind,
+  Clock,
   Maximize2,
   Minimize2,
   Tv,
   List,
   Keyboard,
-  Sparkles,
   ShieldCheck,
   ShieldAlert
 } from 'lucide-react';
@@ -31,7 +29,6 @@ import { soundFx } from '../../../../lib/soundEffects';
 import AmbientGlow from '../../../../components/shared/AmbientGlow';
 import { useAmbientStore } from '../../../../store/ambientStore';
 import { useUserStore } from '../../../../store/userStore';
-import HLSPlayer from '../../../../components/player/HLSPlayer';
 import NightCastPlayer from '../../../../components/player/NightCastPlayer';
 import MovieRow from '../../../../components/shared/MovieRow';
 import { PlayerSkeleton } from '../../../../components/shared/Skeletons';
@@ -40,20 +37,18 @@ function attachTimestampToUrl(url: string, seconds: number): string {
   if (!url) return url;
   try {
     const urlObj = new URL(url);
-    if (seconds > 5) {
+    if (seconds > 3) {
       const s = Math.floor(seconds).toString();
-      // VidLink uses 'start'
-      urlObj.searchParams.set('start', s);
-      // VidSrc and VidBolt use 't'
-      urlObj.searchParams.set('t', s);
-      // VidKing and others use 'progress'
-      urlObj.searchParams.set('progress', s);
-      // VidBolt uses 'startAt'
+      // VidLink uses 'startAt'
       urlObj.searchParams.set('startAt', s);
+      // Fallback aliases for other providers
+      urlObj.searchParams.set('start', s);
+      urlObj.searchParams.set('t', s);
+      urlObj.searchParams.set('progress', s);
     }
     if (url.includes('vidlink.pro')) {
       if (!urlObj.searchParams.has('primaryColor')) {
-        urlObj.searchParams.set('primaryColor', '22c55e');
+        urlObj.searchParams.set('primaryColor', '39AEA9');
       }
       if (!urlObj.searchParams.has('autoplay')) {
         urlObj.searchParams.set('autoplay', 'true');
@@ -65,23 +60,23 @@ function attachTimestampToUrl(url: string, seconds: number): string {
     }
     return urlObj.toString();
   } catch {
-    if (seconds > 5) {
+    if (seconds > 3) {
       const sep = url.includes('?') ? '&' : '?';
-      return `${url}${sep}start=${Math.floor(seconds)}&t=${Math.floor(seconds)}`;
+      return `${url}${sep}startAt=${Math.floor(seconds)}&start=${Math.floor(seconds)}&t=${Math.floor(seconds)}`;
     }
     return url;
   }
 }
 
-function formatDurationTime(totalSeconds: number): string {
-  const secs = Math.floor(totalSeconds);
-  const hrs = Math.floor(secs / 3600);
-  const mins = Math.floor((secs % 3600) / 60);
-  const remSecs = secs % 60;
-  if (hrs > 0) {
-    return `${hrs}:${mins < 10 ? '0' : ''}${mins}:${remSecs < 10 ? '0' : ''}${remSecs}`;
+function formatPlayerTime(seconds: number): string {
+  if (!isFinite(seconds) || isNaN(seconds) || seconds < 0) return "00:00";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) {
+    return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   }
-  return `${mins}:${remSecs < 10 ? '0' : ''}${remSecs}`;
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
 export default function WatchPage() {
@@ -99,13 +94,8 @@ export default function WatchPage() {
       const s = parseInt(fromQuery, 10);
       if (!isNaN(s) && s >= 1) return s;
     }
-    if (typeof window !== 'undefined' && type === 'tv' && id) {
-      const savedList = getContinueWatchingList();
-      const match = savedList.find((x: LocalProgressItem) => getCleanMediaId(x.id) === id && x.season);
-      if (match && match.season) return match.season;
-    }
     return 1;
-  }, [searchParams, type, id]);
+  }, [searchParams]);
 
   const initialEpisode = useMemo(() => {
     const fromQuery = searchParams.get('episode');
@@ -113,22 +103,13 @@ export default function WatchPage() {
       const ep = parseInt(fromQuery, 10);
       if (!isNaN(ep) && ep >= 1) return ep;
     }
-    if (typeof window !== 'undefined' && type === 'tv' && id) {
-      const savedList = getContinueWatchingList();
-      const match = savedList.find((x: LocalProgressItem) => getCleanMediaId(x.id) === id && x.episode);
-      if (match && match.episode) return match.episode;
-    }
     return 1;
-  }, [searchParams, type, id]);
+  }, [searchParams]);
 
   const [currentSeason, setCurrentSeason] = useState(initialSeason);
   const [currentEpisode, setCurrentEpisode] = useState(initialEpisode);
   const [isIframeLoaded, setIsIframeLoaded] = useState(false);
   const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const [meta, setMeta] = useState<any>(null);
   const [recommendations, setRecommendations] = useState<any[]>([]);
@@ -137,7 +118,7 @@ export default function WatchPage() {
     return [
       {
         id: 'vidsrc',
-        name: 'Server 1 (VidSrc)',
+        name: 'Server 1 (VidSrc - Main Stream)',
         url: type === 'tv'
           ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${seasonNum}&episode=${episodeNum}`
           : `https://vidsrc.me/embed/movie?tmdb=${id}`,
@@ -156,8 +137,18 @@ export default function WatchPage() {
         language_name: 'vidsrc.to'
       },
       {
+        id: 'vidlink',
+        name: 'Server 3 (VidLink Pro)',
+        url: type === 'tv'
+          ? `https://vidlink.pro/tv/${id}/${seasonNum}/${episodeNum}?primaryColor=39AEA9&autoplay=true`
+          : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`,
+        type: 'iframe',
+        language: 'en',
+        language_name: 'vidlink.pro'
+      },
+      {
         id: 'vidbolt',
-        name: 'Server 3 (VidBolt)',
+        name: 'Server 4 (VidBolt)',
         url: type === 'tv'
           ? `https://vidbolt.xyz/tv/${id}/${seasonNum}/${episodeNum}`
           : type === 'anime'
@@ -168,78 +159,28 @@ export default function WatchPage() {
         language_name: 'vidbolt.xyz'
       },
       {
-        id: 'vidlink',
-        name: 'Server 4 (VidLink Pro)',
-        url: type === 'tv'
-          ? `https://vidlink.pro/tv/${id}/${seasonNum}/${episodeNum}?primaryColor=22c55e&autoplay=true`
-          : `https://vidlink.pro/movie/${id}?primaryColor=22c55e&autoplay=true`,
-        type: 'iframe',
-        language: 'en',
-        language_name: 'vidlink.pro'
-      },
-      {
         id: 'nightcast-native',
-        name: 'Server 5 (NightCast Native)',
+        name: 'Server 5 (AutoEmbed)',
         url: type === 'tv'
           ? `https://player.autoembed.cc/embed/tv/${id}/${seasonNum}/${episodeNum}`
           : `https://player.autoembed.cc/embed/movie/${id}`,
-        type: 'hls',
+        type: 'iframe',
         language: 'en',
-        language_name: 'NightCast Player'
+        language_name: 'AutoEmbed'
       }
     ];
   }, [type, id]);
 
   const [servers, setServers] = useState<any[]>(() => buildServers(initialSeason, initialEpisode));
 
-  const [activeServerId, setActiveServerId] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('nightcast_preferred_server_v2') || localStorage.getItem('nightcast_preferred_server');
-      if (saved && saved !== 'vidlink' && ['vidsrc', 'vidsrc-to', 'vidbolt', 'vidlink', 'nightcast-native'].includes(saved)) {
-        return saved;
-      }
-    }
-    return 'vidsrc';
-  });
-
-  const [resumeTime, setResumeTime] = useState<number>(() => {
-    if (typeof window === 'undefined' || !id) return 0;
-    const isTv = type === 'tv';
-    const queryTime = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('time') || new URLSearchParams(window.location.search).get('t') : null;
-    if (queryTime && parseInt(queryTime, 10) > 5) {
-      return parseInt(queryTime, 10);
-    }
-    return getSavedTimestamp(
-      id,
-      isTv ? initialSeason : undefined,
-      isTv ? initialEpisode : undefined,
-      type as 'movie' | 'tv'
-    );
-  });
-
-  const [playerUrl, setPlayerUrl] = useState<string>(() => {
-    if (!id) return "";
-    const isTv = type === 'tv';
-    let defaultUrl = isTv
-      ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${initialSeason}&episode=${initialEpisode}`
-      : `https://vidsrc.me/embed/movie?tmdb=${id}`;
-    let initSec = 0;
-    if (typeof window !== 'undefined') {
-      const queryTime = new URLSearchParams(window.location.search).get('time') || new URLSearchParams(window.location.search).get('t');
-      if (queryTime && parseInt(queryTime, 10) > 5) {
-        initSec = parseInt(queryTime, 10);
-      } else {
-        initSec = getSavedTimestamp(id, isTv ? initialSeason : undefined, isTv ? initialEpisode : undefined, type as 'movie' | 'tv');
-      }
-    }
-    return attachTimestampToUrl(defaultUrl, initSec);
-  });
+  const [activeServerId, setActiveServerId] = useState<string>('vidsrc');
+  const [resumeTime, setResumeTime] = useState<number>(0);
+  const [playerUrl, setPlayerUrl] = useState<string>("");
 
   const [seasonEpisodes, setSeasonEpisodes] = useState<any[]>([]);
   const [episodesLoading, setEpisodesLoading] = useState(false);
   const [failedServerIds, setFailedServerIds] = useState<string[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [streamErrorMsg, setStreamErrorMsg] = useState<string | null>(null);
 
   // Active Playback Tracking Refs
   const playbackSecondsRef = useRef<number>(0);
@@ -247,30 +188,38 @@ export default function WatchPage() {
   const hasRealPlayerEventsRef = useRef<boolean>(false);
   const lastRealPlayerEventTimeRef = useRef<number>(0);
   const lastBackendSaveTimeRef = useRef<number>(0);
-
-  // Audio track switching state
-  const [hlsAudioTracks, setHlsAudioTracks] = useState<Array<{ id: number; name: string; lang?: string }>>([
-    { id: 0, name: 'Hindi Dubbed (हिंदी)', lang: 'hi' },
-    { id: 1, name: 'English / Original', lang: 'en' },
-    { id: 2, name: 'Korean', lang: 'ko' }
-  ]);
-  const [selectedAudioTrack, setSelectedAudioTrack] = useState<number>(0);
-  const [isAudioDropdownOpen, setIsAudioDropdownOpen] = useState(false);
+  const hasSavedFinishingRef = useRef<boolean>(false);
 
   // Luxury Cinema Experience States
   const [isTheaterMode, setIsTheaterMode] = useState(false);
-  const [isAdShieldActive, setIsAdShieldActive] = useState<boolean>(() => {
+  const [isAdShieldActive, setIsAdShieldActive] = useState<boolean>(false);
+
+  // Restore client preferences and saved progress safely after mount
+  useEffect(() => {
+    setMounted(true);
     if (typeof window !== 'undefined') {
       try {
-        localStorage.removeItem('nightcast_ad_shield');
-        const saved = localStorage.getItem('nightcast_ad_shield_v2');
-        if (saved !== null) {
-          return saved === 'true';
+        localStorage.removeItem('nightcast_preferred_server');
+        localStorage.removeItem('nightcast_preferred_server_v2');
+        localStorage.removeItem('nightcast_preferred_server_v4');
+        const savedServer = localStorage.getItem('nightcast_preferred_server_v5');
+        if (savedServer && ['vidsrc', 'vidsrc-to', 'vidlink', 'vidbolt', 'nightcast-native'].includes(savedServer)) {
+          setActiveServerId(savedServer);
+        }
+        const savedShield = localStorage.getItem('nightcast_ad_shield_v2');
+        if (savedShield !== null) {
+          setIsAdShieldActive(savedShield === 'true');
         }
       } catch {}
+
+      if (!searchParams.get('season') && type === 'tv' && id) {
+        const savedList = getContinueWatchingList();
+        const match = savedList.find((x: LocalProgressItem) => getCleanMediaId(x.id) === id && x.season);
+        if (match?.season) setCurrentSeason(match.season);
+        if (match?.episode) setCurrentEpisode(match.episode);
+      }
     }
-    return false;
-  });
+  }, [type, id, searchParams]);
   const [isEpisodeDrawerOpen, setIsEpisodeDrawerOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
@@ -292,11 +241,11 @@ export default function WatchPage() {
   useEffect(() => {
     setFailedServerIds([]);
     setToastMessage(null);
-    setStreamErrorMsg(null);
     setShowNextOverlay(false);
     showNextOverlayRef.current = false;
     setIsAutoPlayDismissed(false);
     isAutoPlayDismissedRef.current = false;
+    hasSavedFinishingRef.current = false;
     setNextCountdown(10);
   }, [id, currentSeason, currentEpisode]);
 
@@ -353,13 +302,13 @@ export default function WatchPage() {
           : `https://vidsrc.to/embed/movie/${id}`;
       } else if (rawActiveServer.id === 'vidsrc-to') {
         fallbackUrl = type === 'tv'
-          ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}`
-          : `https://vidbolt.xyz/movie/${id}`;
-      } else if (rawActiveServer.id === 'vidbolt') {
-        fallbackUrl = type === 'tv'
           ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}?primaryColor=39AEA9&autoplay=true`
           : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`;
       } else if (rawActiveServer.id === 'vidlink') {
+        fallbackUrl = type === 'tv'
+          ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}`
+          : `https://vidbolt.xyz/movie/${id}`;
+      } else if (rawActiveServer.id === 'vidbolt') {
         fallbackUrl = type === 'tv'
           ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
           : `https://vidsrc.me/embed/movie?tmdb=${id}`;
@@ -372,17 +321,6 @@ export default function WatchPage() {
     }
     return rawActiveServer;
   }, [rawActiveServer, isServerFailed, type, id, currentSeason, currentEpisode]);
-
-  useEffect(() => {
-    if (activeServer?.audio_tracks && activeServer.audio_tracks.length > 0) {
-      const parsedTracks = activeServer.audio_tracks.map((tr: any, idx: number) => ({
-        id: idx,
-        name: tr.label || tr.lang?.toUpperCase() || `Audio Track ${idx + 1}`,
-        lang: tr.lang
-      }));
-      setHlsAudioTracks(parsedTracks);
-    }
-  }, [activeServer]);
 
   useEffect(() => {
     const s = parseInt(searchParams.get('season') || '1', 10);
@@ -444,14 +382,13 @@ export default function WatchPage() {
         if (data?.servers && data.servers.length > 0) {
           setServers(data.servers);
           const preferred = typeof window !== 'undefined'
-            ? (localStorage.getItem('nightcast_preferred_server_v2') || localStorage.getItem('nightcast_preferred_server'))
+            ? localStorage.getItem('nightcast_preferred_server_v5')
             : null;
-          const preferredExists = preferred && preferred !== 'vidlink' && data.servers.some((s: any) => s.id === preferred);
-          const currentExists = data.servers.some((s: any) => s.id === activeServerId);
-          if (preferredExists) {
-            setActiveServerId(preferred!);
-          } else if (!currentExists) {
-            setActiveServerId(data.servers[0].id);
+          if (preferred && data.servers.some((s: any) => s.id === preferred)) {
+            setActiveServerId(preferred);
+          } else {
+            const vidsrcServer = data.servers.find((s: any) => s.id === 'vidsrc');
+            setActiveServerId(vidsrcServer ? 'vidsrc' : data.servers[0].id);
           }
         }
       } catch (err) {
@@ -466,13 +403,14 @@ export default function WatchPage() {
     const isTv = type === 'tv';
     const queryTime = searchParams.get('time') || searchParams.get('t');
     const parsedQuery = queryTime ? parseInt(queryTime, 10) : 0;
-    const seconds = parsedQuery > 5
+    const seconds = parsedQuery > 3
       ? parsedQuery
       : getSavedTimestamp(
           id,
           isTv ? currentSeason : undefined,
           isTv ? currentEpisode : undefined,
-          type as 'movie' | 'tv'
+          type as 'movie' | 'tv',
+          activeProfile?.id
         );
 
     const finalUrl = attachTimestampToUrl(activeServer.url, seconds);
@@ -480,7 +418,7 @@ export default function WatchPage() {
     setResumeTime(seconds);
     playbackSecondsRef.current = seconds;
     setIsIframeLoaded(false);
-  }, [activeServer, id, type, currentSeason, currentEpisode, searchParams]);
+  }, [activeServer, id, type, currentSeason, currentEpisode, searchParams, activeProfile?.id]);
 
   // If iframe onLoad hasn't fired after 2 seconds (due to adblocker or sandbox), mark as loaded so heartbeat and progress can run
   useEffect(() => {
@@ -565,31 +503,6 @@ export default function WatchPage() {
     return 2700;
   }, [type, meta, seasonEpisodes, currentEpisode]);
 
-  const handleRestartFromBeginning = useCallback(() => {
-    soundFx.playTap();
-    playbackSecondsRef.current = 0;
-    watchDurationSecondsRef.current = 0;
-    setResumeTime(0);
-    if (!id) return;
-    const isTv = type === 'tv';
-    saveWatchProgress({
-      id: id,
-      media_type: type as 'movie' | 'tv',
-      title: meta?.title || meta?.name || 'Untitled',
-      poster_path: meta?.poster_path || null,
-      backdrop_path: meta?.backdrop_path || null,
-      season: isTv ? currentSeason : undefined,
-      episode: isTv ? currentEpisode : undefined,
-      timestamp_seconds: 0,
-      duration_seconds: getEstimatedDuration(),
-      progress_percent: 0,
-    });
-    if (activeServer) {
-      setPlayerUrl(attachTimestampToUrl(activeServer.url, 0));
-      setIsIframeLoaded(false);
-    }
-  }, [id, type, meta, currentSeason, currentEpisode, activeServer, getEstimatedDuration]);
-
   const triggerNextEpisodeOverlay = useCallback(() => {
     if (type === 'tv' && nextEpisodeInfo && !isAutoPlayDismissedRef.current && !showNextOverlayRef.current) {
       setShowNextOverlay(true);
@@ -633,34 +546,43 @@ export default function WatchPage() {
         progress_percent: progressPercent,
         next_season: nextEpisodeInfo?.season,
         next_episode: nextEpisodeInfo?.episode,
-      });
+      }, activeProfile?.id);
 
       // Auto-trigger next episode overlay in web series when nearing the end
-      if (type === 'tv' && duration > 60 && (currentTime >= duration - 25 || progressPercent >= 92)) {
+      if (type === 'tv' && duration > 60 && (currentTime >= duration - 25 || progressPercent >= 90)) {
         if (!isAutoPlayDismissedRef.current && !showNextOverlayRef.current) {
           triggerNextEpisodeOverlay();
         }
       }
 
       const now = Date.now();
-      const isFinishing = progressPercent >= 92.0 || currentTime >= duration - 25;
-      const shouldSaveBackend = (now - lastBackendSaveTimeRef.current >= 12000) || isFinishing;
+      const isFinishing = duration > 0 && (progressPercent >= 90.0 || (duration > 60 && currentTime >= duration - 25));
+      if (!isFinishing && progressPercent < 85.0) {
+        hasSavedFinishingRef.current = false;
+      }
+
+      let shouldSaveBackend = (now - lastBackendSaveTimeRef.current >= 8000);
+      if (isFinishing && !hasSavedFinishingRef.current) {
+        shouldSaveBackend = true;
+        hasSavedFinishingRef.current = true;
+      }
 
       if (activeProfile && meta && shouldSaveBackend) {
         lastBackendSaveTimeRef.current = now;
+        const cleanMediaId = getCleanMediaId(id);
         apiFetch('/api/progress/update', {
           method: 'POST',
           headers: { 'X-Profile-ID': activeProfile.id },
           body: JSON.stringify({
             mediaType: type,
-            id: id,
+            id: cleanMediaId,
             currentTime: currentTime,
             duration: duration,
             progress: progressPercent,
             season: type === 'tv' ? currentSeason : undefined,
             episode: type === 'tv' ? currentEpisode : undefined,
-            event: 'progress',
-            title: meta.title || meta.name || 'Movie',
+            event: isFinishing ? 'ended' : 'progress',
+            title: meta.title || meta.name || 'Untitled',
             posterPath: meta.poster_path,
             backdropPath: meta.backdrop_path,
           })
@@ -671,31 +593,50 @@ export default function WatchPage() {
     }
   }, [id, activeProfile, meta, type, currentSeason, currentEpisode, nextEpisodeInfo, triggerNextEpisodeOverlay]);
 
+  const handleSeekDelta = useCallback((deltaSeconds: number) => {
+    const estDuration = getEstimatedDuration();
+    const current = playbackSecondsRef.current || 0;
+    const newTime = Math.max(0, Math.min(estDuration - 5, current + deltaSeconds));
+    playbackSecondsRef.current = newTime;
+    handlePlayerProgress(newTime, estDuration);
+
+    const baseRaw = activeServer?.url || playerUrl;
+    const updatedUrl = attachTimestampToUrl(baseRaw, newTime);
+    setPlayerUrl(updatedUrl);
+    setResumeTime(newTime);
+    soundFx.playTap();
+    const sign = deltaSeconds > 0 ? "+" : "";
+    const minStr = Math.round(Math.abs(deltaSeconds) / 60);
+    setToastMessage(`Skipped ${sign}${Math.abs(deltaSeconds) >= 60 ? `${minStr}m` : `${deltaSeconds}s`} (Now at ${formatPlayerTime(newTime)})`);
+  }, [getEstimatedDuration, handlePlayerProgress, activeServer, playerUrl]);
+
   // 1. Reset & load saved timestamp on route / episode change
   useEffect(() => {
     if (!id) return;
     const isTv = type === 'tv';
     const queryTime = searchParams.get('time') || searchParams.get('t');
     const parsedQuery = queryTime ? parseInt(queryTime, 10) : 0;
-    const initialSeconds = parsedQuery > 5
+    const initialSeconds = parsedQuery > 3
       ? parsedQuery
       : getSavedTimestamp(
           id,
           isTv ? currentSeason : undefined,
           isTv ? currentEpisode : undefined,
-          type as 'movie' | 'tv'
+          type as 'movie' | 'tv',
+          activeProfile?.id
         );
     playbackSecondsRef.current = initialSeconds;
     watchDurationSecondsRef.current = 0;
     hasRealPlayerEventsRef.current = false;
     setResumeTime(initialSeconds);
-  }, [id, currentSeason, currentEpisode, type, searchParams]);
+  }, [id, currentSeason, currentEpisode, type, searchParams, activeProfile?.id]);
 
   // 2. When TMDB meta loads, ensure metadata in localStorage is updated with high-quality backdrop & title
   useEffect(() => {
     if (!id || !meta) return;
     try {
-      const raw = localStorage.getItem('nightcast_continue_watching');
+      const storageKey = getStorageKey(activeProfile?.id);
+      const raw = localStorage.getItem(storageKey);
       if (raw) {
         const map = JSON.parse(raw);
         const specificKey = type === 'tv' ? `${id}_s${currentSeason}e${currentEpisode}` : id;
@@ -704,15 +645,15 @@ export default function WatchPage() {
           target.title = meta.title || meta.name || target.title;
           target.poster_path = meta.poster_path || target.poster_path;
           target.backdrop_path = meta.backdrop_path || target.backdrop_path;
-          localStorage.setItem('nightcast_continue_watching', JSON.stringify(map));
+          localStorage.setItem(storageKey, JSON.stringify(map));
         }
       }
     } catch {
       // Ignore
     }
-  }, [id, meta, type, currentSeason, currentEpisode]);
+  }, [id, meta, type, currentSeason, currentEpisode, activeProfile?.id]);
 
-  // 3. PostMessage listener for embed players (Vidking PLAYER_EVENT, VidBolt, VidLink, VidSrc)
+  // 3. PostMessage listener for embed players (VidLink MEDIA_DATA, Vidking PLAYER_EVENT, VidBolt, etc.)
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       try {
@@ -726,49 +667,82 @@ export default function WatchPage() {
         }
         if (!data || typeof data !== 'object') return;
 
-        // Support Vidking PLAYER_EVENT
-        if (data.type === 'PLAYER_EVENT' && data.data) {
+        let curTime: number | undefined;
+        let dur: number | undefined;
+
+        // A. VidLink MEDIA_DATA event (emits real-time watched seconds every 2s even when user seeks/skips)
+        if (data.type === 'MEDIA_DATA' && data.data) {
+          hasRealPlayerEventsRef.current = true;
+          let watchedSec: number | undefined;
+          let durSec: number | undefined;
+
+          // VidLink data is an object dictionary keyed by tmdbId, e.g. { "1377237": { progress: ... } }
+          const rawDict = data.data;
+          let mediaEntry = rawDict[id] || rawDict[String(id)];
+          if (!mediaEntry && typeof rawDict === 'object') {
+            const keys = Object.keys(rawDict);
+            for (const k of keys) {
+              if (k === id || String(k) === String(id) || (rawDict[k] && String(rawDict[k].id) === String(id))) {
+                mediaEntry = rawDict[k];
+                break;
+              }
+            }
+            if (!mediaEntry && keys.length === 1 && typeof rawDict[keys[0]] === 'object') {
+              mediaEntry = rawDict[keys[0]];
+            }
+          }
+
+          if (mediaEntry) {
+            if (type === 'tv' && mediaEntry.show_progress) {
+              const epKey = `s${currentSeason}e${currentEpisode}`;
+              const epProg = mediaEntry.show_progress[epKey]?.progress || mediaEntry.progress;
+              if (epProg) {
+                watchedSec = epProg.watched ?? epProg.currentTime;
+                durSec = epProg.duration;
+              }
+            } else if (mediaEntry.progress) {
+              watchedSec = mediaEntry.progress.watched ?? mediaEntry.progress.currentTime;
+              durSec = mediaEntry.progress.duration;
+            }
+          }
+
+          // Direct fallback if data.data is already the progress object
+          if (watchedSec === undefined) {
+            const p = data.data.progress;
+            watchedSec = p?.watched ?? data.data.watched ?? data.data.currentTime ?? data.data.timestamp;
+            durSec = p?.duration ?? data.data.duration;
+          }
+
+          if (watchedSec !== undefined && !isNaN(Number(watchedSec))) {
+            curTime = Number(watchedSec);
+            dur = Number(durSec);
+          }
+        } else if (data.type === 'PLAYER_EVENT' && data.data) {
+          // B. VidLink / Vidking real-time PLAYER_EVENT (emits on "seeked", "play", "pause")
           hasRealPlayerEventsRef.current = true;
           const pData = data.data;
-          const curTime = Number(pData.currentTime ?? pData.timestamp);
-          const dur = Number(pData.duration);
-          const estDur = (!isNaN(dur) && dur > 0) ? dur : getEstimatedDuration();
+          const p = pData.progress;
+          const watchedSec = pData.currentTime ?? pData.timestamp ?? p?.watched ?? pData.watched;
+          const durSec = pData.duration ?? p?.duration;
 
-          if (!isNaN(curTime) && curTime >= 10) {
-            playbackSecondsRef.current = curTime;
-            handlePlayerProgress(curTime, estDur);
+          if (watchedSec !== undefined && !isNaN(Number(watchedSec))) {
+            curTime = Number(watchedSec);
+            dur = Number(durSec);
           }
-          if (pData.event === 'ended') {
+          if (pData.event === 'ended' || data.event === 'ended') {
             if (type === 'tv' && !isAutoPlayDismissedRef.current && !showNextOverlayRef.current) {
               triggerNextEpisodeOverlay();
             }
           }
-          return;
-        }
-
-        let curTime: number | undefined;
-        let dur: number | undefined;
-
-        if (data.type === 'MEDIA_DATA' && data.data) {
-          hasRealPlayerEventsRef.current = true;
-          curTime = Number(data.data.currentTime);
-          dur = Number(data.data.duration);
         } else if (data.event === 'timeupdate' || data.type === 'timeupdate') {
-          hasRealPlayerEventsRef.current = true;
           curTime = Number(data.currentTime ?? data.data?.currentTime);
           dur = Number(data.duration ?? data.data?.duration);
         } else if (typeof data.currentTime === 'number') {
-          hasRealPlayerEventsRef.current = true;
           curTime = data.currentTime;
           dur = typeof data.duration === 'number' ? data.duration : undefined;
         }
 
-        // Guard: If user is resuming from > 30s, ignore initial 0-30s buffer events until player has sought or user has watched >= 10s
-        if (resumeTime > 30 && curTime !== undefined && curTime < 30 && watchDurationSecondsRef.current < 20) {
-          return;
-        }
-
-        if (curTime !== undefined && !isNaN(curTime) && curTime >= 5) {
+        if (curTime !== undefined && !isNaN(curTime) && curTime >= 1) {
           lastRealPlayerEventTimeRef.current = Date.now();
           hasRealPlayerEventsRef.current = true;
           playbackSecondsRef.current = curTime;
@@ -796,27 +770,38 @@ export default function WatchPage() {
     return () => {
       window.removeEventListener('message', handleMessage);
     };
-  }, [handlePlayerProgress, meta, type, triggerNextEpisodeOverlay, resumeTime, getEstimatedDuration]);
+  }, [handlePlayerProgress, meta, type, currentSeason, currentEpisode, triggerNextEpisodeOverlay, resumeTime, getEstimatedDuration]);
 
-  // 4. Active Watcher Heartbeat: For iframe servers that do not emit continuous postMessage
+  // 4. Fallback Watcher Heartbeat: for iframe servers that do NOT emit continuous postMessage (e.g. VidSrc, VidSrc VIP, VidBolt)
   useEffect(() => {
     if (!id || !meta) return;
     const estDuration = getEstimatedDuration();
+    let lastTickTime = Date.now();
 
     const timer = setInterval(() => {
+      const now = Date.now();
+      const elapsedSeconds = (now - lastTickTime) / 1000;
+      lastTickTime = now;
+
+      // Only pause if the user actually switched to another tab or minimized the browser window
       if (document.hidden) return;
-      // Only skip heartbeat if we received a real player postMessage in the last 10 seconds
-      if (Date.now() - lastRealPlayerEventTimeRef.current < 10000) return;
+
+      // If we received REAL continuous player postMessage events (e.g. VidLink) in the last 8 seconds, let real events drive progress
+      if (Date.now() - lastRealPlayerEventTimeRef.current < 8000) return;
+
       if (!isIframeLoaded) return;
+      if (estDuration > 0 && playbackSecondsRef.current >= estDuration - 10) return;
 
-      watchDurationSecondsRef.current += 5;
-      playbackSecondsRef.current += 5;
+      // Add actual elapsed seconds (capped at 10s to prevent large leaps if computer was asleep)
+      const deltaSec = Math.min(Math.max(elapsedSeconds, 1), 10);
+      watchDurationSecondsRef.current += deltaSec;
+      playbackSecondsRef.current += deltaSec;
 
-      // Save once user has watched for >= 5 seconds
-      if (playbackSecondsRef.current >= 5) {
+      // Save progress whenever user has watched for >= 3 seconds
+      if (playbackSecondsRef.current >= 3) {
         handlePlayerProgress(playbackSecondsRef.current, estDuration);
       }
-    }, 5000);
+    }, 4000);
 
     return () => clearInterval(timer);
   }, [id, meta, isIframeLoaded, handlePlayerProgress, getEstimatedDuration]);
@@ -829,32 +814,85 @@ export default function WatchPage() {
       id,
       type === 'tv' ? currentSeason : undefined,
       type === 'tv' ? currentEpisode : undefined,
-      type as 'movie' | 'tv'
+      type as 'movie' | 'tv',
+      activeProfile?.id
     );
-    if (saved > 5) {
+    if (saved > 3) {
       const initialTimer = setTimeout(() => {
         handlePlayerProgress(saved, estDuration);
       }, 2000);
       return () => clearTimeout(initialTimer);
     }
-  }, [id, meta, type, currentSeason, currentEpisode, handlePlayerProgress, getEstimatedDuration]);
+  }, [id, meta, type, currentSeason, currentEpisode, handlePlayerProgress, getEstimatedDuration, activeProfile?.id]);
 
-  // 5. Save progress on beforeunload / exit
+  // 5. Save progress on unmount / navigation / beforeunload
   useEffect(() => {
-    const handleBeforeUnload = () => {
+    const saveOnExit = () => {
       const curTime = playbackSecondsRef.current;
-      if (curTime >= 5 && meta && id) {
+      if (curTime >= 3 && meta && id) {
         const estDuration = getEstimatedDuration();
-        handlePlayerProgress(curTime, estDuration);
+        const progressPercent = estDuration > 0 ? (curTime / estDuration) * 100 : 0;
+        const isFinishing = progressPercent >= 90.0 || (estDuration > 60 && curTime >= estDuration - 25);
+        const cleanMediaId = getCleanMediaId(id);
+
+        // 1. Synchronously save to scoped LocalStorage
+        saveWatchProgress({
+          id: cleanMediaId,
+          media_type: type as 'movie' | 'tv',
+          title: meta.title || meta.name || 'Untitled',
+          poster_path: meta.poster_path || null,
+          backdrop_path: meta.backdrop_path || null,
+          season: type === 'tv' ? currentSeason : undefined,
+          episode: type === 'tv' ? currentEpisode : undefined,
+          timestamp_seconds: curTime,
+          duration_seconds: estDuration,
+          progress_percent: progressPercent,
+          next_season: nextEpisodeInfo?.season,
+          next_episode: nextEpisodeInfo?.episode,
+        }, activeProfile?.id);
+
+        // 2. Beacon to backend if activeProfile exists
+        if (activeProfile?.id) {
+          const payload = {
+            mediaType: type,
+            id: cleanMediaId,
+            currentTime: curTime,
+            duration: estDuration,
+            progress: progressPercent,
+            season: type === 'tv' ? currentSeason : undefined,
+            episode: type === 'tv' ? currentEpisode : undefined,
+            event: isFinishing ? 'ended' : 'progress',
+            title: meta.title || meta.name || 'Untitled',
+            posterPath: meta.poster_path,
+            backdropPath: meta.backdrop_path,
+          };
+          const token = getStoredToken();
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'X-Profile-ID': activeProfile.id,
+          };
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+
+          try {
+            fetch('/api/v1/progress/update', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify(payload),
+              keepalive: true,
+            }).catch(() => {});
+          } catch {}
+        }
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('beforeunload', saveOnExit);
+    window.addEventListener('pagehide', saveOnExit);
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      handleBeforeUnload();
+      window.removeEventListener('beforeunload', saveOnExit);
+      window.removeEventListener('pagehide', saveOnExit);
+      saveOnExit();
     };
-  }, [id, meta, handlePlayerProgress, getEstimatedDuration]);
+  }, [id, meta, type, currentSeason, currentEpisode, activeProfile, nextEpisodeInfo, getEstimatedDuration]);
 
   const handleHlsError = useCallback(() => {
     if (activeServer) {
@@ -879,8 +917,7 @@ export default function WatchPage() {
     if (nextServer && !failedServerIds.includes(nextServer.id)) {
       setActiveServerId(nextServer.id);
       if (typeof window !== 'undefined') {
-        localStorage.setItem('nightcast_preferred_server_v2', nextServer.id);
-        localStorage.setItem('nightcast_preferred_server', nextServer.id);
+        localStorage.setItem('nightcast_preferred_server_v5', nextServer.id);
       }
       soundFx.playTap();
       setToastMessage(`Switched stream engine to ${nextServer.name}`);
@@ -935,7 +972,25 @@ export default function WatchPage() {
         }
       }
 
-      if (e.key === 't' || e.key === 'T') {
+      if (e.shiftKey && e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleSeekDelta(300);
+      } else if (e.shiftKey && e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handleSeekDelta(-300);
+      } else if ((e.altKey || e.ctrlKey) && e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleSeekDelta(600);
+      } else if ((e.altKey || e.ctrlKey) && e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handleSeekDelta(-600);
+      } else if (e.key === ']') {
+        e.preventDefault();
+        handleSeekDelta(60);
+      } else if (e.key === '[') {
+        e.preventDefault();
+        handleSeekDelta(-60);
+      } else if (e.key === 't' || e.key === 'T') {
         e.preventDefault();
         setIsTheaterMode(prev => {
           soundFx.playChime();
@@ -976,7 +1031,8 @@ export default function WatchPage() {
     nextEpisodeInfo,
     cycleNextServer,
     handleNextEpisodeShortcut,
-    toggleNativeFullscreen
+    toggleNativeFullscreen,
+    handleSeekDelta
   ]);
 
   // Lock body scroll when theater mode is active
@@ -1005,7 +1061,7 @@ export default function WatchPage() {
         </div>
       )}
 
-      {playerUrl ? (
+      {mounted && playerUrl ? (
         activeServer?.type === 'hls' ? (
           <NightCastPlayer
             streamUrl={playerUrl}
@@ -1280,7 +1336,7 @@ export default function WatchPage() {
         )}
 
         {/* Ad-Shield Sandbox Warning Banner when Active */}
-        {isAdShieldActive && (
+        {mounted && isAdShieldActive && (
           <div className="p-3.5 px-5 bg-amber-500/10 border border-amber-500/35 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-sans text-amber-200 shadow-xl animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center gap-2.5">
               <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
@@ -1331,8 +1387,7 @@ export default function WatchPage() {
                         soundFx.playTap();
                         setActiveServerId(srv.id);
                         if (typeof window !== 'undefined') {
-                          localStorage.setItem('nightcast_preferred_server_v2', srv.id);
-                          localStorage.setItem('nightcast_preferred_server', srv.id);
+                          localStorage.setItem('nightcast_preferred_server_v5', srv.id);
                         }
                       }
                     }}
@@ -1642,6 +1697,42 @@ export default function WatchPage() {
                   <kbd className="px-2.5 py-1 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
                     ?
                   </kbd>
+                </div>
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
+                  <span className="text-[#E2E8F0] font-medium">Quick Seek ±5 Minutes</span>
+                  <div className="flex items-center gap-1">
+                    <kbd className="px-2 py-0.5 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                      Shift
+                    </kbd>
+                    <span className="text-[#8FA8AD] text-xs">+</span>
+                    <kbd className="px-2 py-0.5 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                      ➔ / ⬅
+                    </kbd>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
+                  <span className="text-[#E2E8F0] font-medium">Quick Seek ±10 Minutes</span>
+                  <div className="flex items-center gap-1">
+                    <kbd className="px-2 py-0.5 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                      Alt
+                    </kbd>
+                    <span className="text-[#8FA8AD] text-xs">+</span>
+                    <kbd className="px-2 py-0.5 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                      ➔ / ⬅
+                    </kbd>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
+                  <span className="text-[#E2E8F0] font-medium">Fine Seek ±1 Minute</span>
+                  <div className="flex items-center gap-1">
+                    <kbd className="px-2 py-0.5 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                      [
+                    </kbd>
+                    <span className="text-[#8FA8AD] text-xs">/</span>
+                    <kbd className="px-2 py-0.5 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                      ]
+                    </kbd>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
                   <span className="text-[#E2E8F0] font-medium">Close Overlay / Exit Theater</span>

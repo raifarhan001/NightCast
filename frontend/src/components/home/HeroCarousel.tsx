@@ -249,7 +249,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
 
   return (
     <div
-      className="relative w-full h-screen max-h-screen h-[100dvh] max-h-[100dvh] overflow-hidden bg-[#0B131B] select-none flex flex-col justify-between pt-16 sm:pt-7 md:pt-8 pb-3 sm:pb-4 px-4 sm:px-10 md:px-14 lg:px-16"
+      className="relative w-full h-screen max-h-screen h-[100dvh] max-h-[100dvh] overflow-hidden bg-[#0B131B] select-none flex flex-col justify-between pt-16 sm:pt-7 md:pt-8 pb-20 sm:pb-4 px-4 sm:px-10 md:px-14 lg:px-16"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -313,7 +313,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
               {/* "Watch now" Button (Crisp Translucent White Pill with Black Play Icon) */}
               <Link
                 href={`/watch/${type}/${activeItem.id}`}
-                className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#F0F0F0]/85 hover:bg-[#F0F0F0] text-[#0B131B] backdrop-blur-md border border-white/20 font-semibold text-xs sm:text-sm tracking-wide flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-white/10 cursor-pointer group"
+                className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#F0F0F0]/85 hover:bg-[#F0F0F0] text-[#0B131B] backdrop-blur-md border border-white/20 font-semibold text-xs sm:text-sm tracking-wide flex items-center gap-2 transform-gpu will-change-transform hover:scale-105 active:scale-95 transition-[transform,background-color] duration-150 shadow-lg shadow-white/10 cursor-pointer group"
               >
                 <Play className="w-4 h-4 fill-[#0B131B] text-[#0B131B] ml-0.5 transition-transform group-hover:scale-110" />
                 <span>Watch now</span>
@@ -323,7 +323,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
               <button
                 type="button"
                 onClick={() => handleOpenTrailer(activeItem)}
-                className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#2C3E50]/35 hover:bg-[#4A6E8D]/45 text-[#F0F0F0] border border-[#4A6E8D]/30 text-xs sm:text-sm font-medium tracking-wide flex items-center justify-center transition-all hover:scale-105 active:scale-95 shadow-md backdrop-blur-xl cursor-pointer"
+                className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#2C3E50]/35 hover:bg-[#4A6E8D]/45 text-[#F0F0F0] border border-[#4A6E8D]/30 text-xs sm:text-sm font-medium tracking-wide flex items-center justify-center transform-gpu will-change-transform transition-[transform,background-color] duration-150 hover:scale-105 active:scale-95 shadow-md backdrop-blur-xl cursor-pointer"
               >
                 Trailer
               </button>
@@ -344,14 +344,14 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
               <button
                 key={m.id}
                 onClick={() => setCurrentIndex(idx)}
-                className={`flex flex-col items-center group cursor-pointer transition-all duration-200 ${
+                className={`flex flex-col items-center group cursor-pointer transform-gpu will-change-transform transition-[transform,opacity] duration-150 ${
                   idx >= 3 ? "hidden sm:flex" : "flex"
                 }`}
                 title={m.title || m.name}
               >
                 {/* Thumbnail Card */}
                 <div
-                  className={`relative w-10 sm:w-12 md:w-13 aspect-[3/4] rounded-md sm:rounded-lg overflow-hidden bg-black/60 transition-all duration-200 ${
+                  className={`relative w-10 sm:w-12 md:w-13 aspect-[3/4] rounded-md sm:rounded-lg overflow-hidden bg-black/60 transform-gpu transition-[border-color,box-shadow,transform,opacity] duration-150 ${
                     isActive
                       ? "ring-2 ring-[#A4C8E1] shadow-[0_4px_16px_rgba(164,200,225,0.35)] scale-105 opacity-100"
                       : "opacity-45 group-hover:opacity-85 border border-[#4A6E8D]/30 group-hover:scale-100"
@@ -389,7 +389,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
           <button
             type="button"
             onClick={() => toggleFavorite(activeItem.id)}
-            className={`w-9 sm:w-10 h-9 sm:h-10 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all duration-200 active:scale-95 cursor-pointer shadow-lg ${
+            className={`w-9 sm:w-10 h-9 sm:h-10 rounded-full flex items-center justify-center backdrop-blur-xl border transform-gpu will-change-transform transition-[transform,background-color,border-color] duration-150 active:scale-95 cursor-pointer shadow-lg ${
               favorites[activeItem.id]
                 ? "bg-rose-500/25 border-rose-500/50 text-rose-400 scale-105"
                 : "bg-[#1B3A57]/35 hover:bg-[#2C3E50]/55 border-[#4A6E8D]/25 text-[#F0F0F0]/80 hover:text-[#F0F0F0]"
@@ -408,7 +408,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
           <button
             type="button"
             onClick={() => toggleWatchlist(activeItem)}
-            className={`w-9 sm:w-10 h-9 sm:h-10 rounded-full flex items-center justify-center backdrop-blur-xl border transition-all duration-200 active:scale-95 cursor-pointer shadow-lg ${
+            className={`w-9 sm:w-10 h-9 sm:h-10 rounded-full flex items-center justify-center backdrop-blur-xl border transform-gpu will-change-transform transition-[transform,background-color,border-color] duration-150 active:scale-95 cursor-pointer shadow-lg ${
               watchlist[activeItem.id]
                 ? "bg-[#A4C8E1]/25 border-[#A4C8E1]/50 text-[#A4C8E1] scale-105"
                 : "bg-[#1B3A57]/35 hover:bg-[#2C3E50]/55 border-[#4A6E8D]/25 text-[#F0F0F0]/80 hover:text-[#F0F0F0]"
@@ -427,7 +427,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
           <button
             type="button"
             onClick={() => showToast("Added to Playlist")}
-            className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-[#1B3A57]/35 hover:bg-[#2C3E50]/55 border border-[#4A6E8D]/25 backdrop-blur-xl flex items-center justify-center text-[#F0F0F0]/80 hover:text-[#F0F0F0] transition-all duration-200 active:scale-95 cursor-pointer shadow-lg"
+            className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-[#1B3A57]/35 hover:bg-[#2C3E50]/55 border border-[#4A6E8D]/25 backdrop-blur-xl flex items-center justify-center text-[#F0F0F0]/80 hover:text-[#F0F0F0] transform-gpu will-change-transform transition-[transform,background-color,border-color] duration-150 active:scale-95 cursor-pointer shadow-lg"
             title="Add to Playlist"
             aria-label="Add to Playlist"
           >

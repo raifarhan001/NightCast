@@ -11,7 +11,7 @@ import { ImageService } from '../../../lib/ImageService';
 import { DetailsSkeleton } from '../../../components/shared/Skeletons';
 import { TvErrorBoundary } from '../../../components/shared/ErrorBoundaries';
 import MovieRow from '../../../components/shared/MovieRow';
-import { Play, Star, Bookmark, BookmarkCheck, Clock, Calendar, Languages, Send, Sparkles } from 'lucide-react';
+import { Play, Star, Bookmark, BookmarkCheck, Clock, Calendar, Languages, Send, Sparkles, RotateCcw, Tv } from 'lucide-react';
 
 function TvDetailsPage() {
   const router = useRouter();
@@ -24,7 +24,7 @@ function TvDetailsPage() {
   const [reviewInput, setReviewInput] = useState('');
   const [reviewSuccess, setReviewSuccess] = useState(false);
 
-  const { data: tv, isLoading } = useQuery<TvDetail>({
+  const { data: tv, isLoading, refetch: refetchTv } = useQuery<TvDetail>({
     queryKey: ['tv-details', id],
     queryFn: () => apiFetch(`/api/tmdb/tv/${id}`)
   });
@@ -93,8 +93,29 @@ function TvDetailsPage() {
   if (isLoading) return <DetailsSkeleton />;
   if (!tv) {
     return (
-      <div className="w-full min-h-screen bg-[#0D0E11] flex justify-center items-center text-center">
-        <p className="text-xs font-mono text-[#87878A] uppercase tracking-widest">TV details not found.</p>
+      <div className="w-full min-h-screen bg-[#0B131B] flex flex-col justify-center items-center text-center px-6">
+        <div className="w-16 h-16 rounded-full bg-[#1B3A57]/30 border border-[#4A6E8D]/30 flex items-center justify-center text-[#A4C8E1] mb-5 shadow-xl">
+          <Tv className="w-8 h-8 opacity-80" />
+        </div>
+        <h2 className="text-2xl font-bold font-display text-[#F0F0F0] mb-2">Show Details Not Found</h2>
+        <p className="text-xs font-sans text-[#4A6E8D] max-w-sm mb-6">
+          We couldn't load information for this TV series. It may have been removed or TMDB is temporarily unreachable.
+        </p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => refetchTv()}
+            className="px-5 py-2.5 rounded-full bg-[#1B3A57]/50 hover:bg-[#2C3E50]/70 text-[#F0F0F0] border border-[#4A6E8D]/40 text-xs font-medium transition cursor-pointer flex items-center gap-2"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Try Again</span>
+          </button>
+          <Link
+            href="/"
+            className="px-5 py-2.5 rounded-full bg-[#F0F0F0] hover:bg-[#A4C8E1] text-[#0B131B] text-xs font-semibold transition cursor-pointer shadow-lg"
+          >
+            Explore Home
+          </Link>
+        </div>
       </div>
     );
   }

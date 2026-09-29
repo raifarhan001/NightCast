@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Search, Film, Tv, Flame, X, Sparkles, SlidersHorizontal } from "lucide-react";
+import { Search, X } from "lucide-react";
 import MovieCard from "../../components/shared/MovieCard";
 import { apiFetch, MediaItem } from "../../lib/api";
 
@@ -61,30 +61,56 @@ function SearchPageContent() {
     if (typeParam) setSelectedType(typeParam);
   }, [typeParam]);
 
-  // Debounce search term changes
+  useEffect(() => {
+    setSelectedGenre(genreParam || "");
+  }, [genreParam]);
+
+  // Debounce search term changes using replace to avoid polluting browser history and causing cursor stutter
   useEffect(() => {
     if (searchTerm === debouncedSearchTerm) return;
     setIsDebouncing(true);
     const timer = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
       setIsDebouncing(false);
+      const params = new URLSearchParams(searchParams.toString());
       if (searchTerm.trim()) {
-        router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}&type=${selectedType}`);
-      } else if (studioParam) {
-        // preserve studio filters when clearing text
-        router.push(`/search?studio=${studioParam}&name=${encodeURIComponent(studioNameParam)}&provider=${providerParam}&network=${networkParam}&company=${companyParam}&type=${selectedType}`);
+        params.set("q", searchTerm.trim());
       } else {
-        router.push(`/search${selectedType !== 'all' ? `?type=${selectedType}` : ''}`);
+        params.delete("q");
       }
+      if (selectedType && selectedType !== "all") {
+        params.set("type", selectedType);
+      } else {
+        params.delete("type");
+      }
+      if (selectedGenre) {
+        params.set("genre", selectedGenre);
+      } else {
+        params.delete("genre");
+      }
+      const qs = params.toString();
+      router.replace(`/search${qs ? `?${qs}` : ''}`, { scroll: false });
     }, 350);
     return () => clearTimeout(timer);
-  }, [searchTerm, selectedType, debouncedSearchTerm, studioParam, studioNameParam, providerParam, networkParam, companyParam, router]);
+  }, [searchTerm, selectedType, selectedGenre, debouncedSearchTerm, searchParams, router]);
+
+  const handleGenreChange = (newGenre: string) => {
+    setSelectedGenre(newGenre);
+    const params = new URLSearchParams(searchParams.toString());
+    if (newGenre) {
+      params.set("genre", newGenre);
+    } else {
+      params.delete("genre");
+    }
+    router.replace(`/search?${params.toString()}`, { scroll: false });
+  };
 
   // Query Key and Fetch Function
   const isStudioFilterActive = Boolean(studioParam || providerParam || networkParam || companyParam);
 
   const fetchCatalogItems = async (): Promise<MediaItem[]> => {
     const activeQuery = debouncedSearchTerm.trim() || queryParam.trim();
+    const activeGenre = selectedGenre || genreParam;
 
     // 1. Text Search Query
     if (activeQuery) {
@@ -95,23 +121,40 @@ function SearchPageContent() {
     // 2. Studio / Platform Filter Query
     if (isStudioFilterActive) {
       if (selectedType === "movie") {
-        const query = `/api/tmdb/discover/movie?with_watch_providers=${providerParam}&with_companies=${companyParam}&with_genres=${genreParam}&with_original_language=${langParam}&watch_region=US`;
+        const query = `/api/tmdb/discover/movie?with_watch_providers=${providerParam}&with_companies=${companyParam}&with_genres=${activeGenre}&with_original_language=${langParam}&watch_region=US`;
         return apiFetch(query);
       }
       if (selectedType === "tv") {
-        const query = `/api/tmdb/discover/tv?with_watch_providers=${providerParam}&with_networks=${networkParam}&with_genres=${genreParam}&with_original_language=${langParam}&watch_region=US`;
+        const query = `/api/tmdb/discover/tv?with_watch_providers=${providerParam}&with_networks=${networkParam}&with_genres=${activeGenre}&with_original_language=${langParam}&watch_region=US`;
         return apiFetch(query);
       }
       const [movies, tvs] = await Promise.all([
-        apiFetch(`/api/tmdb/discover/movie?with_watch_providers=${providerParam}&with_companies=${companyParam}&with_genres=${genreParam}&with_original_language=${langParam}&watch_region=US`),
-        apiFetch(`/api/tmdb/discover/tv?with_watch_providers=${providerParam}&with_networks=${networkParam}&with_genres=${genreParam}&with_original_language=${langParam}&watch_region=US`),
+        apiFetch(`/api/tmdb/discover/movie?with_watch_providers=${providerParam}&with_companies=${companyParam}&with_genres=${activeGenre}&with_original_language=${langParam}&watch_region=US`),
+        apiFetch(`/api/tmdb/discover/tv?with_watch_providers=${providerParam}&with_networks=${networkParam}&with_genres=${activeGenre}&with_original_language=${langParam}&watch_region=US`),
       ]);
       const moviesWithType = (Array.isArray(movies) ? movies : []).map(m => ({ ...m, media_type: "movie" as const }));
       const tvsWithType = (Array.isArray(tvs) ? tvs : []).map(t => ({ ...t, media_type: "tv" as const }));
       return [...moviesWithType, ...tvsWithType];
     }
 
-    // 3. Category Fallback Query
+    // 3. Genre Filter Query when no Studio Filter
+    if (activeGenre) {
+      if (selectedType === "movie") {
+        return apiFetch(`/api/tmdb/discover/movie?with_genres=${activeGenre}`);
+      }
+      if (selectedType === "tv") {
+        return apiFetch(`/api/tmdb/discover/tv?with_genres=${activeGenre}`);
+      }
+      const [movies, tvs] = await Promise.all([
+        apiFetch(`/api/tmdb/discover/movie?with_genres=${activeGenre}`),
+        apiFetch(`/api/tmdb/discover/tv?with_genres=${activeGenre}`),
+      ]);
+      const moviesWithType = (Array.isArray(movies) ? movies : []).map(m => ({ ...m, media_type: "movie" as const }));
+      const tvsWithType = (Array.isArray(tvs) ? tvs : []).map(t => ({ ...t, media_type: "tv" as const }));
+      return [...moviesWithType, ...tvsWithType];
+    }
+
+    // 4. Category Fallback Query
     if (selectedType === "movie") {
       return apiFetch("/api/tmdb/popular?media_type=movie");
     }
@@ -122,7 +165,7 @@ function SearchPageContent() {
   };
 
   const { data: rawItems = [], isLoading: queryLoading } = useQuery<MediaItem[]>({
-    queryKey: ["search-catalog", debouncedSearchTerm, selectedType, studioParam, providerParam, networkParam, companyParam, genreParam, langParam],
+    queryKey: ["search-catalog", debouncedSearchTerm, selectedType, studioParam, providerParam, networkParam, companyParam, genreParam, selectedGenre, langParam],
     queryFn: fetchCatalogItems,
   });
 
@@ -153,7 +196,7 @@ function SearchPageContent() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchTerm.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}&type=${selectedType}`);
+      router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}&type=${selectedType}${selectedGenre ? `&genre=${selectedGenre}` : ''}`);
     }
   };
 
@@ -294,7 +337,7 @@ function SearchPageContent() {
             <div className="flex flex-wrap items-center gap-3 text-xs">
               <select
                 value={selectedGenre}
-                onChange={(e) => setSelectedGenre(e.target.value)}
+                onChange={(e) => handleGenreChange(e.target.value)}
                 className="h-9 px-4 rounded-full bg-[#0B131B]/70 border border-[#4A6E8D]/40 text-xs font-sans font-medium text-[#F0F0F0]/90 hover:text-white focus:outline-none focus:border-[#A4C8E1]/60 cursor-pointer"
               >
                 {GENRES.map((g) => (

@@ -213,7 +213,7 @@ function HeaderContent() {
 
           {/* Auto Suggestions Dropdown with Keyboard Navigation & Badges */}
           {isSuggestionsOpen && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-[#0B131B]/85 backdrop-blur-2xl border border-[#4A6E8D]/30 rounded-2xl shadow-[0_20px_40px_rgba(7,12,18,0.9)] overflow-hidden z-50 py-1 divide-y divide-[#4A6E8D]/20">
+            <div className="absolute top-full right-0 mt-2 w-[calc(100vw-32px)] sm:w-96 max-w-sm bg-[#0B131B]/95 backdrop-blur-2xl border border-[#4A6E8D]/30 rounded-2xl shadow-[0_20px_40px_rgba(7,12,18,0.9)] overflow-hidden z-50 py-1 divide-y divide-[#4A6E8D]/20">
               {isLoadingSuggestions ? (
                 <div className="p-4 flex items-center justify-center gap-2 text-xs text-[#A4C8E1]/70">
                   <div className="w-3.5 h-3.5 border-2 border-[#A4C8E1]/40 border-t-[#A4C8E1] animate-spin rounded-full" />

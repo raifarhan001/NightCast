@@ -1,7 +1,7 @@
 import { ZodMovieDetailSchema, ZodTvDetailSchema, ZodMediaListSchema } from './validation';
 const IS_SERVER = typeof window === 'undefined';
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8001';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8001';
 
 export interface MediaItem {
   id: string | number;
@@ -149,12 +149,12 @@ export interface SystemLog {
 }
 
 // Token storage for cross-origin auth (SameSite=Lax blocks cookie on fetch)
-const TOKEN_KEY = 'nightcast_access_token';
+const TOKEN_KEY = 'nightcast_token';
 
 export function getStoredToken(): string | null {
   if (typeof window === 'undefined') return null;
   try {
-    return localStorage.getItem(TOKEN_KEY) || localStorage.getItem('vidking_access_token');
+    return localStorage.getItem(TOKEN_KEY) || localStorage.getItem('nightcast_access_token') || localStorage.getItem('vidking_access_token');
   } catch { return null; }
 }
 
@@ -163,8 +163,10 @@ export function setStoredToken(token: string | null): void {
   try {
     if (token) {
       localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem('nightcast_access_token', token);
     } else {
       localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem('nightcast_access_token');
       localStorage.removeItem('vidking_access_token');
     }
   } catch {}

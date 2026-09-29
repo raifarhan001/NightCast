@@ -8,7 +8,7 @@ import { syncUserDataWithCloud } from '../../lib/sync';
 import MovieCard from '../../components/shared/MovieCard';
 import AmbientGlow from '../../components/shared/AmbientGlow';
 import { getContinueWatchingList, removeWatchProgress, getCleanMediaId, LocalProgressItem } from '../../lib/progress';
-import { Sparkles, User, Settings as SettingsIcon, LogOut, Trash2, Plus, Bookmark, Clock, Eye, ShieldCheck, Mail, Lock, PlayCircle, Film, LogIn } from 'lucide-react';
+import { User, Settings as SettingsIcon, LogOut, Trash2, Plus, Bookmark, Clock, Eye, Mail, Lock, PlayCircle, LogIn } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';

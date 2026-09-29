@@ -123,6 +123,20 @@ export const useUserStore = create<UserState>((set, get) => ({
     try {
       await apiFetch('/api/auth/logout', { method: 'POST' });
     } catch (_) {}
+
+    const { activeProfile } = get();
+    if (typeof window !== 'undefined') {
+      if (activeProfile?.id) {
+        localStorage.removeItem(`nightcast_cw_${activeProfile.id}`);
+      }
+      localStorage.removeItem('nightcast_cw_guest');
+      localStorage.removeItem('active_profile');
+      localStorage.removeItem('nightcast_watchlist');
+      localStorage.removeItem('nightcast_dismissed_cw');
+      window.dispatchEvent(new CustomEvent('nightcast:progress-update', { detail: { clearedAll: true } }));
+      window.dispatchEvent(new CustomEvent('nightcast:watchlist-update'));
+    }
+
     setStoredToken(null);
     get().setActiveProfile(null);
     set({ user: null, profiles: [], settings: null });

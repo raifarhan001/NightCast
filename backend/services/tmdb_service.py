@@ -1,7 +1,11 @@
-import httpx
+import asyncio
+import logging
 from typing import Dict, Any, List, Optional
+import httpx
 from config import settings
 from services.redis_service import redis_cache
+
+logger = logging.getLogger("nightcast_tmdb")
 
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 
@@ -171,9 +175,24 @@ MOCK_TV = {
 class TMDBClient:
     def __init__(self):
         self.api_key = settings.TMDB_API_KEY
+        self._client: Optional[httpx.AsyncClient] = None
 
     def is_configured(self) -> bool:
         return bool(self.api_key and self.api_key.strip())
+
+    def get_client(self) -> httpx.AsyncClient:
+        if self._client is None or self._client.is_closed:
+            self._client = httpx.AsyncClient(
+                timeout=httpx.Timeout(10.0, connect=5.0),
+                limits=httpx.Limits(max_keepalive_connections=20, max_connections=50),
+                follow_redirects=True
+            )
+        return self._client
+
+    async def close(self):
+        if self._client and not self._client.is_closed:
+            await self._client.aclose()
+            self._client = None
 
     async def get_request(self, endpoint: str, params: Dict[str, Any] = None) -> Dict[str, Any]:
         if not self.is_configured():
@@ -188,35 +207,31 @@ class TMDBClient:
         # Redis caching layer
         cache_key = f"tmdb:{endpoint}:{sorted(params.items())}"
         try:
-            cached_result = redis_cache.get(cache_key)
+            cached_result = await redis_cache.get(cache_key)
             if cached_result:
                 return cached_result
         except Exception:
             pass
 
-        import asyncio
-        import logging
-        logger = logging.getLogger("tmdb")
-        
+        client = self.get_client()
         backoffs = [0.5]
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            for attempt, delay in enumerate(backoffs + [0], start=1):
+        for attempt, delay in enumerate(backoffs + [0], start=1):
+            try:
+                response = await client.get(url, params=params)
+                response.raise_for_status()
+                data = response.json()
                 try:
-                    response = await client.get(url, params=params)
-                    response.raise_for_status()
-                    data = response.json()
-                    try:
-                        redis_cache.set(cache_key, data, expire_seconds=21600)
-                    except Exception:
-                        pass
-                    return data
-                except httpx.HTTPError as e:
-                    if attempt <= len(backoffs):
-                        logger.warning(f"TMDB request retry ({attempt}). Error: {str(e)}")
-                        await asyncio.sleep(delay)
-                    else:
-                        logger.error(f"TMDB request failed. Error: {str(e)}")
-                        raise e
+                    await redis_cache.set(cache_key, data, expire_seconds=21600)
+                except Exception:
+                    pass
+                return data
+            except httpx.HTTPError as e:
+                if attempt <= len(backoffs):
+                    logger.warning(f"TMDB request retry ({attempt}). Error: {str(e)}")
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(f"TMDB request failed. Error: {str(e)}")
+                    raise e
         return {}
 
     async def get_trending(self, media_type: str = "all", time_window: str = "day") -> List[Dict[str, Any]]:
@@ -274,7 +289,7 @@ class TMDBClient:
                 # Generate generic mock item if ID not in standard mock list
                 is_movie = media_type == "movie"
                 return {
-                    "id": int(tmdb_id),
+                    "id": int(tmdb_id) if str(tmdb_id).isdigit() else 0,
                     "title" if is_movie else "name": f"Mock {media_type.capitalize()} {tmdb_id}",
                     "overview": f"This is an elegant showcase movie representing TMDB identifier {tmdb_id}. Curated for cinematic preview details.",
                     "backdrop_path": MOCK_ASSETS["interstellar_backdrop"] if is_movie else MOCK_ASSETS["wednesday_backdrop"],

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
-from typing import Optional, List, Union, Any
+from typing import Optional, List, Union
 from uuid import UUID
 from datetime import datetime
 
@@ -107,15 +107,15 @@ class ReviewResponse(BaseModel):
 
 # --- Continue Watching & History Schemas ---
 class ProgressUpdatePayload(BaseModel):
-    media_type: str = Field(..., alias="mediaType")
-    id: str
-    current_time: float = Field(..., alias="currentTime")
-    duration: float
-    progress: float
+    media_type: Optional[str] = Field("movie", alias="mediaType")
+    id: Union[str, int]
+    current_time: Optional[float] = Field(0.0, alias="currentTime")
+    duration: Optional[float] = 0.0
+    progress: Optional[float] = 0.0
     season: Optional[int] = None
     episode: Optional[int] = None
-    event: str
-    title: str
+    event: Optional[str] = "progress"
+    title: Optional[str] = "Untitled"
     poster_path: Optional[str] = Field(None, alias="posterPath")
     backdrop_path: Optional[str] = Field(None, alias="backdropPath")
 
@@ -182,6 +182,7 @@ class SyncItem(BaseModel):
 class UserSyncPayload(BaseModel):
     continue_watching: Optional[List[SyncItem]] = []
     watchlist: Optional[List[SyncItem]] = []
+    dismissed_ids: Optional[List[str]] = []
 
 class UserSyncResponse(BaseModel):
     continue_watching: List[ContinueWatchingResponse] = []

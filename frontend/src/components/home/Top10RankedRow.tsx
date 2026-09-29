@@ -62,7 +62,7 @@ export default function Top10RankedRow({
   if (!top10Items || top10Items.length === 0) return null;
 
   return (
-    <section className="space-y-4 px-4 sm:px-6 md:px-12 select-none relative group/row">
+    <section className="content-auto space-y-4 px-4 sm:px-6 md:px-12 select-none relative group/row">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight font-display text-[#F0F0F0] flex items-center gap-2.5">
@@ -99,7 +99,7 @@ export default function Top10RankedRow({
       <div
         ref={rowRef}
         onScroll={checkScrollPosition}
-        className="flex items-center gap-3 sm:gap-6 overflow-x-auto no-scrollbar scrollbar-hide scroll-smooth snap-x snap-mandatory pt-2 pb-6 px-1"
+        className="flex items-center gap-3 sm:gap-6 overflow-x-auto no-scrollbar scrollbar-hide scroll-smooth snap-x snap-mandatory smooth-scroll-container pt-2 pb-6 px-1"
       >
         {top10Items.map((item, index) => {
           const rank = index + 1;
@@ -108,7 +108,7 @@ export default function Top10RankedRow({
           const posterUrl = ImageService.getPoster(item.poster_path, "w500", displayTitle);
 
           const isTwoDigits = rank >= 10;
-          const svgViewBox = isTwoDigits ? "0 0 145 180" : "0 0 95 180";
+          const svgViewBox = isTwoDigits ? "0 0 160 180" : "0 0 95 180";
 
           return (
             <Link
@@ -123,7 +123,7 @@ export default function Top10RankedRow({
                 }
               }}
               onMouseLeave={() => useAmbientStore.getState().clearActiveBackdrop(400)}
-              className="group/item relative flex items-center shrink-0 snap-start select-none cursor-pointer transform-gpu will-change-transform transition-all duration-300 ease-out hover:-translate-y-1"
+              className="group/item relative flex items-center shrink-0 snap-start select-none cursor-pointer transform-gpu will-change-transform transition-[transform] duration-200 ease-out hover:-translate-y-1"
             >
               {/* Monumental Modern Rank Number */}
               <div className="relative z-0 select-none pointer-events-none shrink-0 transform-gpu will-change-transform transition-transform duration-300 group-hover/item:scale-105">
@@ -153,7 +153,7 @@ export default function Top10RankedRow({
               </div>
 
               {/* Vertical Poster Card with Rounded-2xl */}
-              <div className="relative z-10 -ml-7 sm:-ml-9 md:-ml-12 w-28 sm:w-36 md:w-40 aspect-[2/3] rounded-2xl overflow-hidden bg-[#1B3A57]/20 border border-[#4A6E8D]/30 shadow-[0_8px_32px_rgba(11,19,27,0.8)] transform-gpu will-change-transform transition-all duration-300 ease-out group-hover/item:scale-[1.03] group-hover/item:border-[#A4C8E1]/60 group-hover/item:shadow-[0_16px_40px_rgba(164,200,225,0.18)]">
+              <div className="relative z-10 -ml-7 sm:-ml-9 md:-ml-12 w-28 sm:w-36 md:w-40 aspect-[2/3] rounded-2xl overflow-hidden bg-[#1B3A57]/20 border border-[#4A6E8D]/30 shadow-[0_8px_32px_rgba(11,19,27,0.8)] transform-gpu will-change-transform transition-[transform,border-color,box-shadow] duration-200 ease-out group-hover/item:scale-[1.03] group-hover/item:border-[#A4C8E1]/60 group-hover/item:shadow-[0_16px_40px_rgba(164,200,225,0.18)]">
                 <Image
                   src={posterUrl}
                   alt={displayTitle}

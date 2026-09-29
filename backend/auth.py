@@ -1,19 +1,18 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
+from uuid import UUID
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 import bcrypt
+from sqlalchemy import func
 from sqlalchemy.orm import Session
-from uuid import UUID
 
 from config import settings
 from database import get_db
 import models
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)
-
-from sqlalchemy import func
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
@@ -31,10 +30,11 @@ def get_password_hash(password: str) -> str:
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
+    now_utc = datetime.now(timezone.utc)
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = now_utc + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = now_utc + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
     return encoded_jwt
@@ -69,8 +69,12 @@ def get_current_user(
     actual_token = token
     if not actual_token:
         actual_token = request.cookies.get("access_token")
-        if actual_token and actual_token.startswith("Bearer "):
-            actual_token = actual_token.replace("Bearer ", "")
+        if actual_token:
+            if actual_token.startswith("Bearer "):
+                actual_token = actual_token[7:]
+            elif actual_token.startswith("Bearer%20"):
+                actual_token = actual_token[9:]
+            actual_token = actual_token.strip()
             
     if not actual_token:
         raise HTTPException(
@@ -117,8 +121,8 @@ def get_active_profile(
         return profile
     
     try:
-        profile_uuid = UUID(profile_id_str)
-    except ValueError:
+        profile_uuid = UUID(str(profile_id_str).strip())
+    except (ValueError, TypeError, AttributeError):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid Profile ID format"

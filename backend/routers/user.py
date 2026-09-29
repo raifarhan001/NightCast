@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime
+from typing import List
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from typing import List, Optional
-from uuid import UUID
 
 from database import get_db
 import models
@@ -66,35 +66,86 @@ def sync_user_data(
     active_profile: models.Profile = Depends(auth.get_active_profile),
     db: Session = Depends(get_db)
 ):
-    # 1. Ingest incoming continue_watching
+    # 1. Purge explicitly dismissed items from cloud database so they never resurrect
+    dismissed_set = set()
+    if payload.dismissed_ids:
+        for did in payload.dismissed_ids:
+            clean_d = str(did).split('_s')[0].split('-s')[0].split('_')[0].strip()
+            if clean_d:
+                dismissed_set.add(clean_d)
+                db.query(models.ContinueWatching).filter(
+                    models.ContinueWatching.profile_id == active_profile.id,
+                    (models.ContinueWatching.media_id == clean_d) |
+                    (models.ContinueWatching.media_id == str(did)) |
+                    (models.ContinueWatching.media_id.like(f"{clean_d}\\_%")) |
+                    (models.ContinueWatching.media_id.like(f"{clean_d}-%"))
+                ).delete(synchronize_session=False)
+        db.commit()
+
+    # 2. Ingest incoming continue_watching
     if payload.continue_watching:
         for item in payload.continue_watching:
             raw_id = str(item.media_id or item.id or '').strip()
             if not raw_id:
                 continue
             clean_id = raw_id.split('_s')[0].split('-s')[0].split('_')[0].strip()
+            if clean_id in dismissed_set:
+                continue
+
             progress = float(item.progress_percent or 0)
             seconds = float(item.timestamp_seconds or 0)
             duration = float(item.duration_seconds or 0)
 
-            # Skip completed items or empty items
-            if progress >= 92.0 or (duration > 60 and seconds >= duration - 30):
+            # Clean completed items from DB so they do not resurrect
+            if progress >= 90.0 or (duration > 60 and seconds >= duration - 25):
+                db.query(models.ContinueWatching).filter(
+                    models.ContinueWatching.profile_id == active_profile.id,
+                    (models.ContinueWatching.media_id == clean_id) |
+                    (models.ContinueWatching.media_id == raw_id) |
+                    (models.ContinueWatching.media_id.like(f"{clean_id}\\_%")) |
+                    (models.ContinueWatching.media_id.like(f"{clean_id}-%"))
+                ).delete(synchronize_session=False)
                 continue
-            if progress < 1.0 and seconds < 5.0:
+
+            if progress < 0.5 and seconds < 3.0:
                 continue
 
             s_num = int(item.season) if item.season is not None and str(item.season).isdigit() else None
             ep_num = int(item.episode) if item.episode is not None and str(item.episode).isdigit() else None
 
-            existing = db.query(models.ContinueWatching).filter(
-                models.ContinueWatching.profile_id == active_profile.id,
-                models.ContinueWatching.media_id == clean_id,
-                models.ContinueWatching.season == s_num,
-                models.ContinueWatching.episode == ep_num
-            ).first()
+            incoming_time = None
+            if item.updated_at:
+                try:
+                    incoming_time = datetime.fromisoformat(str(item.updated_at).replace("Z", "+00:00"))
+                except Exception:
+                    pass
+
+            if s_num is None and ep_num is None:
+                existing = db.query(models.ContinueWatching).filter(
+                    models.ContinueWatching.profile_id == active_profile.id,
+                    (models.ContinueWatching.media_id == clean_id) | (models.ContinueWatching.media_id == raw_id),
+                    (models.ContinueWatching.season.is_(None)) | (models.ContinueWatching.season == 0)
+                ).first()
+            else:
+                existing = db.query(models.ContinueWatching).filter(
+                    models.ContinueWatching.profile_id == active_profile.id,
+                    (models.ContinueWatching.media_id == clean_id) | (models.ContinueWatching.media_id == raw_id),
+                    models.ContinueWatching.season == s_num,
+                    models.ContinueWatching.episode == ep_num
+                ).first()
 
             if existing:
-                if seconds > (existing.timestamp_seconds or 0) or progress > (existing.progress_percent or 0):
+                client_is_newer = False
+                if incoming_time and existing.updated_at:
+                    ex_time = existing.updated_at
+                    if ex_time.tzinfo is None and incoming_time.tzinfo is not None:
+                        ex_time = ex_time.replace(tzinfo=incoming_time.tzinfo)
+                    client_is_newer = incoming_time >= ex_time
+
+                if client_is_newer or seconds > (existing.timestamp_seconds or 0) or progress > (existing.progress_percent or 0):
+                    existing.media_id = clean_id
+                    existing.season = s_num
+                    existing.episode = ep_num
                     existing.progress_percent = progress
                     existing.timestamp_seconds = seconds
                     existing.duration_seconds = duration
@@ -102,11 +153,19 @@ def sync_user_data(
                     existing.backdrop_path = item.backdrop_path
                 if item.poster_path:
                     existing.poster_path = item.poster_path
+
+                if s_num is None and ep_num is None:
+                    db.query(models.ContinueWatching).filter(
+                        models.ContinueWatching.profile_id == active_profile.id,
+                        (models.ContinueWatching.media_id == clean_id) | (models.ContinueWatching.media_id == raw_id),
+                        (models.ContinueWatching.season.is_(None)) | (models.ContinueWatching.season == 0),
+                        models.ContinueWatching.id != existing.id
+                    ).delete(synchronize_session=False)
             else:
                 new_cw = models.ContinueWatching(
                     profile_id=active_profile.id,
                     media_id=clean_id,
-                    media_type=item.media_type or "movie",
+                    media_type=item.media_type or ("tv" if s_num is not None else "movie"),
                     title=item.title or "Untitled",
                     poster_path=item.poster_path,
                     backdrop_path=item.backdrop_path,
@@ -119,7 +178,7 @@ def sync_user_data(
                 db.add(new_cw)
         db.commit()
 
-    # 2. Ingest incoming watchlist (favorites)
+    # 3. Ingest incoming watchlist (favorites)
     if payload.watchlist:
         for item in payload.watchlist:
             raw_id = str(item.media_id or item.id or '').strip()
@@ -129,7 +188,7 @@ def sync_user_data(
 
             existing_fav = db.query(models.Favorite).filter(
                 models.Favorite.profile_id == active_profile.id,
-                models.Favorite.media_id == clean_id
+                (models.Favorite.media_id == clean_id) | (models.Favorite.media_id == raw_id)
             ).first()
 
             if not existing_fav:
@@ -143,7 +202,7 @@ def sync_user_data(
                 db.add(new_fav)
         db.commit()
 
-    # 3. Retrieve consolidated latest database state
+    # 4. Retrieve consolidated latest database state
     cw_items = db.query(models.ContinueWatching).filter(
         models.ContinueWatching.profile_id == active_profile.id
     ).order_by(models.ContinueWatching.updated_at.desc()).all()
@@ -152,7 +211,7 @@ def sync_user_data(
     consolidated_cw = []
     for cw in cw_items:
         clean_id = cw.media_id.split('_s')[0].split('-s')[0].split('_')[0].strip()
-        if cw.progress_percent >= 92.0:
+        if cw.progress_percent >= 90.0 or clean_id in dismissed_set:
             continue
         if clean_id not in seen_media:
             seen_media.add(clean_id)

@@ -12,12 +12,12 @@ export default function NotFound() {
       <h1 className="text-6xl font-black text-white font-display tracking-tight mb-2">404</h1>
       <h2 className="text-2xl font-bold text-white mb-4">Scene Not Found</h2>
       <p className="text-sm text-white/60 max-w-md mb-8">
-        The title or stream page you requested could not be located in the Apple TV+ library.
+        The title or stream page you requested could not be located in the NightCast library.
       </p>
 
       <Link
         href="/"
-        className="apple-btn-primary"
+        className="cinema-btn-primary"
       >
         Return to Home
       </Link>

@@ -84,14 +84,14 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
       label: "Movies",
       icon: Film,
       href: "/movies",
-      isActive: pathname.startsWith("/movies") || pathname.startsWith("/movie"),
+      isActive: pathname.startsWith("/movies") || pathname.startsWith("/movie") || pathname.startsWith("/watch/movie"),
     },
     {
       id: "shows",
       label: "TV Shows",
       icon: Tv,
       href: "/shows",
-      isActive: pathname.startsWith("/shows") || pathname.startsWith("/tv"),
+      isActive: pathname.startsWith("/shows") || pathname.startsWith("/tv") || pathname.startsWith("/watch/tv"),
     },
     {
       id: "top-rated",

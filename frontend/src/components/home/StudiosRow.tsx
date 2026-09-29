@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -177,7 +177,7 @@ export default function StudiosRow() {
   };
 
   return (
-    <section className="space-y-3 px-4 sm:px-6 md:px-12 select-none relative group/row">
+    <section className="content-auto space-y-3 px-4 sm:px-6 md:px-12 select-none relative group/row">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight font-display text-[#F0F0F0] flex items-center gap-2.5">
@@ -214,7 +214,7 @@ export default function StudiosRow() {
       <div
         ref={rowRef}
         onScroll={checkScrollPosition}
-        className="flex items-center gap-3 sm:gap-4 overflow-x-auto no-scrollbar scrollbar-hide scroll-smooth snap-x snap-mandatory pt-2 pb-2"
+        className="flex items-center gap-3 sm:gap-4 overflow-x-auto no-scrollbar scrollbar-hide scroll-smooth snap-x snap-mandatory pt-2 pb-2 smooth-scroll-container"
       >
         {STUDIOS.map((studio) => (
           <Link
@@ -223,8 +223,8 @@ export default function StudiosRow() {
             className="group/studio flex flex-col items-center gap-2 shrink-0 snap-start select-none cursor-pointer"
           >
             {/* Studio Capsule Card */}
-            <div className="w-36 sm:w-44 md:w-48 h-20 sm:h-22 rounded-2xl bg-[#1B3A57]/35 hover:bg-[#2C3E50]/60 backdrop-blur-xl border border-[#4A6E8D]/35 flex items-center justify-center p-4 transition-all duration-300 ease-out group-hover/studio:scale-105 group-hover/studio:border-[#A4C8E1]/60 group-hover/studio:shadow-[0_12px_32px_rgba(11,19,27,0.85),0_0_20px_rgba(164,200,225,0.15)] shadow-sm">
-              <div className="transition-transform duration-300 ease-out group-hover/studio:scale-105">
+            <div className="w-36 sm:w-44 md:w-48 h-20 sm:h-22 rounded-2xl bg-[#1B3A57]/35 hover:bg-[#2C3E50]/60 backdrop-blur-xl border border-[#4A6E8D]/35 flex items-center justify-center p-4 transform-gpu will-change-transform transition-[transform,border-color,box-shadow,background-color] duration-200 ease-out group-hover/studio:scale-105 group-hover/studio:border-[#A4C8E1]/60 group-hover/studio:shadow-[0_12px_32px_rgba(11,19,27,0.85),0_0_20px_rgba(164,200,225,0.15)] shadow-sm">
+              <div className="transform-gpu transition-transform duration-200 ease-out group-hover/studio:scale-105">
                 {studio.logo}
               </div>
             </div>

@@ -1,23 +1,28 @@
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
 import time
+import logging
+from contextlib import asynccontextmanager
+
+sys_path_dir = os.path.dirname(os.path.abspath(__file__))
+if sys_path_dir not in sys.path:
+    sys.path.insert(0, sys_path_dir)
+
 from fastapi import FastAPI, Request, Response, status, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse, HTMLResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from contextlib import asynccontextmanager
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy import text
 
 from database import init_db, SessionLocal, is_sqlite
-from routers import auth, tmdb, progress, user, ai, admin, discover, f1, streams
+from routers import auth, tmdb, progress, user, ai, admin, f1, streams
 from services.ai_service import populate_mock_embeddings
 from services.redis_service import redis_cache
 from config import settings
+
+logger = logging.getLogger("nightcast_main")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -28,7 +33,7 @@ async def lifespan(app: FastAPI):
         try:
             init_db()
         except Exception as e:
-            print(f"init_db startup warning: {e}")
+            logger.warning(f"init_db startup warning: {e}")
             
         try:
             db = SessionLocal()
@@ -37,7 +42,7 @@ async def lifespan(app: FastAPI):
             finally:
                 db.close()
         except Exception as e:
-            print(f"Background embeddings task warning: {e}")
+            logger.warning(f"Background embeddings task warning: {e}")
             
     asyncio.create_task(background_startup())
     
@@ -53,7 +58,7 @@ app = FastAPI(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    print(f"Handled Error on {request.url}: {exc}")
+    logger.error(f"Handled Error on {request.url}: {exc}")
     if isinstance(exc, (HTTPException, StarletteHTTPException)):
         return JSONResponse(
             status_code=exc.status_code,
@@ -101,7 +106,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         client_ip = request.client.host if request.client else "unknown"
-        if "/api/v1/auth/login" in request.url.path or "/api/v1/auth/register" in request.url.path:
+        if "/auth/login" in request.url.path or "/auth/register" in request.url.path:
             now = time.time()
             timestamps = self.requests.get(client_ip, [])
             # Filter timestamps
@@ -176,7 +181,6 @@ app.include_router(progress.router, prefix="/api/v1")
 app.include_router(user.router, prefix="/api/v1")
 app.include_router(ai.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
-app.include_router(discover.router, prefix="/api/v1")
 app.include_router(f1.router, prefix="/api/v1")
 app.include_router(streams.router, prefix="/api/v1")
 
@@ -185,10 +189,10 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(tmdb.router, prefix="/api")
 app.include_router(user.router, prefix="/api")
 app.include_router(progress.router, prefix="/api")
-
-@app.get("/api/f1/2026-data")
-async def get_f1_2026_direct():
-    return await f1.get_2026_f1_data()
+app.include_router(f1.router, prefix="/api")
+app.include_router(streams.router, prefix="/api")
+app.include_router(ai.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 
 @app.get("/api/health")
 def api_health_simple():

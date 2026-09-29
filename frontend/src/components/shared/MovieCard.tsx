@@ -3,13 +3,14 @@
 import React, { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Play, Plus, Check, ThumbsUp, ChevronDown, X, Sparkles } from "lucide-react";
+import { Play, Plus, Check, ThumbsUp, ChevronDown, X } from "lucide-react";
 import { ImageService } from "../../lib/ImageService";
 import { soundFx } from "../../lib/soundEffects";
 import { useAmbientStore } from "../../store/ambientStore";
 import { useUserStore } from "../../store/userStore";
 import { apiFetch } from "../../lib/api";
 import { triggerToast } from "../common/ToastNotification";
+import { getCleanMediaId } from "../../lib/progress";
 import PlatformBadge from "./PlatformBadge";
 
 export const TMDB_GENRES: Record<number, string> = {
@@ -63,6 +64,7 @@ interface MovieCardProps {
     genre_ids?: number[];
     genres?: Array<{ id?: number; name?: string } | string>;
     adult?: boolean;
+    content_rating?: string;
   };
   subtitle?: string;
   isFirst?: boolean;
@@ -99,14 +101,12 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
   const [liked, setLiked] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [align, setAlign] = useState<"left" | "center" | "right">("center");
+  const [openDownward, setOpenDownward] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const rating = item.vote_average ? item.vote_average.toFixed(1) : null;
   const type = item.media_type || (item.first_air_date ? "tv" : "movie");
   const title = item.title || item.name || "Untitled";
-
-  const releaseYear = (item.release_date || item.first_air_date || "").slice(0, 4);
 
   const imageUrl = item.backdrop_path
     ? ImageService.getBackdrop(item.backdrop_path, "w780", title)
@@ -123,16 +123,15 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
     ? `Season ${item.season}, Episode ${item.episode || 1}`
     : subtitle || (type === "tv" ? "TV Series" : "Movie");
 
-  // Dynamic Match percentage (e.g. 96% match like Netflix reference)
+  // Dynamic Match percentage based on genuine TMDB vote average
   const matchScore = useMemo(() => {
     if (item.vote_average && item.vote_average > 0) {
-      return Math.min(99, Math.max(76, Math.round(70 + (item.vote_average / 10) * 28)));
+      return Math.min(99, Math.max(50, Math.round((item.vote_average / 10) * 100)));
     }
-    const numId = typeof item.id === 'number' ? item.id : parseInt(String(item.id).replace(/\D/g, "") || "85", 10);
-    return 88 + (numId % 11);
-  }, [item.vote_average, item.id]);
+    return null;
+  }, [item.vote_average]);
 
-  // Duration or Seasons string
+  // Genuine duration or seasons string
   const durationText = useMemo(() => {
     if (item.duration_seconds && item.duration_seconds > 0) {
       const mins = Math.round(item.duration_seconds / 60);
@@ -145,16 +144,13 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
       const remMins = item.runtime % 60;
       return hrs > 0 ? `${hrs}h ${remMins}m` : `${item.runtime}m`;
     }
-    if (type === "tv") {
-      return item.season ? (item.season > 1 ? `${item.season} Seasons` : "1 Season") : "1 Season";
+    if (type === "tv" && item.season) {
+      return item.season > 1 ? `${item.season} Seasons` : "1 Season";
     }
-    const numId = typeof item.id === 'number' ? item.id : parseInt(String(item.id).replace(/\D/g, "") || "110", 10);
-    const hrs = 1 + (numId % 2);
-    const mins = 12 + ((numId * 7) % 43);
-    return `${hrs}h ${mins}m`;
-  }, [item.duration_seconds, item.runtime, item.season, item.id, type]);
+    return null;
+  }, [item.duration_seconds, item.runtime, item.season, type]);
 
-  // Dot-separated genres list (up to 3)
+  // Genuine dot-separated genres list (up to 3)
   const genresList: string[] = useMemo(() => {
     if (Array.isArray(item.genres) && item.genres.length > 0) {
       const parsed = item.genres
@@ -170,23 +166,14 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
         .slice(0, 3);
       if (mapped.length > 0) return mapped;
     }
-    const fallbackSets = [
-      ["Action", "Sci-Fi", "Adventure"],
-      ["Drama", "Thriller", "Mystery"],
-      ["Comedy", "Romantic", "Drama"],
-      ["Crime", "Action", "Drama"],
-      ["Animation", "Family", "Comedy"]
-    ];
-    const numId = typeof item.id === "number" ? item.id : parseInt(String(item.id).replace(/\D/g, "") || "0", 10);
-    return fallbackSets[numId % fallbackSets.length];
-  }, [item.genres, item.genre_ids, item.id]);
+    return [];
+  }, [item.genres, item.genre_ids]);
 
   const ageRating = useMemo(() => {
     if (item.adult) return "18+";
-    const numId = typeof item.id === 'number' ? item.id : parseInt(String(item.id).replace(/\D/g, "") || "16", 10);
-    const ratings = ["U/A 13+", "U/A 16+", "U/A 16+", "U/A 13+", "16+"];
-    return ratings[numId % ratings.length];
-  }, [item.adult, item.id]);
+    if (item.content_rating) return item.content_rating;
+    return null;
+  }, [item.adult, item.content_rating]);
 
   const handleWatchlistClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -270,58 +257,63 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
       if (backdrop) {
         useAmbientStore.getState().setActiveBackdrop(backdrop, title);
       }
-      setIsHovered(true);
-    }, 280);
-
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
-      if (rect.left < 90 || isFirst) {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+        setOpenDownward(rect.top < 120);
+        if (rect.left < 90 || isFirst) {
+          setAlign("left");
+        } else if (windowWidth - rect.right < 90 || isLast) {
+          setAlign("right");
+        } else {
+          setAlign("center");
+        }
+      } else if (isFirst) {
         setAlign("left");
-      } else if (windowWidth - rect.right < 90 || isLast) {
+      } else if (isLast) {
         setAlign("right");
       } else {
         setAlign("center");
       }
-    } else if (isFirst) {
-      setAlign("left");
-    } else if (isLast) {
-      setAlign("right");
-    } else {
-      setAlign("center");
-    }
+      setIsHovered(true);
+    }, 280);
   };
 
   const handleMouseLeave = () => {
-    useAmbientStore.getState().clearActiveBackdrop(400);
     if (hoverTimerRef.current) {
       clearTimeout(hoverTimerRef.current);
       hoverTimerRef.current = null;
     }
-    setIsHovered(false);
+    if (isHovered) {
+      useAmbientStore.getState().clearActiveBackdrop(400);
+      setIsHovered(false);
+    }
   };
+
+  const cleanId = useMemo(() => getCleanMediaId(item.id), [item.id]);
 
   const watchUrl = useMemo(() => {
     const params = new URLSearchParams();
     if (item.season) params.set("season", item.season.toString());
     if (item.episode) params.set("episode", (item.episode || 1).toString());
-    if (item.timestamp_seconds && Number(item.timestamp_seconds) > 5) {
+    if (item.timestamp_seconds && Number(item.timestamp_seconds) > 3) {
       params.set("time", Math.floor(Number(item.timestamp_seconds)).toString());
     }
     const qs = params.toString();
-    return `/watch/${type}/${item.id}${qs ? `?${qs}` : ""}`;
-  }, [type, item.id, item.season, item.episode, item.timestamp_seconds]);
-  const detailUrl = `/${type}/${item.id}`;
+    return `/watch/${type}/${cleanId}${qs ? `?${qs}` : ""}`;
+  }, [type, cleanId, item.season, item.episode, item.timestamp_seconds]);
+  const detailUrl = `/${type}/${cleanId}`;
 
   const positionClasses = useMemo(() => {
+    const vOffset = openDownward ? "top-2 sm:top-4" : "-top-10 sm:-top-12";
     if (align === "left") {
-      return "-top-10 sm:-top-12 left-0 w-[280px] sm:w-[310px] md:w-[330px] origin-top-left";
+      return `${vOffset} left-0 w-[280px] sm:w-[310px] md:w-[330px] origin-top-left`;
     }
     if (align === "right") {
-      return "-top-10 sm:-top-12 right-0 w-[280px] sm:w-[310px] md:w-[330px] origin-top-right";
+      return `${vOffset} right-0 w-[280px] sm:w-[310px] md:w-[330px] origin-top-right`;
     }
-    return "-top-10 sm:-top-12 left-1/2 -translate-x-1/2 w-[280px] sm:w-[310px] md:w-[330px] origin-top";
-  }, [align]);
+    return `${vOffset} left-1/2 -translate-x-1/2 w-[280px] sm:w-[310px] md:w-[330px] origin-top`;
+  }, [align, openDownward]);
 
   return (
     <div
@@ -337,7 +329,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
         href={watchUrl}
         className="group block cursor-pointer transform-gpu will-change-transform"
       >
-        <div className="cinema-card-landscape w-full bg-[#1B3A57]/25 border border-[#4A6E8D]/30 rounded-2xl shadow-[-8px_0_24px_rgba(0,0,0,0.7),0_8px_24px_rgba(0,0,0,0.5)] group-hover:border-[#A4C8E1]/60 group-hover:shadow-[0_16px_36px_-6px_rgba(11,19,27,0.9),0_0_24px_rgba(164,200,225,0.18)] transition-all duration-300 ease-out relative">
+        <div className="cinema-card-landscape w-full bg-[#1B3A57]/25 border border-[#4A6E8D]/30 rounded-2xl shadow-[-8px_0_24px_rgba(0,0,0,0.7),0_8px_24px_rgba(0,0,0,0.5)] group-hover:border-[#A4C8E1]/60 group-hover:shadow-[0_16px_36px_-6px_rgba(11,19,27,0.9),0_0_24px_rgba(164,200,225,0.18)] transition-[transform,border-color,box-shadow] duration-200 ease-out relative">
           {imageUrl ? (
             <Image
               src={imageUrl}
@@ -402,7 +394,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
       {/* Netflix-Style Hover Preview Pop-Up Card */}
       {isHovered && (
         <div
-          className={`absolute ${positionClasses} z-50 bg-[#0B131B] backdrop-blur-2xl rounded-2xl sm:rounded-3xl shadow-[0_24px_60px_rgba(0,0,0,0.95),0_0_25px_rgba(164,200,225,0.18)] border border-[#4A6E8D]/50 overflow-hidden transform-gpu will-change-transform animate-in fade-in zoom-in-95 duration-200 pointer-events-auto`}
+          className={`absolute ${positionClasses} z-50 bg-[#0B131B] rounded-2xl sm:rounded-3xl shadow-[0_24px_60px_rgba(0,0,0,0.95),0_0_25px_rgba(164,200,225,0.18)] border border-[#4A6E8D]/50 overflow-hidden transform-gpu will-change-transform animate-in fade-in zoom-in-95 duration-150 pointer-events-auto`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Top Banner: High-Res Cinema Artwork / Poster */}
@@ -505,31 +497,39 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
 
             {/* Row 2: Match %, Age Rating, Duration, Quality Badge */}
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-xs font-sans">
-              <span className="text-[#A4C8E1] font-bold text-xs drop-shadow-[0_0_8px_rgba(164,200,225,0.4)]">
-                {matchScore}% match
-              </span>
-              <span className="border border-[#4A6E8D]/40 bg-[#2C3E50]/60 px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#F0F0F0]/90">
-                {ageRating}
-              </span>
-              <span className="text-[#F0F0F0]/75 font-medium text-[11px]">
-                {durationText}
-              </span>
+              {matchScore !== null && (
+                <span className="text-[#A4C8E1] font-bold text-xs drop-shadow-[0_0_8px_rgba(164,200,225,0.4)]">
+                  {matchScore}% match
+                </span>
+              )}
+              {ageRating && (
+                <span className="border border-[#4A6E8D]/40 bg-[#2C3E50]/60 px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#F0F0F0]/90">
+                  {ageRating}
+                </span>
+              )}
+              {durationText && (
+                <span className="text-[#F0F0F0]/75 font-medium text-[11px]">
+                  {durationText}
+                </span>
+              )}
               <span className="border border-[#4A6E8D]/40 bg-[#2C3E50]/60 text-[#A4C8E1] px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider">
                 4K UHD
               </span>
             </div>
 
             {/* Row 3: Genres (Dot-separated) */}
-            <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-[#F0F0F0]/85 font-sans font-medium pt-0.5 pb-1">
-              {genresList.map((g, idx) => (
-                <React.Fragment key={g}>
-                  <span>{g}</span>
-                  {idx < genresList.length - 1 && (
-                    <span className="text-[#4A6E8D]">•</span>
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
+            {genresList.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-[#F0F0F0]/85 font-sans font-medium pt-0.5 pb-1">
+                {genresList.map((g, idx) => (
+                  <React.Fragment key={g}>
+                    <span>{g}</span>
+                    {idx < genresList.length - 1 && (
+                      <span className="text-[#4A6E8D]">•</span>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

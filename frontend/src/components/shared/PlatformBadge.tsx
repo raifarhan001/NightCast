@@ -4,12 +4,6 @@ import React from "react";
 
 export type PlatformType = "netflix" | "prime" | "disney" | "appletv" | "hbo" | "hulu" | "paramount";
 
-interface PlatformInfo {
-  id: PlatformType;
-  name: string;
-  badge: React.ReactNode;
-}
-
 export function getPlatformForItem(item: {
   id: string | number;
   title?: string;

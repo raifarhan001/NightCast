@@ -5,7 +5,7 @@ import asyncio
 from typing import Dict, Any, List, Optional
 from services.redis_service import redis_cache
 
-logger = logging.getLogger("stream_extractor")
+logger = logging.getLogger("nightcast_stream_extractor")
 
 # Common headers to mimic browser requests
 BROWSER_HEADERS = {
@@ -27,11 +27,6 @@ SOURCE_API_PATTERNS = [
     re.compile(r'data-src=["\']([^"\']+)["\']'),
     re.compile(r'src=["\']([^"\']*?(?:embed|player|stream)[^"\']*?)["\']'),
 ]
-
-
-def encode_param(val: str) -> str:
-    from urllib.parse import quote
-    return quote(val, safe='')
 
 
 async def fetch_dual_audio_manifest(
@@ -90,43 +85,6 @@ class StreamExtractor:
     async def fetch_dual_audio_manifest(self, tmdb_id: str, season: int = 1, episode: int = 1, media_type: str = "tv") -> Dict[str, Any]:
         return await fetch_dual_audio_manifest(tmdb_id, season, episode, media_type)
 
-    def _parse_m3u8_audio_tracks(self, m3u8_content: str) -> List[Dict[str, str]]:
-        """Parse #EXT-X-MEDIA:TYPE=AUDIO tags from an HLS master playlist manifest."""
-        audio_tracks = []
-        seen = set()
-        audio_lines = re.findall(r'#EXT-X-MEDIA:TYPE=AUDIO.*', m3u8_content, re.IGNORECASE)
-        
-        for line in audio_lines:
-            name_match = re.search(r'NAME=["\']([^"\']+)["\']', line, re.IGNORECASE)
-            lang_match = re.search(r'LANGUAGE=["\']([^"\']+)["\']', line, re.IGNORECASE)
-            
-            label = name_match.group(1) if name_match else None
-            lang = lang_match.group(1) if lang_match else None
-            
-            if not label and lang:
-                label = lang.upper()
-            elif not label:
-                label = "Default Audio"
-                
-            if not lang and label:
-                lang = label[:2].lower()
-            elif not lang:
-                lang = "en"
-                
-            key = (lang.lower(), label)
-            if key not in seen:
-                seen.add(key)
-                audio_tracks.append({"lang": lang.lower(), "label": label})
-
-        if not audio_tracks:
-            audio_tracks = [
-                {"lang": "en", "label": "English"},
-                {"lang": "hi", "label": "Hindi"},
-                {"lang": "ko", "label": "Korean"}
-            ]
-            
-        return audio_tracks
-
     async def extract_streams(
         self,
         media_type: str,
@@ -136,8 +94,8 @@ class StreamExtractor:
         language_pref: Optional[str] = None
     ) -> Dict[str, Any]:
         """Main entry point. Resolves direct HLS streams, parses audio track metadata, and provides iframe fallbacks."""
-        cache_key = f"streams:v8:{media_type}:{tmdb_id}:{season}:{episode}:{language_pref or 'all'}"
-        cached = redis_cache.get(cache_key)
+        cache_key = f"streams:v11:{media_type}:{tmdb_id}:{season}:{episode}:{language_pref or 'all'}"
+        cached = await redis_cache.get(cache_key)
         if cached:
             logger.info(f"Cache hit for {cache_key}")
             return cached
@@ -145,23 +103,23 @@ class StreamExtractor:
         if media_type == "movie":
             s1_vidsrc = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
             s2_vidsrc_to = f"https://vidsrc.to/embed/movie/{tmdb_id}"
-            s3_vidbolt = f"https://vidbolt.xyz/movie/{tmdb_id}"
-            s4_vidlink = f"https://vidlink.pro/movie/{tmdb_id}?primaryColor=22c55e&autoplay=true"
+            s3_vidlink = f"https://vidlink.pro/movie/{tmdb_id}?primaryColor=39AEA9&autoplay=true"
+            s4_vidbolt = f"https://vidbolt.xyz/movie/{tmdb_id}"
         elif media_type == "anime":
             s1_vidsrc = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
             s2_vidsrc_to = f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}"
-            s3_vidbolt = f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}"
-            s4_vidlink = f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=22c55e&autoplay=true"
+            s3_vidlink = f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=39AEA9&autoplay=true"
+            s4_vidbolt = f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}"
         else:
             s1_vidsrc = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
             s2_vidsrc_to = f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}"
-            s3_vidbolt = f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}"
-            s4_vidlink = f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=22c55e&autoplay=true"
+            s3_vidlink = f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=39AEA9&autoplay=true"
+            s4_vidbolt = f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}"
 
         all_servers = [
             {
                 "id": "vidsrc",
-                "name": "Server 1 (VidSrc)",
+                "name": "Server 1 (VidSrc - Fast Stream)",
                 "url": s1_vidsrc,
                 "type": "iframe",
                 "language": "en",
@@ -176,29 +134,41 @@ class StreamExtractor:
                 "language_name": "vidsrc.to"
             },
             {
-                "id": "vidbolt",
-                "name": "Server 3 (VidBolt)",
-                "url": s3_vidbolt,
-                "type": "iframe",
-                "language": "en",
-                "language_name": "vidbolt.xyz"
-            },
-            {
                 "id": "vidlink",
-                "name": "Server 4 (VidLink Pro)",
-                "url": s4_vidlink,
+                "name": "Server 3 (VidLink Pro)",
+                "url": s3_vidlink,
                 "type": "iframe",
                 "language": "en",
                 "language_name": "vidlink.pro"
+            },
+            {
+                "id": "vidbolt",
+                "name": "Server 4 (VidBolt)",
+                "url": s4_vidbolt,
+                "type": "iframe",
+                "language": "en",
+                "language_name": "vidbolt.xyz"
             }
         ]
 
+        # Integrate direct HLS extraction with 2-second timeout
+        direct_servers: List[Dict[str, Any]] = []
+        try:
+            direct_servers = await asyncio.wait_for(
+                self._try_autoembed(media_type, tmdb_id, season, episode),
+                timeout=2.0
+            )
+        except (asyncio.TimeoutError, Exception) as e:
+            logger.debug(f"Direct stream extraction skipped or timed out: {e}")
+
+        combined_servers = (direct_servers or []) + all_servers
+
         if language_pref == "hi":
-            all_servers.sort(key=lambda s: 0 if s.get("language") == "hi" else 1)
+            combined_servers.sort(key=lambda s: 0 if s.get("language") == "hi" else 1)
 
-        result = {"servers": all_servers}
+        result = {"servers": combined_servers}
 
-        redis_cache.set(cache_key, result, expire_seconds=3600)
+        await redis_cache.set(cache_key, result, expire_seconds=3600)
         logger.info(f"Cached servers list for {cache_key}")
 
         return result
@@ -269,92 +239,6 @@ class StreamExtractor:
         except Exception as e:
             logger.error(f"autoembed extraction failed: {e}")
             return []
-
-    def _get_iframe_fallbacks(
-        self, media_type: str, tmdb_id: str, season: int, episode: int
-    ) -> List[Dict[str, Any]]:
-        """Return standard iframe embed URLs as fallback."""
-        if media_type == "movie":
-            return [
-                {
-                    "id": "vidsrc",
-                    "name": "Server 1 (VidSrc)",
-                    "url": f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}",
-                    "type": "iframe",
-                },
-                {
-                    "id": "vidsrc-to",
-                    "name": "Server 2 (VidSrc VIP)",
-                    "url": f"https://vidsrc.to/embed/movie/{tmdb_id}",
-                    "type": "iframe",
-                },
-                {
-                    "id": "vidbolt",
-                    "name": "Server 3 (VidBolt)",
-                    "url": f"https://vidbolt.xyz/movie/{tmdb_id}",
-                    "type": "iframe",
-                },
-                {
-                    "id": "vidlink",
-                    "name": "Server 4 (VidLink Pro)",
-                    "url": f"https://vidlink.pro/movie/{tmdb_id}?primaryColor=22c55e&autoplay=true",
-                    "type": "iframe",
-                },
-            ]
-        elif media_type == "anime":
-            return [
-                {
-                    "id": "vidsrc",
-                    "name": "Server 1 (VidSrc)",
-                    "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
-                    "type": "iframe",
-                },
-                {
-                    "id": "vidsrc-to",
-                    "name": "Server 2 (VidSrc VIP)",
-                    "url": f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}",
-                    "type": "iframe",
-                },
-                {
-                    "id": "vidbolt",
-                    "name": "Server 3 (VidBolt)",
-                    "url": f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}",
-                    "type": "iframe",
-                },
-                {
-                    "id": "vidlink",
-                    "name": "Server 4 (VidLink Pro)",
-                    "url": f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=22c55e&autoplay=true",
-                    "type": "iframe",
-                },
-            ]
-        else:
-            return [
-                {
-                    "id": "vidsrc",
-                    "name": "Server 1 (VidSrc)",
-                    "url": f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}",
-                    "type": "iframe",
-                },
-                {
-                    "id": "vidsrc-to",
-                    "name": "Server 2 (VidSrc VIP)",
-                    "url": f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}",
-                    "type": "iframe",
-                },
-                {
-                    "id": "vidbolt",
-                    "name": "Server 3 (VidBolt)",
-                    "url": f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}",
-                    "type": "iframe",
-                },
-                {
-                    "id": "vidlink",
-                    "name": "Server 4 (VidLink Pro)",
-                    "url": f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=22c55e&autoplay=true",
-                    "type": "iframe",
-                },
-            ]
 
     def _extract_m3u8_from_html(self, html: str) -> List[str]:
         """Extract .m3u8 URLs from HTML/JS source text."""

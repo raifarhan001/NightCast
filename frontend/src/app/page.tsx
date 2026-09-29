@@ -1,11 +1,10 @@
 "use client";
 
 import React, { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUserStore } from "../store/userStore";
 import { apiFetch, MediaItem, ContinueWatchingItem } from "../lib/api";
-import { getContinueWatchingList, removeWatchProgress, getCleanMediaId, LocalProgressItem } from "../lib/progress";
+import { getContinueWatchingList, removeWatchProgress, getCleanMediaId, isDismissedFromContinueWatching, LocalProgressItem } from "../lib/progress";
 import HeroCarousel from "../components/home/HeroCarousel";
 import AmbientGlow from "../components/shared/AmbientGlow";
 import MovieRow from "../components/shared/MovieRow";
@@ -14,8 +13,6 @@ import StudiosRow from "../components/home/StudiosRow";
 import { HeroSkeleton, MovieRowSkeleton } from "../components/shared/Skeletons";
 
 function HomePageContent() {
-  const searchParams = useSearchParams();
-  const activeTab = searchParams.get("tab") || "foryou";
   const { activeProfile } = useUserStore();
   const queryClient = useQueryClient();
 
@@ -23,7 +20,7 @@ function HomePageContent() {
 
   React.useEffect(() => {
     const refreshList = () => {
-      setLocalContinueWatching(getContinueWatchingList());
+      setLocalContinueWatching(getContinueWatchingList(activeProfile?.id));
       if (activeProfile) {
         queryClient.invalidateQueries({ queryKey: ["continue-watching", activeProfile.id] });
       }
@@ -90,7 +87,7 @@ function HomePageContent() {
   // Backend Continue Watching History
   const { data: continueWatching = [] } = useQuery<ContinueWatchingItem[]>({
     queryKey: ["continue-watching", activeProfile?.id],
-    queryFn: () => apiFetch("/api/progress/continue", {
+    queryFn: () => apiFetch("/api/v1/progress/continue", {
       headers: activeProfile ? { "X-Profile-ID": activeProfile.id } : {},
     }),
     enabled: !!activeProfile,
@@ -104,15 +101,18 @@ function HomePageContent() {
       const cleanId = getCleanMediaId(c.media_id || c.id);
       if (!cleanId) return;
 
+      // Filter out explicitly dismissed items so they never resurrect on refresh
+      if (isDismissedFromContinueWatching(cleanId, c.updated_at)) return;
+
       const percent = Number(c.progress_percent ?? 0);
       const seconds = Number(c.timestamp_seconds ?? 0);
       const duration = Number(c.duration_seconds ?? 0);
 
-      // Filter out completed (>= 92%)
-      if (percent >= 92.0 || (duration > 60 && seconds >= duration - 30)) return;
+      // Filter out completed (>= 90%)
+      if (percent >= 90.0 || (duration > 60 && seconds >= duration - 25)) return;
       
-      const isUpNextMarker = (c.media_type === 'tv' || c.season) && c.episode !== undefined && percent >= 1;
-      const hasWatchedContent = seconds >= 5 || percent >= 1.5;
+      const isUpNextMarker = (c.media_type === 'tv' || c.season) && c.episode !== undefined && percent >= 0.5;
+      const hasWatchedContent = seconds >= 3 || percent >= 0.5;
       if (!isUpNextMarker && !hasWatchedContent) return;
 
       const existing = map.get(cleanId);
@@ -155,8 +155,8 @@ function HomePageContent() {
 
   const handleRemoveContinueWatching = React.useCallback(async (item: any) => {
     const cleanId = getCleanMediaId(item.id);
-    removeWatchProgress(cleanId, item.season, item.episode);
-    setLocalContinueWatching(getContinueWatchingList());
+    removeWatchProgress(cleanId, item.season, item.episode, activeProfile?.id);
+    setLocalContinueWatching(getContinueWatchingList(activeProfile?.id));
 
     // Immediately remove from React Query cache so UI updates instantly
     queryClient.setQueryData<ContinueWatchingItem[]>(
@@ -166,11 +166,7 @@ function HomePageContent() {
 
     if (activeProfile) {
       try {
-        const queryParams = new URLSearchParams();
-        if (item.season) queryParams.set("season", item.season.toString());
-        if (item.episode) queryParams.set("episode", item.episode.toString());
-        const qs = queryParams.toString() ? `?${queryParams.toString()}` : "";
-        await apiFetch(`/api/progress/continue/${cleanId}${qs}`, {
+        await apiFetch(`/api/v1/progress/continue/${cleanId}`, {
           method: "DELETE",
           headers: { "X-Profile-ID": activeProfile.id },
         });

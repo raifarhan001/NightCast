@@ -1,13 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from sqlalchemy import text
-from typing import List, Dict, Any
-from uuid import UUID
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session, joinedload
 
 from database import get_db
 import models
 import auth
-import schemas
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -32,13 +28,28 @@ def get_stats(
 
 @router.get("/users")
 def get_users_list(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
     current_admin: models.User = Depends(auth.get_current_admin),
     db: Session = Depends(get_db)
 ):
-    users = db.query(models.User).all()
-    results = []
+    users = (
+        db.query(models.User)
+        .options(joinedload(models.User.profiles))
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    seen = set()
+    unique_users = []
     for u in users:
-        profiles = db.query(models.Profile).filter(models.Profile.user_id == u.id).all()
+        if u.id not in seen:
+            seen.add(u.id)
+            unique_users.append(u)
+
+    results = []
+    for u in unique_users:
+        profiles = u.profiles or []
         results.append({
             "id": u.id,
             "email": u.email,
@@ -56,7 +67,7 @@ def get_system_logs(
 ):
     # Simulated structure representing container/system logs
     return [
-        {"timestamp": "2026-07-15T00:01:10Z", "level": "INFO", "message": "Vidking Backend listening on port 8000"},
+        {"timestamp": "2026-07-15T00:01:10Z", "level": "INFO", "message": "NightCast Backend listening on port 8001"},
         {"timestamp": "2026-07-15T00:01:12Z", "level": "INFO", "message": "Connected to pgvector Database successfully"},
         {"timestamp": "2026-07-15T00:01:15Z", "level": "INFO", "message": "Redis connection active (TTL 21600)"},
         {"timestamp": "2026-07-15T00:05:43Z", "level": "INFO", "message": "Pre-populating mock vector database embeddings... completed"},

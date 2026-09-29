@@ -91,10 +91,21 @@ html, body {
   scrollbar-width: none !important;
 }
 
+/* GPU Hardware-accelerated smooth scrolling & defer offscreen rows */
+.content-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 260px;
+}
+
+.smooth-scroll-container {
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 @layer components {
   /* Navigation Tab Pills */
   .cinema-tab {
-    @apply px-4 py-2 text-xs font-sans font-medium tracking-normal text-[#A4C8E1]/70 hover:text-[#F0F0F0] hover:bg-[#1B3A57]/40 transition-all duration-200 select-none cursor-pointer rounded-full;
+    @apply px-4 py-2 text-xs font-sans font-medium tracking-normal text-[#A4C8E1]/70 hover:text-[#F0F0F0] hover:bg-[#1B3A57]/40 transition-[color,background-color] duration-150 select-none cursor-pointer rounded-full;
   }
 
   .cinema-tab-active {
@@ -103,17 +114,17 @@ html, body {
 
   /* Primary Button */
   .cinema-btn-primary {
-    @apply px-6 py-3 rounded-full bg-[#F0F0F0] hover:bg-[#A4C8E1] text-[#0B131B] font-sans font-bold text-xs tracking-wide flex items-center gap-2 transform-gpu will-change-transform hover:shadow-[0_8px_25px_rgba(164,200,225,0.35)] hover:scale-[1.02] active:scale-[0.97] transition-all duration-200 ease-out cursor-pointer;
+    @apply px-6 py-3 rounded-full bg-[#F0F0F0] hover:bg-[#A4C8E1] text-[#0B131B] font-sans font-bold text-xs tracking-wide flex items-center gap-2 transform-gpu will-change-transform hover:shadow-[0_8px_25px_rgba(164,200,225,0.35)] hover:scale-[1.02] active:scale-[0.97] transition-transform duration-150 ease-out cursor-pointer;
   }
 
   /* Frosted Glass Secondary Button */
   .cinema-btn-secondary {
-    @apply px-5 py-3 rounded-full bg-[#2C3E50]/50 hover:bg-[#4A6E8D]/40 backdrop-blur-xl text-[#F0F0F0] font-sans font-medium text-xs tracking-wide flex items-center gap-2 transform-gpu will-change-transform hover:scale-[1.02] active:scale-[0.97] transition-all duration-200 ease-out shadow-[0_8px_32px_rgba(11,19,27,0.6)] cursor-pointer border border-[#4A6E8D]/35;
+    @apply px-5 py-3 rounded-full bg-[#2C3E50]/50 hover:bg-[#4A6E8D]/40 backdrop-blur-xl text-[#F0F0F0] font-sans font-medium text-xs tracking-wide flex items-center gap-2 transform-gpu will-change-transform hover:scale-[1.02] active:scale-[0.97] transition-transform duration-150 ease-out shadow-[0_8px_32px_rgba(11,19,27,0.6)] cursor-pointer border border-[#4A6E8D]/35;
   }
 
   /* Frosted 16:9 Landscape Card */
   .cinema-card-landscape {
-    @apply relative aspect-video w-full rounded-2xl overflow-hidden bg-[#1B3A57]/20 border border-[#4A6E8D]/25 transform-gpu will-change-transform transition-all duration-300 ease-out group-hover:scale-[1.03] group-hover:-translate-y-1 group-hover:border-[#A4C8E1]/40 group-hover:shadow-[0_16px_36px_-6px_rgba(7,12,18,0.9),0_0_24px_rgba(164,200,225,0.15)];
+    @apply relative aspect-video w-full rounded-2xl overflow-hidden bg-[#1B3A57]/20 border border-[#4A6E8D]/25 transform-gpu will-change-transform transition-[transform,border-color,box-shadow] duration-200 ease-out group-hover:scale-[1.03] group-hover:-translate-y-1 group-hover:border-[#A4C8E1]/40 group-hover:shadow-[0_16px_36px_-6px_rgba(7,12,18,0.9),0_0_24px_rgba(164,200,225,0.15)];
   }
 
   /* Refined Badges */

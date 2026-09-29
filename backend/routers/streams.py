@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, Query
-from typing import Dict, Any
 from providers.local_provider import LocalMediaProvider
 from services.stream_extractor import fetch_dual_audio_manifest
 

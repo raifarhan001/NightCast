@@ -1,6 +1,11 @@
+import asyncio
+import logging
+from typing import Dict, Any, List, Tuple
 import httpx
 from fastapi import APIRouter
-from typing import Dict, Any
+from services.redis_service import redis_cache
+
+logger = logging.getLogger("nightcast_f1")
 
 router = APIRouter(prefix="/f1", tags=["Formula 1"])
 
@@ -515,170 +520,131 @@ VERIFIED_2026_DATA: Dict[str, Any] = {
     ]
 }
 
+async def _fetch_schedule(client: httpx.AsyncClient) -> List[Dict[str, Any]]:
+    sched_urls = [
+        "https://api.jolpi.ca/ergast/f1/2026/races.json",
+        "https://api.jolpi.ca/ergast/f1/current/races.json"
+    ]
+    for url in sched_urls:
+        try:
+            res = await client.get(url)
+            if res.status_code == 200:
+                data = res.json()
+                races = data.get("MRData", {}).get("RaceTable", {}).get("Races", [])
+                if races:
+                    return races
+        except Exception as ex:
+            logger.debug(f"Schedule fetch error ({url}): {ex}")
+    return []
+
+async def _fetch_driver_standings(client: httpx.AsyncClient) -> Tuple[List[Any], List[Dict[str, Any]]]:
+    drv_urls = [
+        "https://api.jolpi.ca/ergast/f1/2026/driverstandings/",
+        "https://api.jolpi.ca/ergast/f1/2026/driverstandings/.json",
+        "https://api.jolpi.ca/ergast/f1/current/driverstandings/",
+        "https://api.jolpi.ca/ergast/f1/current/driverstandings/.json"
+    ]
+    for url in drv_urls:
+        try:
+            res = await client.get(url)
+            if res.status_code == 200:
+                data = res.json()
+                standings_lists = data.get("MRData", {}).get("StandingsTable", {}).get("StandingsLists", [])
+                if standings_lists and len(standings_lists) > 0:
+                    raw_drv = standings_lists[0].get("DriverStandings", [])
+                    if raw_drv:
+                        parsed = []
+                        for item in raw_drv:
+                            driver_obj = item.get("Driver", {})
+                            given_name = driver_obj.get("givenName", "")
+                            family_name = driver_obj.get("familyName", "")
+                            full_name = f"{given_name} {family_name}".strip() or driver_obj.get("driverId", "Unknown Driver")
+                            constructors = item.get("Constructors", [])
+                            team_name = constructors[0].get("name", "F1 Team") if constructors else "F1 Team"
+                            parsed.append({
+                                "position": int(item.get("position", 0)),
+                                "driverName": full_name,
+                                "driverNumber": driver_obj.get("permanentNumber", item.get("position", "")),
+                                "teamName": team_name,
+                                "points": float(item.get("points", 0)),
+                                "wins": int(item.get("wins", 0)),
+                                "nationality": driver_obj.get("nationality", "Global")
+                            })
+                        return raw_drv, parsed
+        except Exception as ex:
+            logger.debug(f"Driver standings error ({url}): {ex}")
+    return [], []
+
+async def _fetch_constructor_standings(client: httpx.AsyncClient) -> Tuple[List[Any], List[Dict[str, Any]]]:
+    const_urls = [
+        "https://api.jolpi.ca/ergast/f1/2026/constructorstandings/",
+        "https://api.jolpi.ca/ergast/f1/2026/constructorstandings/.json",
+        "https://api.jolpi.ca/ergast/f1/current/constructorstandings/",
+        "https://api.jolpi.ca/ergast/f1/current/constructorstandings/.json"
+    ]
+    for url in const_urls:
+        try:
+            res = await client.get(url)
+            if res.status_code == 200:
+                data = res.json()
+                standings_lists = data.get("MRData", {}).get("StandingsTable", {}).get("StandingsLists", [])
+                if standings_lists and len(standings_lists) > 0:
+                    raw_const = standings_lists[0].get("ConstructorStandings", [])
+                    if raw_const:
+                        parsed = []
+                        for item in raw_const:
+                            const_obj = item.get("Constructor", {})
+                            parsed.append({
+                                "position": int(item.get("position", 0)),
+                                "teamName": const_obj.get("name", "F1 Team"),
+                                "nationality": const_obj.get("nationality", "Global"),
+                                "points": float(item.get("points", 0)),
+                                "wins": int(item.get("wins", 0))
+                            })
+                        return raw_const, parsed
+        except Exception as ex:
+            logger.debug(f"Constructor standings error ({url}): {ex}")
+    return [], []
+
 @router.get("/2026-data")
 async def get_2026_f1_data():
     """
-    Hybrid F1 Data Endpoint with Debug Logging & Live Fallback Proxying.
-    Fetches Schedule, Driver Standings, and Constructor Standings from api.jolpi.ca.
+    Hybrid F1 Data Endpoint with concurrent Jolpi.ca fetching and 12-hour Redis caching.
+    Fetches Schedule, Driver Standings, and Constructor Standings concurrently.
     """
-    schedule_data = None
-    driver_standings_data = None
-    constructor_standings_data = None
-    raw_driver_standings = []
-    raw_constructor_standings = []
-    raw_races = []
+    cache_key = "f1:dashboard:2026:v3"
+    cached = await redis_cache.get(cache_key)
+    if cached:
+        return cached
+
+    raw_races: List[Dict[str, Any]] = []
+    driver_standings_data: List[Dict[str, Any]] = []
+    constructor_standings_data: List[Dict[str, Any]] = []
+    raw_driver_standings: List[Any] = []
+    raw_constructor_standings: List[Any] = []
 
     try:
         async with httpx.AsyncClient(timeout=5.0, follow_redirects=True) as client:
-            # 1. Fetch Schedule
-            sched_url = "https://api.jolpi.ca/ergast/f1/2026/races.json"
-            res_sched = await client.get(sched_url)
-            print(f"[F1 DEBUG] Schedule 2026 ({sched_url}) HTTP {res_sched.status_code} - Body: {res_sched.text[:500]}")
-            
-            if res_sched.status_code == 200:
-                try:
-                    json_sched = res_sched.json()
-                    raw_races = json_sched.get("MRData", {}).get("RaceTable", {}).get("Races", [])
-                except Exception as ex:
-                    print(f"[F1 DEBUG] Schedule JSON parse error: {ex}")
-            
-            if res_sched.status_code != 200 or not raw_races:
-                fallback_sched_url = "https://api.jolpi.ca/ergast/f1/current/races.json"
-                res_sched = await client.get(fallback_sched_url)
-                print(f"[F1 DEBUG] Schedule Fallback ({fallback_sched_url}) HTTP {res_sched.status_code} - Body: {res_sched.text[:500]}")
-                if res_sched.status_code == 200:
-                    try:
-                        json_sched = res_sched.json()
-                        raw_races = json_sched.get("MRData", {}).get("RaceTable", {}).get("Races", [])
-                    except Exception as ex:
-                        print(f"[F1 DEBUG] Fallback Schedule JSON parse error: {ex}")
+            sched_task = _fetch_schedule(client)
+            driver_task = _fetch_driver_standings(client)
+            const_task = _fetch_constructor_standings(client)
 
-            if raw_races:
-                schedule_data = raw_races
+            results = await asyncio.gather(sched_task, driver_task, const_task, return_exceptions=True)
 
-            # 2. Fetch Driver Standings (strictly check trailing slashes / and /.json)
-            drv_urls = [
-                "https://api.jolpi.ca/ergast/f1/2026/driverstandings/",
-                "https://api.jolpi.ca/ergast/f1/2026/driverstandings/.json"
-            ]
-            raw_drv = []
-            for drv_url in drv_urls:
-                res_drv = await client.get(drv_url)
-                print(f"[F1 DEBUG] Drivers 2026 ({drv_url}) HTTP {res_drv.status_code} - Body: {res_drv.text[:500]}")
-                if res_drv.status_code == 200:
-                    try:
-                        json_drv = res_drv.json()
-                        standings_lists = json_drv.get("MRData", {}).get("StandingsTable", {}).get("StandingsLists", [])
-                        if standings_lists and len(standings_lists) > 0:
-                            raw_drv = standings_lists[0].get("DriverStandings", [])
-                        if raw_drv:
-                            break
-                    except Exception as ex:
-                        print(f"[F1 DEBUG] Driver Standings JSON parse error: {ex}")
-
-            # Fallback to current season driver standings if 404 or empty StandingsTable
-            if not raw_drv:
-                fallback_drv_urls = [
-                    "https://api.jolpi.ca/ergast/f1/current/driverstandings/",
-                    "https://api.jolpi.ca/ergast/f1/current/driverstandings/.json"
-                ]
-                for fallback_drv_url in fallback_drv_urls:
-                    res_drv = await client.get(fallback_drv_url)
-                    print(f"[F1 DEBUG] Drivers Current Fallback ({fallback_drv_url}) HTTP {res_drv.status_code} - Body: {res_drv.text[:500]}")
-                    if res_drv.status_code == 200:
-                        try:
-                            json_drv = res_drv.json()
-                            standings_lists = json_drv.get("MRData", {}).get("StandingsTable", {}).get("StandingsLists", [])
-                            if standings_lists and len(standings_lists) > 0:
-                                raw_drv = standings_lists[0].get("DriverStandings", [])
-                            if raw_drv:
-                                break
-                        except Exception as ex:
-                            print(f"[F1 DEBUG] Fallback Driver Standings JSON parse error: {ex}")
-
-            if raw_drv:
-                raw_driver_standings = raw_drv
-                parsed_drv = []
-                for item in raw_drv:
-                    driver_obj = item.get("Driver", {})
-                    given_name = driver_obj.get("givenName", "")
-                    family_name = driver_obj.get("familyName", "")
-                    full_name = f"{given_name} {family_name}".strip() or driver_obj.get("driverId", "Unknown Driver")
-                    constructors = item.get("Constructors", [])
-                    team_name = constructors[0].get("name", "F1 Team") if constructors else "F1 Team"
-                    parsed_drv.append({
-                        "position": int(item.get("position", 0)),
-                        "driverName": full_name,
-                        "driverNumber": driver_obj.get("permanentNumber", item.get("position", "")),
-                        "teamName": team_name,
-                        "points": float(item.get("points", 0)),
-                        "wins": int(item.get("wins", 0)),
-                        "nationality": driver_obj.get("nationality", "Global")
-                    })
-                driver_standings_data = parsed_drv
-
-            # 3. Fetch Constructor Standings (strictly check trailing slashes / and /.json)
-            const_urls = [
-                "https://api.jolpi.ca/ergast/f1/2026/constructorstandings/",
-                "https://api.jolpi.ca/ergast/f1/2026/constructorstandings/.json"
-            ]
-            raw_const = []
-            for const_url in const_urls:
-                res_const = await client.get(const_url)
-                print(f"[F1 DEBUG] Constructors 2026 ({const_url}) HTTP {res_const.status_code} - Body: {res_const.text[:500]}")
-                if res_const.status_code == 200:
-                    try:
-                        json_const = res_const.json()
-                        standings_lists = json_const.get("MRData", {}).get("StandingsTable", {}).get("StandingsLists", [])
-                        if standings_lists and len(standings_lists) > 0:
-                            raw_const = standings_lists[0].get("ConstructorStandings", [])
-                        if raw_const:
-                            break
-                    except Exception as ex:
-                        print(f"[F1 DEBUG] Constructor Standings JSON parse error: {ex}")
-
-            # Fallback to current season constructor standings if 404 or empty StandingsTable
-            if not raw_const:
-                fallback_const_urls = [
-                    "https://api.jolpi.ca/ergast/f1/current/constructorstandings/",
-                    "https://api.jolpi.ca/ergast/f1/current/constructorstandings/.json"
-                ]
-                for fallback_const_url in fallback_const_urls:
-                    res_const = await client.get(fallback_const_url)
-                    print(f"[F1 DEBUG] Constructors Current Fallback ({fallback_const_url}) HTTP {res_const.status_code} - Body: {res_const.text[:500]}")
-                    if res_const.status_code == 200:
-                        try:
-                            json_const = res_const.json()
-                            standings_lists = json_const.get("MRData", {}).get("StandingsTable", {}).get("StandingsLists", [])
-                            if standings_lists and len(standings_lists) > 0:
-                                raw_const = standings_lists[0].get("ConstructorStandings", [])
-                            if raw_const:
-                                break
-                        except Exception as ex:
-                            print(f"[F1 DEBUG] Fallback Constructor Standings JSON parse error: {ex}")
-
-            if raw_const:
-                raw_constructor_standings = raw_const
-                parsed_const = []
-                for item in raw_const:
-                    const_obj = item.get("Constructor", {})
-                    parsed_const.append({
-                        "position": int(item.get("position", 0)),
-                        "teamName": const_obj.get("name", "F1 Team"),
-                        "nationality": const_obj.get("nationality", "Global"),
-                        "points": float(item.get("points", 0)),
-                        "wins": int(item.get("wins", 0))
-                    })
-                constructor_standings_data = parsed_const
-
+            if isinstance(results[0], list):
+                raw_races = results[0]
+            if isinstance(results[1], tuple):
+                raw_driver_standings, driver_standings_data = results[1]
+            if isinstance(results[2], tuple):
+                raw_constructor_standings, constructor_standings_data = results[2]
     except Exception as e:
-        print(f"[F1 DEBUG] Exception during Jolpi.ca fetch: {e}")
+        logger.warning(f"Exception during concurrent Jolpi.ca fetch: {e}")
 
-    final_races = schedule_data if schedule_data else VERIFIED_2026_DATA["races"]
+    final_races = raw_races if raw_races else VERIFIED_2026_DATA["races"]
     final_drivers = driver_standings_data if driver_standings_data else VERIFIED_2026_DATA["driver_standings"]
     final_constructors = constructor_standings_data if constructor_standings_data else VERIFIED_2026_DATA["constructor_standings"]
 
-    return {
+    response_data = {
         "year": "2026",
         "season": "2026 FIA Formula One World Championship",
         "races": final_races,
@@ -686,7 +652,7 @@ async def get_2026_f1_data():
         "constructor_standings": final_constructors,
         "MRData": {
             "RaceTable": {
-                "Races": schedule_data if schedule_data else []
+                "Races": raw_races if raw_races else []
             },
             "StandingsTable": {
                 "StandingsLists": [
@@ -697,5 +663,9 @@ async def get_2026_f1_data():
                 ]
             }
         },
-        "source": "jolpi-ca-live" if (driver_standings_data or schedule_data) else "verified-2026-fia-database"
+        "source": "jolpi-ca-live" if (driver_standings_data or raw_races) else "verified-2026-fia-database"
     }
+
+    # Cache for 12 hours (43200 seconds)
+    await redis_cache.set(cache_key, response_data, expire_seconds=43200)
+    return response_data

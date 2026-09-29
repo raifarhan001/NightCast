@@ -11,7 +11,7 @@ from services.tmdb_service import MOCK_MOVIES, MOCK_TV
 from database import is_sqlite
 
 
-logger = logging.getLogger("vidking_ai")
+logger = logging.getLogger("nightcast_ai")
 
 # 384-dimensional vocabulary mapping for local offline semantic search
 VOCABULARY = [
@@ -120,7 +120,7 @@ def local_cosine_similarity(query_vector: List[float], metadata_list: List[model
         else:
             try:
                 e_arr = np.array(emb_val)
-            except:
+            except Exception:
                 continue
                 
         norm_e = np.linalg.norm(e_arr)

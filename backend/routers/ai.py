@@ -1,12 +1,11 @@
 import asyncio
-from fastapi import APIRouter, Depends, Query, HTTPException, status
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
+from typing import Dict, Any
 
 from database import get_db
 import models
 import auth
-import schemas
 from services.ai_service import search_semantic_media, get_ai_recommendations
 from services.tmdb_service import tmdb_client
 
@@ -32,6 +31,10 @@ async def _enrich_hit(hit: Dict[str, Any]) -> Dict[str, Any]:
             "media_type": hit["media_type"],
             "title": hit.get("title", ""),
             "overview": hit.get("description", ""),
+            "backdrop_path": None,
+            "poster_path": None,
+            "vote_average": None,
+            "release_date": None,
             "score": hit.get("score", 0.0)
         }
 

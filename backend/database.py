@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from config import settings
 
-logger = logging.getLogger("vidking_database")
+logger = logging.getLogger("nightcast_database")
 
 DATABASE_URL = settings.DATABASE_URL
 is_sqlite = False
@@ -13,21 +13,29 @@ is_sqlite = False
 def get_db_engine():
     global is_sqlite
     if "postgresql" in DATABASE_URL:
-        try:
-            eng = create_engine(
-                DATABASE_URL,
-                pool_size=10,
-                max_overflow=5,
-                pool_pre_ping=True,
-                connect_args={"connect_timeout": 3}
-            )
-            # Test connection eagerly so we fail-fast and fallback to SQLite if host is unreachable
-            with eng.connect() as conn:
-                conn.execute(text("SELECT 1"))
-            logger.info("Connected to PostgreSQL database successfully.")
-            return eng
-        except Exception as e:
-            logger.warning(f"PostgreSQL connection test failed: {e}. Falling back to SQLite.")
+        import time
+        max_retries = 3
+        for attempt in range(1, max_retries + 1):
+            try:
+                logger.info(f"Connecting to PostgreSQL (attempt {attempt}/{max_retries})...")
+                eng = create_engine(
+                    DATABASE_URL,
+                    pool_size=10,
+                    max_overflow=5,
+                    pool_pre_ping=True,
+                    connect_args={"connect_timeout": 15}
+                )
+                # Test connection eagerly so we fail-fast and fallback to SQLite if host is unreachable
+                with eng.connect() as conn:
+                    conn.execute(text("SELECT 1"))
+                logger.info("Connected to PostgreSQL database successfully.")
+                is_sqlite = False
+                return eng
+            except Exception as e:
+                logger.warning(f"PostgreSQL connection attempt {attempt} failed: {e}")
+                if attempt < max_retries:
+                    time.sleep(2)
+        logger.warning("All PostgreSQL connection attempts failed. Falling back to SQLite.")
     
     is_sqlite = True
     backend_dir = os.path.dirname(os.path.abspath(__file__))

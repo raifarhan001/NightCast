@@ -36,7 +36,7 @@ export const ImageService = {
   },
 
   FallbackImage(type: 'poster' | 'backdrop' | 'profile', title?: string): string {
-    const displayTitle = title || 'NEXUS PLAY';
+    const displayTitle = title || 'NIGHTCAST';
     const width = type === 'poster' ? 500 : (type === 'backdrop' ? 1920 : 300);
     const height = type === 'poster' ? 750 : (type === 'backdrop' ? 1080 : 300);
     
