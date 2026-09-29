@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useRef } from "react";
+import React from "react";
 import MovieCard from "./MovieCard";
+import CarouselContainer from "./CarouselContainer";
 import { MediaItem } from "../../lib/api";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface MovieRowProps {
   title: string;
@@ -13,19 +13,6 @@ interface MovieRowProps {
 }
 
 function MovieRow({ title, subtitle, items, onRemoveItem }: MovieRowProps) {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  const scroll = (direction: "left" | "right") => {
-    if (scrollContainerRef.current) {
-      const { scrollLeft, clientWidth } = scrollContainerRef.current;
-      const scrollAmount = clientWidth * 0.8;
-      scrollContainerRef.current.scrollTo({
-        left: direction === "left" ? scrollLeft - scrollAmount : scrollLeft + scrollAmount,
-        behavior: "smooth",
-      });
-    }
-  };
-
   if (!items || items.length === 0) return null;
 
   return (
@@ -42,42 +29,21 @@ function MovieRow({ title, subtitle, items, onRemoveItem }: MovieRowProps) {
         )}
       </div>
 
-      <div className="relative">
-        <button
-          onClick={() => scroll("left")}
-          className="hidden sm:flex absolute -left-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full border border-[#4A6E8D]/35 bg-[#1B3A57]/45 hover:bg-[#2C3E50]/70 backdrop-blur-xl items-center justify-center text-[#F0F0F0] hover:text-[#A4C8E1] opacity-0 group-hover:opacity-100 transition-[opacity,transform] duration-200 hover:scale-105 active:scale-95 shadow-[0_8px_24px_rgba(11,19,27,0.85)] cursor-pointer"
-          aria-label="Scroll left"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-
-        <div
-          ref={scrollContainerRef}
-          className="flex items-start gap-3 sm:gap-4 md:gap-5 overflow-x-auto pt-4 pb-20 -mb-16 scrollbar-hide snap-x scroll-smooth no-scrollbar smooth-scroll-container px-1"
-        >
-          {items.map((item, idx) => (
-            <div
-              key={`${item.id}-${item.season || 0}-${item.episode || 0}-${idx}`}
-              className="snap-start shrink-0 relative hover:z-50"
-            >
-              <MovieCard
-                item={item}
-                isFirst={idx === 0}
-                isLast={idx === items.length - 1}
-                onRemove={onRemoveItem ? () => onRemoveItem(item) : undefined}
-              />
-            </div>
-          ))}
-        </div>
-
-        <button
-          onClick={() => scroll("right")}
-          className="hidden sm:flex absolute -right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full border border-[#4A6E8D]/35 bg-[#1B3A57]/45 hover:bg-[#2C3E50]/70 backdrop-blur-xl items-center justify-center text-[#F0F0F0] hover:text-[#A4C8E1] opacity-0 group-hover:opacity-100 transition-[opacity,transform] duration-200 hover:scale-105 active:scale-95 shadow-[0_8px_24px_rgba(11,19,27,0.85)] cursor-pointer"
-          aria-label="Scroll right"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-      </div>
+      <CarouselContainer posterType="landscape" itemCount={items.length} className="pt-4 pb-20 -mb-16">
+        {items.map((item, idx) => (
+          <div
+            key={`${item.id}-${item.season || 0}-${item.episode || 0}-${idx}`}
+            className="snap-start shrink-0 relative hover:z-50"
+          >
+            <MovieCard
+              item={item}
+              isFirst={idx === 0}
+              isLast={idx === items.length - 1}
+              onRemove={onRemoveItem ? () => onRemoveItem(item) : undefined}
+            />
+          </div>
+        ))}
+      </CarouselContainer>
     </div>
   );
 }

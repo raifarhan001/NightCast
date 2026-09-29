@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
+import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Play } from "lucide-react";
+import { Play } from "lucide-react";
 import { ImageService } from "../../lib/ImageService";
 import { soundFx } from "../../lib/soundEffects";
 import { useAmbientStore } from "../../store/ambientStore";
 import PlatformBadge from "../shared/PlatformBadge";
+import CarouselContainer from "../shared/CarouselContainer";
 
 interface RankedItem {
   id: string | number;
@@ -30,34 +31,7 @@ export default function Top10RankedRow({
   title = "Top 10 Movies & Shows",
   items = [],
 }: Top10RankedRowProps) {
-  const rowRef = useRef<HTMLDivElement>(null);
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(true);
-
   const top10Items = items.slice(0, 10);
-
-  const checkScrollPosition = () => {
-    if (rowRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = rowRef.current;
-      setShowLeftArrow(scrollLeft > 10);
-      setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
-    }
-  };
-
-  useEffect(() => {
-    checkScrollPosition();
-  }, [items]);
-
-  const handleScroll = (direction: "left" | "right") => {
-    if (rowRef.current) {
-      const { scrollLeft, clientWidth } = rowRef.current;
-      const scrollAmount = clientWidth * 0.75;
-      rowRef.current.scrollTo({
-        left: direction === "left" ? scrollLeft - scrollAmount : scrollLeft + scrollAmount,
-        behavior: "smooth",
-      });
-    }
-  };
 
   if (!top10Items || top10Items.length === 0) return null;
 
@@ -69,37 +43,13 @@ export default function Top10RankedRow({
           <span className="w-1.5 h-5 rounded-full bg-[#A4C8E1] shadow-[0_0_12px_rgba(164,200,225,0.6)] inline-block shrink-0" />
           <span>{title}</span>
         </h2>
-
-        {/* Desktop Navigation Controls */}
-        <div className="hidden sm:flex items-center gap-2">
-          <button
-            onClick={() => handleScroll("left")}
-            disabled={!showLeftArrow}
-            className={`w-10 h-10 rounded-full border border-[#4A6E8D]/35 bg-[#1B3A57]/45 hover:bg-[#2C3E50]/70 backdrop-blur-xl text-[#F0F0F0] hover:text-[#A4C8E1] flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 cursor-pointer shadow-[0_8px_24px_rgba(11,19,27,0.85)] hover:scale-105 active:scale-95 ${
-              !showLeftArrow ? "opacity-30 cursor-not-allowed" : ""
-            }`}
-            aria-label="Scroll left"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => handleScroll("right")}
-            disabled={!showRightArrow}
-            className={`w-10 h-10 rounded-full border border-[#4A6E8D]/35 bg-[#1B3A57]/45 hover:bg-[#2C3E50]/70 backdrop-blur-xl text-[#F0F0F0] hover:text-[#A4C8E1] flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 cursor-pointer shadow-[0_8px_24px_rgba(11,19,27,0.85)] hover:scale-105 active:scale-95 ${
-              !showRightArrow ? "opacity-30 cursor-not-allowed" : ""
-            }`}
-            aria-label="Scroll right"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
       </div>
 
-      {/* Ranked Items Carousel */}
-      <div
-        ref={rowRef}
-        onScroll={checkScrollPosition}
-        className="flex items-center gap-3 sm:gap-6 overflow-x-auto no-scrollbar scrollbar-hide scroll-smooth snap-x snap-mandatory smooth-scroll-container pt-2 pb-6 px-1"
+      {/* Shared Carousel Container */}
+      <CarouselContainer
+        posterType="portrait"
+        itemCount={top10Items.length}
+        className="pt-2 pb-6"
       >
         {top10Items.map((item, index) => {
           const rank = index + 1;
@@ -180,7 +130,7 @@ export default function Top10RankedRow({
             </Link>
           );
         })}
-      </div>
+      </CarouselContainer>
     </section>
   );
 }

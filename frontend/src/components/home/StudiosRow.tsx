@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Studio {
   id: string;
@@ -152,30 +151,9 @@ const STUDIOS: Studio[] = [
   },
 ];
 
+import CarouselContainer from "../shared/CarouselContainer";
+
 export default function StudiosRow() {
-  const rowRef = useRef<HTMLDivElement>(null);
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(true);
-
-  const checkScrollPosition = () => {
-    if (rowRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = rowRef.current;
-      setShowLeftArrow(scrollLeft > 10);
-      setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
-    }
-  };
-
-  const handleScroll = (direction: "left" | "right") => {
-    if (rowRef.current) {
-      const { scrollLeft, clientWidth } = rowRef.current;
-      const scrollAmount = clientWidth * 0.75;
-      rowRef.current.scrollTo({
-        left: direction === "left" ? scrollLeft - scrollAmount : scrollLeft + scrollAmount,
-        behavior: "smooth",
-      });
-    }
-  };
-
   return (
     <section className="content-auto space-y-3 px-4 sm:px-6 md:px-12 select-none relative group/row">
       {/* Header */}
@@ -184,37 +162,13 @@ export default function StudiosRow() {
           <span className="w-1.5 h-5 rounded-full bg-[#A4C8E1] shadow-[0_0_12px_rgba(164,200,225,0.6)] inline-block shrink-0" />
           <span>Studios & Platforms</span>
         </h2>
-
-        {/* Desktop Navigation Arrows */}
-        <div className="hidden sm:flex items-center gap-2">
-          <button
-            onClick={() => handleScroll("left")}
-            disabled={!showLeftArrow}
-            className={`w-10 h-10 rounded-full border border-[#4A6E8D]/35 bg-[#1B3A57]/45 hover:bg-[#2C3E50]/70 backdrop-blur-xl text-[#F0F0F0] hover:text-[#A4C8E1] flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 cursor-pointer shadow-[0_8px_24px_rgba(11,19,27,0.85)] hover:scale-105 active:scale-95 ${
-              !showLeftArrow ? "opacity-30 cursor-not-allowed" : ""
-            }`}
-            aria-label="Scroll left"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => handleScroll("right")}
-            disabled={!showRightArrow}
-            className={`w-10 h-10 rounded-full border border-[#4A6E8D]/35 bg-[#1B3A57]/45 hover:bg-[#2C3E50]/70 backdrop-blur-xl text-[#F0F0F0] hover:text-[#A4C8E1] flex items-center justify-center transform-gpu will-change-transform transition-all duration-200 cursor-pointer shadow-[0_8px_24px_rgba(11,19,27,0.85)] hover:scale-105 active:scale-95 ${
-              !showRightArrow ? "opacity-30 cursor-not-allowed" : ""
-            }`}
-            aria-label="Scroll right"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
       </div>
 
       {/* Studios Carousel */}
-      <div
-        ref={rowRef}
-        onScroll={checkScrollPosition}
-        className="flex items-center gap-3 sm:gap-4 overflow-x-auto no-scrollbar scrollbar-hide scroll-smooth snap-x snap-mandatory pt-2 pb-2 smooth-scroll-container"
+      <CarouselContainer
+        posterType="capsule"
+        itemCount={STUDIOS.length}
+        className="pt-2 pb-2"
       >
         {STUDIOS.map((studio) => (
           <Link
@@ -235,7 +189,7 @@ export default function StudiosRow() {
             </span>
           </Link>
         ))}
-      </div>
+      </CarouselContainer>
     </section>
   );
 }
