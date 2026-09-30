@@ -491,6 +491,30 @@ export default function NightCastPlayer({
     window.addEventListener("mouseup", onMouseUp);
   }, [handleSeekFromEvent]);
 
+  const handleSeekTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (!e.touches[0]) return;
+    setIsDraggingSeek(true);
+    handleSeekFromEvent(e.touches[0].clientX);
+
+    const onTouchMove = (moveEvt: TouchEvent) => {
+      if (moveEvt.touches[0]) {
+        handleSeekFromEvent(moveEvt.touches[0].clientX);
+      }
+    };
+
+    const onTouchEnd = () => {
+      setIsDraggingSeek(false);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("touchcancel", onTouchEnd);
+    };
+
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchend", onTouchEnd);
+    window.addEventListener("touchcancel", onTouchEnd);
+  }, [handleSeekFromEvent]);
+
   const handleSeekMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const bar = seekBarRef.current;
     if (!bar || !duration) return;
@@ -640,16 +664,11 @@ export default function NightCastPlayer({
       onClick={(e) => {
         // Prevent click if clicking controls or menus
         if ((e.target as HTMLElement).closest("[data-player-ui]")) return;
-        if (clickTimerRef.current) {
-          clearTimeout(clickTimerRef.current);
-          clickTimerRef.current = null;
-          toggleFullscreen();
-        } else {
-          clickTimerRef.current = setTimeout(() => {
-            togglePlay();
-            clickTimerRef.current = null;
-          }, 240);
-        }
+        togglePlay();
+      }}
+      onDoubleClick={(e) => {
+        if ((e.target as HTMLElement).closest("[data-player-ui]")) return;
+        toggleFullscreen();
       }}
     >
       {/* HTML5 Video Element */}
@@ -665,7 +684,7 @@ export default function NightCastPlayer({
       {isLoading && !errorMsg && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-[2px] z-20 pointer-events-none">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-14 h-14 rounded-full border-3 border-[#22C55E]/20 border-t-[#22C55E] animate-spin shadow-[0_0_20px_rgba(34,197,94,0.4)]" />
+            <div className="w-14 h-14 rounded-full border-3 border-[#39AEA9]/20 border-t-[#39AEA9] animate-spin shadow-[0_0_20px_rgba(57,174,169,0.5)]" />
             <span className="text-white/80 font-mono text-xs tracking-wider uppercase">Loading Stream...</span>
           </div>
         </div>
@@ -727,7 +746,7 @@ export default function NightCastPlayer({
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-[#39AEA9] animate-pulse" />
             <span className="text-white/90 text-xs font-semibold tracking-wide font-sans">
               NightCast Player
             </span>
@@ -746,15 +765,23 @@ export default function NightCastPlayer({
         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent pointer-events-none h-36 -top-12" />
 
         <div className="relative px-4 sm:px-6 pb-4 pt-4 flex flex-col gap-3">
-          {/* Top Row: Neon Green Scrubber Bar + Right-aligned Time */}
+          {/* Top Row: Brand Teal Scrubber Bar + Right-aligned Time */}
           <div className="w-full flex flex-col gap-1.5">
             {/* Scrubber Bar Line */}
             <div
               ref={seekBarRef}
+              role="slider"
+              aria-label="Timeline scrubber"
+              tabIndex={0}
+              aria-valuenow={Math.round(currentTime)}
+              aria-valuemin={0}
+              aria-valuemax={Math.round(duration || 0)}
+              aria-valuetext={`${formatPlayerTime(currentTime)} of ${formatPlayerTime(duration)}`}
               onMouseDown={handleSeekMouseDown}
+              onTouchStart={handleSeekTouchStart}
               onMouseMove={handleSeekMouseMove}
               onMouseLeave={handleSeekMouseLeave}
-              className="relative w-full h-3 flex items-center cursor-pointer group/scrub"
+              className="relative w-full h-3 flex items-center cursor-pointer group/scrub focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] rounded-full"
             >
               {/* Background Track */}
               <div className="w-full h-[3.5px] group-hover/scrub:h-[5px] bg-white/25 rounded-full overflow-hidden transition-all duration-150">
@@ -765,13 +792,13 @@ export default function NightCastPlayer({
                 />
               </div>
 
-              {/* Played Neon Green Bar */}
+              {/* Played Brand Teal Bar */}
               <div
-                className="absolute top-1/2 -translate-y-1/2 left-0 h-[3.5px] group-hover/scrub:h-[5px] bg-[#22C55E] rounded-full shadow-[0_0_12px_rgba(34,197,94,0.8)] pointer-events-none transition-all duration-75"
+                className="absolute top-1/2 -translate-y-1/2 left-0 h-[3.5px] group-hover/scrub:h-[5px] bg-[#39AEA9] rounded-full shadow-[0_0_12px_rgba(57,174,169,0.8)] pointer-events-none transition-all duration-75"
                 style={{ width: `${progressPercent}%` }}
               />
 
-              {/* Scrubber White Circular Thumb Knob (matching screenshot) */}
+              {/* Scrubber White Circular Thumb Knob */}
               <div
                 className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,0.9),0_2px_4px_rgba(0,0,0,0.8)] pointer-events-none transition-transform group-hover/scrub:scale-125"
                 style={{ left: `calc(${progressPercent}% - 7px)` }}
@@ -797,17 +824,19 @@ export default function NightCastPlayer({
           </div>
 
           {/* Bottom Row: Floating Dark Pill Capsule Container */}
-          <div className="relative w-full flex items-center justify-between bg-[#0B1015]/90 backdrop-blur-xl border border-white/10 rounded-full px-3 sm:px-4 py-2 shadow-[0_15px_40px_rgba(0,0,0,0.85)]">
+          <div className="relative w-full flex items-center justify-between bg-[#0B131B]/75 backdrop-blur-2xl backdrop-saturate-150 border border-white/[0.12] rounded-full px-3 sm:px-4 py-2 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_15px_40px_rgba(0,0,0,0.85)]">
             {/* Left Controls: Play/Pause, Rewind 10s, Forward 10s, Volume + Inline Slider */}
             <div className="flex items-center gap-2 sm:gap-2.5">
-              {/* White Solid Circle Play/Pause Button (matching screenshot) */}
+              {/* White Solid Circle Play/Pause Button */}
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   togglePlay();
                 }}
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-md cursor-pointer flex-shrink-0"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-md cursor-pointer flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                 title={isPlaying ? "Pause (Space)" : "Play (Space)"}
+                aria-label={isPlaying ? "Pause video" : "Play video"}
               >
                 {isPlaying ? (
                   <Pause className="w-4 h-4 fill-black text-black" />
@@ -818,36 +847,42 @@ export default function NightCastPlayer({
 
               {/* 10s Rewind Button */}
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleSkip(-10);
                 }}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/15 active:scale-90 flex items-center justify-center text-white/90 hover:text-white transition-all cursor-pointer flex-shrink-0"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/15 active:scale-90 flex items-center justify-center text-white/90 hover:text-white transition-all cursor-pointer flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                 title="Rewind 10s (←)"
+                aria-label="Rewind 10 seconds"
               >
                 <Rewind10Icon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </button>
 
               {/* 10s Forward Button */}
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleSkip(10);
                 }}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/15 active:scale-90 flex items-center justify-center text-white/90 hover:text-white transition-all cursor-pointer flex-shrink-0"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/15 active:scale-90 flex items-center justify-center text-white/90 hover:text-white transition-all cursor-pointer flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                 title="Forward 10s (→)"
+                aria-label="Forward 10 seconds"
               >
                 <Forward10Icon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </button>
 
               {/* Volume Speaker Button */}
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleMute();
                 }}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/15 active:scale-90 flex items-center justify-center text-white/90 hover:text-white transition-all cursor-pointer flex-shrink-0 ml-0.5"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/15 active:scale-90 flex items-center justify-center text-white/90 hover:text-white transition-all cursor-pointer flex-shrink-0 ml-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                 title={isMuted ? "Unmute (M)" : "Mute (M)"}
+                aria-label={isMuted ? "Unmute audio" : "Mute audio"}
               >
                 {isMuted || volume === 0 ? (
                   <VolumeX className="w-4 h-4 text-white/80" />
@@ -858,22 +893,28 @@ export default function NightCastPlayer({
                 )}
               </button>
 
-              {/* Inline Volume Slider: Green Bar + White Round Thumb (matching screenshot) */}
+              {/* Inline Volume Slider: Teal Bar + White Round Thumb (Hidden on mobile) */}
               <div
                 ref={volumeBarRef}
+                role="slider"
+                aria-label="Volume level"
+                tabIndex={0}
+                aria-valuenow={Math.round((isMuted ? 0 : volume) * 100)}
+                aria-valuemin={0}
+                aria-valuemax={100}
                 onClick={(e) => {
                   e.stopPropagation();
                   const rect = e.currentTarget.getBoundingClientRect();
                   const pos = (e.clientX - rect.left) / rect.width;
                   handleVolumeChange(pos);
                 }}
-                className="relative w-14 sm:w-20 h-4 flex items-center cursor-pointer group/vol"
+                className="hidden sm:flex relative w-14 sm:w-20 h-4 items-center cursor-pointer group/vol focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] rounded-full"
                 title={`Volume: ${Math.round((isMuted ? 0 : volume) * 100)}%`}
               >
                 {/* Volume Track */}
                 <div className="w-full h-1 bg-white/25 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-[#22C55E] rounded-full transition-all duration-75"
+                    className="h-full bg-[#39AEA9] rounded-full transition-all duration-75"
                     style={{ width: `${(isMuted ? 0 : volume) * 100}%` }}
                   />
                 </div>
@@ -887,23 +928,27 @@ export default function NightCastPlayer({
 
             {/* Right Controls: Settings with Quality Badge, PiP, Fullscreen */}
             <div className="flex items-center gap-2 sm:gap-2.5 relative">
-              {/* Settings Gear Button with Green Quality Badge (720p / 1080p) */}
+              {/* Settings Gear Button with Teal Quality Badge */}
               <div className="relative">
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsSettingsOpen((prev) => !prev);
                     setSettingsTab("main");
                   }}
-                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all cursor-pointer relative ${
+                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all cursor-pointer relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
                     isSettingsOpen ? "bg-white/20 text-white" : "bg-white/5 hover:bg-white/15 text-white/90"
                   }`}
                   title="Playback Settings & Quality"
+                  aria-label="Playback settings and quality"
+                  aria-haspopup="menu"
+                  aria-expanded={isSettingsOpen}
                 >
                   <Settings className="w-4 h-4" />
 
-                  {/* Neon Green Badge (e.g. 720p or 1080p) matching screenshot */}
-                  <span className="absolute -top-1.5 -right-1.5 bg-[#84cc16] text-black text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-md leading-tight select-none">
+                  {/* Teal Badge */}
+                  <span className="absolute -top-1.5 -right-1.5 bg-[#39AEA9] text-[#0B131B] text-[8px] font-black px-1.5 py-0.2 rounded-full shadow-md leading-tight select-none">
                     {currentQualityLabel}
                   </span>
                 </button>
@@ -912,7 +957,7 @@ export default function NightCastPlayer({
                 {isSettingsOpen && (
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute bottom-12 right-0 w-60 bg-[#0B1015]/95 backdrop-blur-2xl border border-white/15 rounded-2xl p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.95)] z-50 text-white animate-in fade-in slide-in-from-bottom-2 duration-200"
+                    className="absolute bottom-12 right-0 w-60 bg-[#0B131B]/90 backdrop-blur-3xl backdrop-saturate-150 border border-white/[0.12] rounded-2xl p-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_20px_50px_rgba(0,0,0,0.95)] z-50 text-white animate-in fade-in slide-in-from-bottom-2 duration-200"
                   >
                     {settingsTab === "main" && (
                       <div className="flex flex-col gap-1">
@@ -922,11 +967,12 @@ export default function NightCastPlayer({
 
                         {/* Quality Option */}
                         <button
+                          type="button"
                           onClick={() => setSettingsTab("quality")}
                           className="w-full px-2.5 py-2 rounded-xl flex items-center justify-between hover:bg-white/10 text-xs font-sans font-medium transition-colors cursor-pointer"
                         >
                           <span className="flex items-center gap-2">
-                            <Sliders className="w-3.5 h-3.5 text-[#22C55E]" />
+                            <Sliders className="w-3.5 h-3.5 text-[#39AEA9]" />
                             <span>Quality</span>
                           </span>
                           <span className="text-white/60 font-mono text-[11px] bg-white/10 px-2 py-0.5 rounded-full">
@@ -936,11 +982,12 @@ export default function NightCastPlayer({
 
                         {/* Speed Option */}
                         <button
+                          type="button"
                           onClick={() => setSettingsTab("speed")}
                           className="w-full px-2.5 py-2 rounded-xl flex items-center justify-between hover:bg-white/10 text-xs font-sans font-medium transition-colors cursor-pointer"
                         >
                           <span className="flex items-center gap-2">
-                            <Gauge className="w-3.5 h-3.5 text-[#22C55E]" />
+                            <Gauge className="w-3.5 h-3.5 text-[#39AEA9]" />
                             <span>Speed</span>
                           </span>
                           <span className="text-white/60 font-mono text-[11px] bg-white/10 px-2 py-0.5 rounded-full">
@@ -951,11 +998,12 @@ export default function NightCastPlayer({
                         {/* Audio Track Option */}
                         {audioTracks.length > 0 && (
                           <button
+                            type="button"
                             onClick={() => setSettingsTab("audio")}
                             className="w-full px-2.5 py-2 rounded-xl flex items-center justify-between hover:bg-white/10 text-xs font-sans font-medium transition-colors cursor-pointer"
                           >
                             <span className="flex items-center gap-2">
-                              <Languages className="w-3.5 h-3.5 text-[#22C55E]" />
+                              <Languages className="w-3.5 h-3.5 text-[#39AEA9]" />
                               <span>Audio</span>
                             </span>
                             <span className="text-white/60 font-mono text-[11px] bg-white/10 px-2 py-0.5 rounded-full truncate max-w-24">
@@ -976,8 +1024,9 @@ export default function NightCastPlayer({
                         <div className="flex items-center justify-between px-2.5 py-1 border-b border-white/10 mb-1">
                           <span className="text-[11px] font-mono uppercase tracking-wider text-white/50">Quality</span>
                           <button
+                            type="button"
                             onClick={() => setSettingsTab("main")}
-                            className="text-[10px] text-[#22C55E] hover:underline cursor-pointer"
+                            className="text-[10px] text-[#39AEA9] hover:underline cursor-pointer"
                           >
                             Back
                           </button>
@@ -985,10 +1034,11 @@ export default function NightCastPlayer({
                         <div className="space-y-0.5 max-h-48 overflow-y-auto no-scrollbar">
                           {/* Auto Quality */}
                           <button
+                            type="button"
                             onClick={() => handleQualityChange(-1, "Auto")}
                             className={`w-full px-2.5 py-1.5 rounded-xl flex items-center justify-between text-xs transition-colors cursor-pointer ${
                               currentQualityId === -1
-                                ? "bg-[#22C55E]/20 text-[#22C55E] font-bold"
+                                ? "bg-[#39AEA9]/20 text-[#39AEA9] font-bold"
                                 : "hover:bg-white/10 text-white/80"
                             }`}
                           >
@@ -1007,10 +1057,11 @@ export default function NightCastPlayer({
                           ).map((lvl) => (
                             <button
                               key={lvl.id}
+                              type="button"
                               onClick={() => handleQualityChange(lvl.id, lvl.label)}
                               className={`w-full px-2.5 py-1.5 rounded-xl flex items-center justify-between text-xs transition-colors cursor-pointer ${
                                 currentQualityLabel === lvl.label
-                                  ? "bg-[#22C55E]/20 text-[#22C55E] font-bold"
+                                  ? "bg-[#39AEA9]/20 text-[#39AEA9] font-bold"
                                   : "hover:bg-white/10 text-white/80"
                               }`}
                             >
@@ -1028,8 +1079,9 @@ export default function NightCastPlayer({
                         <div className="flex items-center justify-between px-2.5 py-1 border-b border-white/10 mb-1">
                           <span className="text-[11px] font-mono uppercase tracking-wider text-white/50">Speed</span>
                           <button
+                            type="button"
                             onClick={() => setSettingsTab("main")}
-                            className="text-[10px] text-[#22C55E] hover:underline cursor-pointer"
+                            className="text-[10px] text-[#39AEA9] hover:underline cursor-pointer"
                           >
                             Back
                           </button>
@@ -1038,10 +1090,11 @@ export default function NightCastPlayer({
                           {[0.5, 0.75, 1, 1.25, 1.5, 2].map((spd) => (
                             <button
                               key={spd}
+                              type="button"
                               onClick={() => handleSpeedChange(spd)}
                               className={`w-full px-2.5 py-1.5 rounded-xl flex items-center justify-between text-xs transition-colors cursor-pointer ${
                                 playbackSpeed === spd
-                                  ? "bg-[#22C55E]/20 text-[#22C55E] font-bold"
+                                  ? "bg-[#39AEA9]/20 text-[#39AEA9] font-bold"
                                   : "hover:bg-white/10 text-white/80"
                               }`}
                             >
@@ -1059,8 +1112,9 @@ export default function NightCastPlayer({
                         <div className="flex items-center justify-between px-2.5 py-1 border-b border-white/10 mb-1">
                           <span className="text-[11px] font-mono uppercase tracking-wider text-white/50">Audio Track</span>
                           <button
+                            type="button"
                             onClick={() => setSettingsTab("main")}
-                            className="text-[10px] text-[#22C55E] hover:underline cursor-pointer"
+                            className="text-[10px] text-[#39AEA9] hover:underline cursor-pointer"
                           >
                             Back
                           </button>
@@ -1071,10 +1125,11 @@ export default function NightCastPlayer({
                             return (
                               <button
                                 key={trk.id}
+                                type="button"
                                 onClick={() => handleAudioTrackChange(trk.id)}
                                 className={`w-full px-2.5 py-1.5 rounded-xl flex items-center justify-between text-xs transition-colors cursor-pointer ${
                                   isSelected
-                                    ? "bg-[#22C55E]/20 text-[#22C55E] font-bold"
+                                    ? "bg-[#39AEA9]/20 text-[#39AEA9] font-bold"
                                     : "hover:bg-white/10 text-white/80"
                                 }`}
                               >
@@ -1092,24 +1147,28 @@ export default function NightCastPlayer({
 
               {/* Picture-in-Picture Button */}
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   togglePip();
                 }}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/15 active:scale-90 flex items-center justify-center text-white/90 hover:text-white transition-all cursor-pointer flex-shrink-0"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/15 active:scale-90 flex items-center justify-center text-white/90 hover:text-white transition-all cursor-pointer flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                 title="Picture in Picture (P)"
+                aria-label="Toggle Picture in Picture"
               >
                 <PipIcon className="w-4 h-4" />
               </button>
 
               {/* Fullscreen Button */}
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleFullscreen();
                 }}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/15 active:scale-90 flex items-center justify-center text-white/90 hover:text-white transition-all cursor-pointer flex-shrink-0"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/15 active:scale-90 flex items-center justify-center text-white/90 hover:text-white transition-all cursor-pointer flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                 title={isFullscreen ? "Exit Fullscreen (F)" : "Fullscreen (F)"}
+                aria-label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
               >
                 {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
               </button>

@@ -94,24 +94,24 @@ function TvDetailsPage() {
   if (!tv) {
     return (
       <div className="w-full min-h-screen bg-[#0B131B] flex flex-col justify-center items-center text-center px-6">
-        <div className="w-16 h-16 rounded-full bg-[#1B3A57]/30 border border-[#4A6E8D]/30 flex items-center justify-center text-[#A4C8E1] mb-5 shadow-xl">
+        <div className="w-16 h-16 rounded-3xl bg-white/[0.04] backdrop-blur-2xl border border-white/[0.15] flex items-center justify-center text-[#A4C8E1] mb-5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_10px_30px_rgba(0,0,0,0.7)]">
           <Tv className="w-8 h-8 opacity-80" />
         </div>
         <h2 className="text-2xl font-bold font-display text-[#F0F0F0] mb-2">Show Details Not Found</h2>
-        <p className="text-xs font-sans text-[#4A6E8D] max-w-sm mb-6">
+        <p className="text-xs font-sans text-[#8FA8AD] max-w-sm mb-6">
           We couldn't load information for this TV series. It may have been removed or TMDB is temporarily unreachable.
         </p>
         <div className="flex items-center gap-3">
           <button
             onClick={() => refetchTv()}
-            className="px-5 py-2.5 rounded-full bg-[#1B3A57]/50 hover:bg-[#2C3E50]/70 text-[#F0F0F0] border border-[#4A6E8D]/40 text-xs font-medium transition cursor-pointer flex items-center gap-2"
+            className="px-5 py-2.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-[#F0F0F0] border border-white/[0.15] backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] text-xs font-medium transition cursor-pointer flex items-center gap-2 active:scale-95"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Try Again</span>
           </button>
           <Link
             href="/"
-            className="px-5 py-2.5 rounded-full bg-[#F0F0F0] hover:bg-[#A4C8E1] text-[#0B131B] text-xs font-semibold transition cursor-pointer shadow-lg"
+            className="px-5 py-2.5 rounded-full bg-[#F0F0F0]/95 hover:bg-white text-[#0B131B] text-xs font-semibold backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.6),0_4px_20px_rgba(255,255,255,0.2)] transition cursor-pointer active:scale-95"
           >
             Explore Home
           </Link>
@@ -135,10 +135,10 @@ function TvDetailsPage() {
   return (
     <div className="w-full min-h-screen bg-[#0B131B] text-[#F0F0F0] pb-28">
       {/* Immersive Backdrop Banner */}
-      <div className="relative w-full h-[65vh] md:h-[80vh] select-none border-b border-[#4A6E8D]/25">
+      <div className="relative w-full h-[65vh] md:h-[80vh] select-none border-b border-white/[0.08]">
         <Image
           src={backdropUrl}
-          alt={tv.name}
+          alt={`${tv.name} backdrop cinematic artwork`}
           fill
           priority
           placeholder="blur"
@@ -152,10 +152,10 @@ function TvDetailsPage() {
       {/* Main TV Poster & Info Grid */}
       <div className="max-w-7xl mx-auto px-6 md:px-12 -mt-48 md:-mt-72 relative z-10 grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
         <div className="space-y-4 flex flex-col items-center md:items-stretch">
-          <div className="relative w-56 md:w-full aspect-[2/3] rounded-2xl overflow-hidden shadow-[0_25px_60px_rgba(11,19,27,0.95)] border border-[#4A6E8D]/30 bg-[#1B3A57]/30">
+          <div className="relative w-56 md:w-full aspect-[2/3] rounded-3xl overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_25px_60px_rgba(0,0,0,0.9)] border border-white/[0.15] bg-[#0B131B]/60 backdrop-blur-2xl">
             <Image
               src={posterUrl}
-              alt={tv.name}
+              alt={`${tv.name} official series poster`}
               fill
               placeholder="blur"
               blurDataURL={ImageService.getBlurHash()}
@@ -172,10 +172,11 @@ function TvDetailsPage() {
               toggleFavoriteMutation.mutate();
             }}
             disabled={toggleFavoriteMutation.isPending}
-            className={`w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-full border transition-all font-sans font-semibold text-xs tracking-wide cursor-pointer ${
+            aria-label={isFavorite ? "Remove from watchlist" : "Add to watchlist"}
+            className={`w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl border transition-all font-mono font-bold text-xs uppercase tracking-wider cursor-pointer active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
               isFavorite
-                ? 'bg-[#A4C8E1] text-[#0B131B] border-[#A4C8E1] shadow-[0_0_20px_rgba(164,200,225,0.4)]'
-                : 'border-[#4A6E8D]/40 bg-[#1B3A57]/60 text-[#F0F0F0] hover:bg-[#2C3E50]/70 backdrop-blur-xl'
+                ? 'bg-[#A4C8E1] text-[#0B131B] border-[#A4C8E1] shadow-[0_0_24px_rgba(164,200,225,0.4),inset_0_1px_1px_rgba(255,255,255,0.5)]'
+                : 'border-white/[0.15] bg-white/[0.06] text-[#F0F0F0] hover:bg-white/[0.12] hover:border-white/[0.25] backdrop-blur-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]'
             }`}
           >
             {isFavorite ? (
@@ -185,7 +186,7 @@ function TvDetailsPage() {
               </>
             ) : (
               <>
-                <Bookmark className="w-4 h-4 text-[#F0F0F0]/80" />
+                <Bookmark className="w-4 h-4 text-white/80" />
                 <span>Add to Watchlist</span>
               </>
             )}
@@ -195,13 +196,13 @@ function TvDetailsPage() {
         <div className="md:col-span-3 space-y-6">
           {/* Metadata Chips */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="px-3 py-1 rounded-full bg-[#1B3A57]/70 border border-[#4A6E8D]/40 text-[#A4C8E1] text-[10px] font-sans font-semibold">
+            <span className="px-3.5 py-1.5 rounded-full bg-[#39AEA9]/15 border border-[#39AEA9]/35 text-[#39AEA9] text-[10px] font-sans font-semibold backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
               Series Premiere
             </span>
-            <span className="px-3 py-1 rounded-full bg-[#1B3A57]/30 border border-[#4A6E8D]/25 text-[10px] font-sans font-medium text-[#F0F0F0]/80 backdrop-blur-md">
+            <span className="px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.12] text-[10px] font-sans font-medium text-[#F0F0F0]/90 backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
               Dolby Atmos
             </span>
-            <span className="px-3 py-1 rounded-full bg-[#1B3A57]/30 border border-[#4A6E8D]/25 text-[10px] font-sans font-medium text-[#F0F0F0]/80 backdrop-blur-md">
+            <span className="px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.12] text-[10px] font-sans font-medium text-[#F0F0F0]/90 backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
               4K HDR
             </span>
           </div>
@@ -210,31 +211,31 @@ function TvDetailsPage() {
             <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-[#F0F0F0] leading-[0.95]">
               {tv.name}
             </h1>
-            {tv.tagline && <p className="text-sm italic text-[#4A6E8D] font-light">&ldquo;{tv.tagline}&rdquo;</p>}
+            {tv.tagline && <p className="text-sm italic text-[#8FA8AD] font-light">&ldquo;{tv.tagline}&rdquo;</p>}
           </div>
 
-          <div className="flex flex-wrap gap-5 text-xs font-sans text-[#4A6E8D] items-center pb-4 border-b border-[#4A6E8D]/20">
+          <div className="flex flex-wrap gap-5 text-xs font-sans text-[#8FA8AD] items-center pb-4 border-b border-white/[0.08]">
             <div className="flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-[#4A6E8D]" />
+              <Calendar className="w-3.5 h-3.5 text-[#8FA8AD]" />
               <span>{releaseYear}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-[#4A6E8D]" />
+              <Clock className="w-3.5 h-3.5 text-[#8FA8AD]" />
               <span>{seasons.length} Seasons ({tv.episode_run_time?.[0] || 50}m eps)</span>
             </div>
             <div className="flex items-center gap-1.5 text-[#F0F0F0]">
               <Star className="w-3.5 h-3.5 text-[#A4C8E1] fill-[#A4C8E1]" />
               <span className="font-bold">{rating}</span>
-              <span className="text-[#4A6E8D]">/ 10</span>
+              <span className="text-[#8FA8AD]">/ 10</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <Languages className="w-3.5 h-3.5 text-[#4A6E8D]" />
+              <Languages className="w-3.5 h-3.5 text-[#8FA8AD]" />
               <span>English, Hindi &amp; Multi-Audio</span>
             </div>
           </div>
 
           <div className="space-y-2">
-            <h3 className="text-xs uppercase tracking-wider text-[#4A6E8D] font-sans font-semibold">Overview</h3>
+            <h3 className="text-xs uppercase tracking-wider text-[#8FA8AD] font-sans font-semibold">Overview</h3>
             <p className="text-sm md:text-base font-normal text-[#F0F0F0]/90 leading-relaxed font-sans max-w-3xl">
               {tv.overview}
             </p>
@@ -242,7 +243,7 @@ function TvDetailsPage() {
 
           <div className="flex flex-wrap gap-2">
             {tv.genres?.map((g: any) => (
-              <span key={g.id} className="px-3 py-1 rounded-full border border-[#4A6E8D]/25 bg-[#1B3A57]/30 text-xs font-sans text-[#F0F0F0]/80 hover:text-[#F0F0F0] hover:border-[#A4C8E1]/60 transition-colors">
+              <span key={g.id} className="px-3 py-1 rounded-full border border-white/[0.12] bg-white/[0.04] backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] text-xs font-sans text-[#F0F0F0]/90 hover:text-white hover:border-[#39AEA9]/50 hover:bg-white/[0.08] transition-all">
                 {g.name}
               </span>
             ))}
@@ -250,11 +251,11 @@ function TvDetailsPage() {
 
           <div className="pt-2">
             <Link
-              href={`/watch/tv/${id}?season=1&episode=1`}
-              className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-[#F0F0F0] hover:bg-[#A4C8E1] text-[#0B131B] text-xs font-sans font-bold tracking-wide rounded-full shadow-[0_4px_24px_rgba(240,240,240,0.3)] transition-all cursor-pointer active:scale-[0.97]"
+              href={`/watch/tv/${id}?season=${activeSeason}&episode=1`}
+              className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-[#F0F0F0]/95 hover:bg-white text-[#0B131B] text-xs font-sans font-bold tracking-wide rounded-full backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.6),0_4px_24px_rgba(240,240,240,0.3)] transition-all cursor-pointer active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
             >
               <Play className="w-4 h-4 fill-current ml-0.5 text-[#0B131B]" />
-              <span>Play S1 E1</span>
+              <span>Play S{activeSeason} E1</span>
             </Link>
           </div>
         </div>
@@ -262,23 +263,23 @@ function TvDetailsPage() {
 
       {/* Chapter / Episode Selection */}
       <section className="max-w-7xl mx-auto px-6 md:px-12 mt-20 space-y-6">
-        <div className="border-t border-[#4A6E8D]/25 pt-10 flex flex-wrap items-center justify-between gap-4">
+        <div className="border-t border-white/[0.08] pt-10 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-[#A4C8E1] to-[#4A6E8D]" />
+            <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-[#A4C8E1] to-[#39AEA9] shadow-[0_0_10px_rgba(57,174,169,0.7)]" />
             <div>
               <h3 className="font-display text-xl font-bold tracking-tight text-[#F0F0F0]">Episodes</h3>
-              <p className="text-[10px] text-[#4A6E8D] font-mono font-medium tracking-[0.15em] uppercase mt-0.5">Chapter Selection</p>
+              <p className="text-[10px] text-[#8FA8AD] font-mono font-medium tracking-[0.15em] uppercase mt-0.5">Chapter Selection</p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 p-1 bg-[#0B131B]/80 border border-[#4A6E8D]/30 rounded-xl">
+          <div className="flex items-center gap-1.5 p-1 bg-white/[0.05] border border-white/[0.12] rounded-2xl backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] overflow-x-auto no-scrollbar max-w-full">
             {seasons.map((s: any) => (
               <button
                 key={s.season_number}
                 onClick={() => setActiveSeason(s.season_number)}
-                className={`px-4 py-2 rounded-lg text-xs font-mono font-bold tracking-wider transition-all border cursor-pointer ${
+                className={`px-4 py-2 rounded-xl text-xs font-mono font-bold tracking-wider transition-all border cursor-pointer active:scale-95 ${
                   activeSeason === s.season_number
-                    ? 'bg-[#F0F0F0] border-transparent text-[#0B131B] shadow-[0_0_15px_rgba(240,240,240,0.3)]'
-                    : 'border-transparent bg-transparent text-[#4A6E8D] hover:text-[#F0F0F0] hover:bg-[#2C3E50]/40'
+                    ? 'bg-[#F0F0F0]/95 border-white/40 text-[#0B131B] backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.6),0_2px_10px_rgba(255,255,255,0.2)]'
+                    : 'border-transparent bg-transparent text-[#8FA8AD] hover:text-[#F0F0F0] hover:bg-white/[0.08]'
                 }`}
               >
                 {s.name || `S${s.season_number}`}
@@ -292,20 +293,20 @@ function TvDetailsPage() {
             <Link
               key={ep.episode_number}
               href={`/watch/tv/${id}?season=${activeSeason}&episode=${ep.episode_number}`}
-              className="bg-[#1B3A57]/25 rounded-2xl p-5 flex items-start gap-4 border border-[#4A6E8D]/25 hover:border-[#A4C8E1]/60 hover:bg-[#2C3E50]/40 transition-all group cursor-pointer shadow-lg"
+              className="bg-white/[0.04] backdrop-blur-2xl rounded-2xl p-5 flex items-start gap-4 border border-white/[0.1] hover:border-white/[0.22] hover:bg-white/[0.08] transition-all group cursor-pointer shadow-[inset_0_1px_1px_rgba(255,255,255,0.08),0_10px_30px_rgba(0,0,0,0.5)] active:scale-[0.99]"
             >
-              <div className="w-11 h-11 rounded-xl bg-[#0B131B] border border-[#4A6E8D]/30 flex items-center justify-center text-[#4A6E8D] group-hover:bg-[#F0F0F0] group-hover:border-transparent group-hover:text-[#0B131B] shrink-0 transition-all">
+              <div className="w-11 h-11 rounded-xl bg-white/[0.06] backdrop-blur-xl border border-white/[0.15] flex items-center justify-center text-[#8FA8AD] group-hover:bg-[#F0F0F0] group-hover:border-transparent group-hover:text-[#0B131B] shrink-0 transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
                 <Play className="w-4 h-4 fill-current ml-0.5" />
               </div>
               <div className="space-y-1 min-w-0 flex-1">
-                <p className="text-[11px] text-[#4A6E8D] font-mono font-bold uppercase tracking-wider">
+                <p className="text-[11px] text-[#8FA8AD] font-mono font-bold uppercase tracking-wider">
                   Episode {ep.episode_number}
                 </p>
                 <h4 className="text-sm font-bold text-[#F0F0F0] group-hover:text-white transition-colors truncate">
                   {ep.name}
                 </h4>
                 {ep.overview && (
-                  <p className="text-xs text-[#4A6E8D] font-normal leading-relaxed line-clamp-2">
+                  <p className="text-xs text-[#8FA8AD] font-normal leading-relaxed line-clamp-2">
                     {ep.overview}
                   </p>
                 )}
@@ -319,10 +320,10 @@ function TvDetailsPage() {
       {tv.cast && tv.cast.length > 0 && (
         <section className="max-w-7xl mx-auto px-6 md:px-12 mt-20">
           <div className="flex items-center gap-3 mb-6">
-            <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-[#A4C8E1] to-[#4A6E8D]" />
+            <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-[#A4C8E1] to-[#39AEA9] shadow-[0_0_10px_rgba(57,174,169,0.7)]" />
             <div>
               <h3 className="font-display text-xl font-bold tracking-tight text-[#F0F0F0]">Cast</h3>
-              <p className="text-[10px] text-[#4A6E8D] font-mono font-medium tracking-[0.15em] uppercase mt-0.5">Actors &amp; Roles</p>
+              <p className="text-[10px] text-[#8FA8AD] font-mono font-medium tracking-[0.15em] uppercase mt-0.5">Actors &amp; Roles</p>
             </div>
           </div>
           <div className="flex gap-5 overflow-x-auto no-scrollbar pb-2">
@@ -330,12 +331,12 @@ function TvDetailsPage() {
               const avatar = ImageService.getProfile(c.profile_path, c.name);
               return (
                 <div key={idx} className="flex flex-col items-center shrink-0 w-24 gap-2 text-center">
-                  <div className="relative w-16 h-16 rounded-2xl overflow-hidden border border-[#4A6E8D]/30 bg-[#1B3A57]/30">
+                  <div className="relative w-16 h-16 rounded-2xl overflow-hidden border border-white/[0.15] bg-[#0B131B]/60 backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]">
                     <Image src={avatar} alt={c.name} fill sizes="64px" className="object-cover" />
                   </div>
                   <div className="space-y-0.5">
                     <p className="text-xs font-bold text-[#F0F0F0] truncate max-w-[90px]">{c.name}</p>
-                    <p className="text-[10px] font-mono text-[#4A6E8D] truncate max-w-[90px]">{c.character}</p>
+                    <p className="text-[10px] font-mono text-[#8FA8AD] truncate max-w-[90px]">{c.character}</p>
                   </div>
                 </div>
               );
@@ -348,13 +349,13 @@ function TvDetailsPage() {
       {trailerKey && (
         <section className="max-w-7xl mx-auto px-6 md:px-12 mt-20">
           <div className="flex items-center gap-3 mb-6">
-            <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-[#A4C8E1] to-[#4A6E8D]" />
+            <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-[#A4C8E1] to-[#39AEA9] shadow-[0_0_10px_rgba(57,174,169,0.7)]" />
             <div>
               <h3 className="font-display text-xl font-bold tracking-tight text-[#F0F0F0]">Official Preview</h3>
-              <p className="text-[10px] text-[#4A6E8D] font-mono font-medium tracking-[0.15em] uppercase mt-0.5">Trailer</p>
+              <p className="text-[10px] text-[#8FA8AD] font-mono font-medium tracking-[0.15em] uppercase mt-0.5">Trailer</p>
             </div>
           </div>
-          <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-[#4A6E8D]/30 bg-[#0B131B] shadow-[0_25px_60px_rgba(11,19,27,0.95)]">
+          <div className="relative w-full aspect-video rounded-3xl overflow-hidden border border-white/[0.15] bg-[#0B131B]/70 backdrop-blur-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_25px_60px_rgba(0,0,0,0.9)]">
             <iframe
               src={`https://www.youtube.com/embed/${trailerKey}?autoplay=0&mute=1&controls=1`}
               title="Official Trailer"
@@ -380,27 +381,31 @@ function TvDetailsPage() {
 
       {/* Editorial Critiques */}
       <section className="max-w-4xl mx-auto px-6 md:px-12 mt-20 space-y-8">
-        <div className="border-t border-[#4A6E8D]/25 pt-12">
+        <div className="border-t border-white/[0.08] pt-12">
           <div className="flex items-center gap-3 mb-2">
-            <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-[#A4C8E1] to-[#4A6E8D]" />
+            <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-[#A4C8E1] to-[#39AEA9] shadow-[0_0_10px_rgba(57,174,169,0.7)]" />
             <h3 className="font-display text-2xl font-bold tracking-tight text-[#F0F0F0]">Editorial Critiques</h3>
           </div>
-          <p className="text-xs text-[#4A6E8D] font-mono font-medium tracking-wider uppercase ml-4">Viewer Reviews</p>
+          <p className="text-xs text-[#8FA8AD] font-mono font-medium tracking-wider uppercase ml-4">Viewer Reviews</p>
         </div>
 
         {user && activeProfile ? (
-          <form onSubmit={handleReviewSubmit} className="bg-[#1B3A57]/30 rounded-2xl p-6 space-y-4 border border-[#4A6E8D]/30 shadow-xl">
-            <div className="flex items-center justify-between pb-4 border-b border-[#4A6E8D]/25">
-              <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-[#4A6E8D]">
+          <form onSubmit={handleReviewSubmit} className="bg-white/[0.04] backdrop-blur-3xl rounded-3xl p-6 sm:p-8 space-y-5 border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.12),0_20px_50px_rgba(0,0,0,0.6)]">
+            <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
+              <div className="flex items-center gap-2 text-xs font-mono font-bold uppercase tracking-wider text-[#8FA8AD]">
                 <Sparkles className="w-4 h-4 text-[#A4C8E1]" />
                 <span>Review as {activeProfile.name}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-[#4A6E8D]">Score:</span>
+                <label htmlFor="tv-score-select" className="text-xs font-mono text-[#8FA8AD] cursor-pointer">
+                  Score:
+                </label>
                 <select
+                  id="tv-score-select"
+                  aria-label="Score rating out of 10"
                   value={ratingInput}
                   onChange={(e) => setRatingInput(parseFloat(e.target.value))}
-                  className="bg-[#0B131B] border border-[#4A6E8D]/40 text-[#F0F0F0] rounded-xl px-3 py-1.5 text-xs font-mono focus:outline-none focus:border-[#A4C8E1]/60"
+                  className="bg-[#0B131B]/80 border border-white/[0.15] text-[#F0F0F0] rounded-xl px-3 py-1.5 text-xs font-mono backdrop-blur-xl focus:outline-none focus:border-[#39AEA9] focus:ring-1 focus:ring-[#39AEA9]"
                 >
                   {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map(v => (
                     <option key={v} value={v.toFixed(1)}>{v.toFixed(1)}</option>
@@ -408,24 +413,30 @@ function TvDetailsPage() {
                 </select>
               </div>
             </div>
-            <textarea
-              value={reviewInput}
-              onChange={(e) => setReviewInput(e.target.value)}
-              placeholder="Share your thoughts on the series..."
-              required
-              rows={4}
-              className="w-full bg-[#0B131B] border border-[#4A6E8D]/40 rounded-xl p-4 text-sm text-[#F0F0F0] placeholder-[#4A6E8D] focus:outline-none focus:border-[#A4C8E1]/60 resize-none font-sans"
-            />
+            <div>
+              <label htmlFor="tv-review-textarea" className="sr-only">
+                Write your review
+              </label>
+              <textarea
+                id="tv-review-textarea"
+                value={reviewInput}
+                onChange={(e) => setReviewInput(e.target.value)}
+                placeholder="Share your thoughts on the series..."
+                required
+                rows={4}
+                className="w-full bg-[#0B131B]/60 border border-white/[0.15] rounded-2xl p-4 text-sm text-[#F0F0F0] placeholder-[#8FA8AD] backdrop-blur-2xl focus:outline-none focus:border-[#39AEA9] focus:ring-1 focus:ring-[#39AEA9] resize-none font-sans shadow-[inset_0_1px_2px_rgba(0,0,0,0.5)]"
+              />
+            </div>
             <div className="flex items-center justify-between">
               {reviewSuccess ? (
-                <span className="text-xs font-mono text-[#A4C8E1] font-semibold">Review saved successfully.</span>
+                <span className="text-xs font-mono text-[#39AEA9] font-semibold">Review saved successfully.</span>
               ) : (
                 <span />
               )}
               <button
                 type="submit"
                 disabled={createReviewMutation.isPending}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#F0F0F0] hover:bg-[#A4C8E1] text-[#0B131B] font-mono font-bold text-xs tracking-wider uppercase transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer shadow-[0_4px_16px_rgba(240,240,240,0.3)]"
+                className="flex items-center gap-2 px-6 py-3 rounded-full bg-[#F0F0F0]/95 hover:bg-white text-[#0B131B] font-mono font-bold text-xs tracking-wider uppercase backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.6),0_4px_16px_rgba(240,240,240,0.3)] transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
               >
                 <span>Submit Review</span>
                 <Send className="w-3.5 h-3.5" />
@@ -433,28 +444,28 @@ function TvDetailsPage() {
             </div>
           </form>
         ) : (
-          <div className="bg-[#1B3A57]/20 rounded-2xl p-8 text-center border border-[#4A6E8D]/25">
-            <p className="text-xs font-mono text-[#4A6E8D] uppercase tracking-wider">Sign in with a profile to publish a review.</p>
+          <div className="bg-white/[0.04] backdrop-blur-2xl rounded-2xl p-8 text-center border border-white/[0.1] shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]">
+            <p className="text-xs font-mono text-[#8FA8AD] uppercase tracking-wider">Sign in with a profile to publish a review.</p>
           </div>
         )}
 
         <div className="space-y-4">
           {reviews.length > 0 ? (
             reviews.map((r) => (
-              <div key={r.id} className="bg-[#1B3A57]/25 rounded-2xl p-5 space-y-3.5 border border-[#4A6E8D]/25 shadow-lg">
+              <div key={r.id} className="bg-white/[0.04] backdrop-blur-2xl rounded-2xl p-5 space-y-3.5 border border-white/[0.1] shadow-[inset_0_1px_1px_rgba(255,255,255,0.1),0_10px_30px_rgba(0,0,0,0.4)]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-[#0B131B] border border-[#4A6E8D]/30 flex items-center justify-center text-xs font-mono font-bold text-[#A4C8E1] uppercase">
+                    <div className="w-9 h-9 rounded-xl bg-white/[0.08] backdrop-blur-xl border border-white/[0.15] flex items-center justify-center text-xs font-mono font-bold text-[#A4C8E1] uppercase shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
                       {r.profile_name?.charAt(0) || 'A'}
                     </div>
                     <div>
                       <p className="text-xs font-bold text-[#F0F0F0]">{r.profile_name || 'Anonymous'}</p>
-                      <p className="text-[10px] font-mono text-[#4A6E8D]">
+                      <p className="text-[10px] font-mono text-[#8FA8AD]">
                         {new Date(r.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#2C3E50]/60 border border-[#4A6E8D]/40 text-[#A4C8E1] text-xs font-mono font-bold">
+                  <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/[0.06] backdrop-blur-xl border border-white/[0.15] text-[#A4C8E1] text-xs font-mono font-bold shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
                     <Star className="w-3 h-3 fill-current" />
                     <span>{r.rating?.toFixed(1)}</span>
                   </div>
@@ -463,7 +474,7 @@ function TvDetailsPage() {
               </div>
             ))
           ) : (
-            <p className="text-xs font-mono text-[#4A6E8D] uppercase tracking-wider text-center py-8">No editorial reviews yet.</p>
+            <p className="text-xs font-mono text-[#8FA8AD] uppercase tracking-wider text-center py-8">No editorial reviews yet.</p>
           )}
         </div>
       </section>

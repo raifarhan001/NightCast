@@ -9,6 +9,7 @@ import { MediaItem, apiFetch } from "../../lib/api";
 import { ImageService } from "../../lib/ImageService";
 import { useAmbientStore } from "../../store/ambientStore";
 import { useUserStore } from "../../store/userStore";
+import { triggerToast } from "../common/ToastNotification";
 
 interface HeroCarouselProps {
   items: MediaItem[];
@@ -40,27 +41,46 @@ const GENRE_MAP: Record<number, string> = {
 };
 
 function formatReleaseDate(rawDate?: string): string {
-  if (!rawDate) return "May, 17";
+  if (!rawDate) return "Coming Soon";
   try {
     const d = new Date(rawDate);
-    if (isNaN(d.getTime())) return "May, 17";
+    if (isNaN(d.getTime())) return "Coming Soon";
     const month = d.toLocaleString("en-US", { month: "short" });
     const day = d.getDate();
     return `${month}, ${day}`;
   } catch {
-    return "May, 17";
+    return "Coming Soon";
   }
 }
 
 function HeroCarousel({ items = [] }: HeroCarouselProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = sessionStorage.getItem("nc_hero_carousel_index");
+        if (saved) {
+          const parsed = parseInt(saved, 10);
+          if (!isNaN(parsed) && parsed >= 0) return parsed;
+        }
+      } catch {}
+    }
+    return 0;
+  });
   const [isPaused, setIsPaused] = useState(false);
   const [favorites, setFavorites] = useState<Record<string | number, boolean>>({});
   const [watchlist, setWatchlist] = useState<Record<string | number, boolean>>({});
   const [trailerKey, setTrailerKey] = useState<string | null>(null);
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
   const [isLoadingTrailer, setIsLoadingTrailer] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Sync currentIndex to sessionStorage for scroll/page return restoration
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem("nc_hero_carousel_index", String(currentIndex));
+      } catch {}
+    }
+  }, [currentIndex]);
 
   // Load saved favorites & watchlist from localStorage and listen for updates
   useEffect(() => {
@@ -117,10 +137,16 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
     return () => clearInterval(interval);
   }, [isPaused, isTrailerOpen, displayItems, nextSlide]);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 2500);
-  };
+  // Close trailer modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isTrailerOpen) {
+        setIsTrailerOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isTrailerOpen]);
 
   const toggleFavorite = (id: string | number) => {
     setFavorites((prev) => {
@@ -129,7 +155,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
       try {
         localStorage.setItem("nightcast_favorites", JSON.stringify(nextMap));
       } catch {}
-      showToast(updated ? "Added to Favorites" : "Removed from Favorites");
+      triggerToast(updated ? "Added to Favorites" : "Removed from Favorites", "success");
       return nextMap;
     });
   };
@@ -204,7 +230,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
       })
     );
 
-    showToast(nextState ? `Added "${itemToToggle.title || itemToToggle.name || 'Title'}" to Watchlist` : `Removed from Watchlist`);
+    triggerToast(nextState ? `Added "${itemToToggle.title || itemToToggle.name || 'Title'}" to Watchlist` : `Removed from Watchlist`, "success");
   };
 
   const handleOpenTrailer = async (item: MediaItem) => {
@@ -265,7 +291,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
         >
           <Image
             src={backdropUrl}
-            alt={title}
+            alt={`${title} backdrop cinematic artwork`}
             fill
             className="object-cover object-right-top lg:object-center opacity-95 brightness-[0.92]"
             priority
@@ -313,17 +339,19 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
               {/* "Watch now" Button (Crisp Translucent White Pill with Black Play Icon) */}
               <Link
                 href={`/watch/${type}/${activeItem.id}`}
-                className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#F0F0F0]/85 hover:bg-[#F0F0F0] text-[#0B131B] backdrop-blur-md border border-white/20 font-semibold text-xs sm:text-sm tracking-wide flex items-center gap-2 transform-gpu will-change-transform hover:scale-105 active:scale-95 transition-[transform,background-color] duration-150 shadow-lg shadow-white/10 cursor-pointer group"
+                aria-label={`Watch ${title} now`}
+                className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#F0F0F0]/90 hover:bg-white text-[#0B131B] backdrop-blur-xl border border-white/40 font-semibold text-xs sm:text-sm tracking-wide flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-200 shadow-[inset_0_1px_1px_rgba(255,255,255,0.6),0_8px_32px_rgba(255,255,255,0.2)] cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B]"
               >
-                <Play className="w-4 h-4 fill-[#0B131B] text-[#0B131B] ml-0.5 transition-transform group-hover:scale-110" />
+                <Play className="w-4 h-4 fill-[#0B131B] text-[#0B131B] ml-0.5 transition-transform duration-200 group-hover:scale-110" />
                 <span>Watch now</span>
               </Link>
 
-              {/* "Trailer" Button (Frosted Dark Slate Pill with Outline) */}
+              {/* "Trailer" Button (Frosted Dark Glass Pill with Outline) */}
               <button
                 type="button"
                 onClick={() => handleOpenTrailer(activeItem)}
-                className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#2C3E50]/35 hover:bg-[#4A6E8D]/45 text-[#F0F0F0] border border-[#4A6E8D]/30 text-xs sm:text-sm font-medium tracking-wide flex items-center justify-center transform-gpu will-change-transform transition-[transform,background-color] duration-150 hover:scale-105 active:scale-95 shadow-md backdrop-blur-xl cursor-pointer"
+                aria-label={`Watch trailer for ${title}`}
+                className="px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white/[0.08] hover:bg-white/[0.16] text-[#F0F0F0] hover:text-white border border-white/[0.16] text-xs sm:text-sm font-medium tracking-wide flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-2xl backdrop-saturate-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B]"
               >
                 Trailer
               </button>
@@ -344,22 +372,22 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
               <button
                 key={m.id}
                 onClick={() => setCurrentIndex(idx)}
-                className={`flex flex-col items-center group cursor-pointer transform-gpu will-change-transform transition-[transform,opacity] duration-150 ${
+                aria-label={`Select slide ${idx + 1}: ${m.title || m.name}`}
+                className={`flex flex-col items-center group cursor-pointer transition-all duration-200 rounded-md sm:rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
                   idx >= 3 ? "hidden sm:flex" : "flex"
                 }`}
-                title={m.title || m.name}
               >
                 {/* Thumbnail Card */}
                 <div
-                  className={`relative w-10 sm:w-12 md:w-13 aspect-[3/4] rounded-md sm:rounded-lg overflow-hidden bg-black/60 transform-gpu transition-[border-color,box-shadow,transform,opacity] duration-150 ${
+                  className={`relative w-10 sm:w-12 md:w-13 aspect-[3/4] rounded-md sm:rounded-lg overflow-hidden bg-black/60 transition-all duration-200 ${
                     isActive
                       ? "ring-2 ring-[#A4C8E1] shadow-[0_4px_16px_rgba(164,200,225,0.35)] scale-105 opacity-100"
-                      : "opacity-45 group-hover:opacity-85 border border-[#4A6E8D]/30 group-hover:scale-100"
+                      : "opacity-45 group-hover:opacity-85 border border-white/[0.12] group-hover:border-white/[0.25] group-hover:scale-100"
                   }`}
                 >
                   <Image
                     src={poster}
-                    alt={m.title || m.name || "Movie"}
+                    alt={`${m.title || m.name || "Movie"} poster thumbnail`}
                     fill
                     sizes="60px"
                     className="object-cover"
@@ -389,10 +417,10 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
           <button
             type="button"
             onClick={() => toggleFavorite(activeItem.id)}
-            className={`w-9 sm:w-10 h-9 sm:h-10 rounded-full flex items-center justify-center backdrop-blur-xl border transform-gpu will-change-transform transition-[transform,background-color,border-color] duration-150 active:scale-95 cursor-pointer shadow-lg ${
+            className={`w-9 sm:w-10 h-9 sm:h-10 rounded-full flex items-center justify-center backdrop-blur-2xl backdrop-saturate-150 border transition-all duration-200 active:scale-95 cursor-pointer ${
               favorites[activeItem.id]
-                ? "bg-rose-500/25 border-rose-500/50 text-rose-400 scale-105"
-                : "bg-[#1B3A57]/35 hover:bg-[#2C3E50]/55 border-[#4A6E8D]/25 text-[#F0F0F0]/80 hover:text-[#F0F0F0]"
+                ? "bg-rose-500/25 border-rose-500/50 text-rose-400 scale-105 shadow-[0_0_15px_rgba(244,63,94,0.4)]"
+                : "bg-white/[0.06] hover:bg-white/[0.14] border-white/[0.14] text-[#F0F0F0]/80 hover:text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.5)]"
             }`}
             title="Favorite"
             aria-label="Favorite"
@@ -408,10 +436,10 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
           <button
             type="button"
             onClick={() => toggleWatchlist(activeItem)}
-            className={`w-9 sm:w-10 h-9 sm:h-10 rounded-full flex items-center justify-center backdrop-blur-xl border transform-gpu will-change-transform transition-[transform,background-color,border-color] duration-150 active:scale-95 cursor-pointer shadow-lg ${
+            className={`w-9 sm:w-10 h-9 sm:h-10 rounded-full flex items-center justify-center backdrop-blur-2xl backdrop-saturate-150 border transition-all duration-200 active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
               watchlist[activeItem.id]
-                ? "bg-[#A4C8E1]/25 border-[#A4C8E1]/50 text-[#A4C8E1] scale-105"
-                : "bg-[#1B3A57]/35 hover:bg-[#2C3E50]/55 border-[#4A6E8D]/25 text-[#F0F0F0]/80 hover:text-[#F0F0F0]"
+                ? "bg-[#39AEA9]/25 border-[#39AEA9]/60 text-[#39AEA9] scale-105 shadow-[0_0_15px_rgba(57,174,169,0.4)]"
+                : "bg-white/[0.06] hover:bg-white/[0.14] border-white/[0.14] text-[#F0F0F0]/80 hover:text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.5)]"
             }`}
             title="Watchlist"
             aria-label="Watchlist"
@@ -426,8 +454,8 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
           {/* Plus / Add to Collection Button */}
           <button
             type="button"
-            onClick={() => showToast("Added to Playlist")}
-            className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-[#1B3A57]/35 hover:bg-[#2C3E50]/55 border border-[#4A6E8D]/25 backdrop-blur-xl flex items-center justify-center text-[#F0F0F0]/80 hover:text-[#F0F0F0] transform-gpu will-change-transform transition-[transform,background-color,border-color] duration-150 active:scale-95 cursor-pointer shadow-lg"
+            onClick={() => triggerToast("Added to Playlist", "success")}
+            className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-white/[0.06] hover:bg-white/[0.14] border border-white/[0.14] backdrop-blur-2xl backdrop-saturate-150 flex items-center justify-center text-[#F0F0F0]/80 hover:text-white transition-all duration-200 active:scale-95 cursor-pointer shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
             title="Add to Playlist"
             aria-label="Add to Playlist"
           >
@@ -436,54 +464,52 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
         </div>
       </div>
 
-      {/* Floating Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-20 right-6 sm:right-8 z-50 bg-[#0B131B]/95 backdrop-blur-xl border border-[#4A6E8D]/35 text-[#F0F0F0] text-xs font-semibold px-4 py-2 rounded-full shadow-2xl animate-in fade-in duration-200">
-          {toastMessage}
-        </div>
-      )}
-
       {/* YouTube Trailer Modal */}
       {isTrailerOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Official Trailer"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-2xl flex items-center justify-center p-4 animate-in fade-in duration-200"
           onClick={() => setIsTrailerOpen(false)}
         >
           <div
-            className="relative w-full max-w-4xl aspect-video bg-black rounded-2xl overflow-hidden border border-white/20 shadow-2xl"
+            className="relative w-full max-w-4xl aspect-video bg-[#0B131B]/95 backdrop-blur-3xl rounded-2xl overflow-hidden border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_25px_60px_rgba(0,0,0,0.95)]"
             onClick={(e) => e.stopPropagation()}
           >
             <button
+              type="button"
               onClick={() => setIsTrailerOpen(false)}
-              className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-black/60 hover:bg-black/90 text-white flex items-center justify-center transition border border-white/20 cursor-pointer"
+              className="absolute top-4 right-4 z-10 w-9 h-9 rounded-full bg-white/[0.1] hover:bg-white/[0.2] text-white flex items-center justify-center transition border border-white/[0.15] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
               title="Close Trailer"
+              aria-label="Close trailer"
             >
               <X className="w-5 h-5" />
             </button>
 
             {isLoadingTrailer ? (
               <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-white">
-                <div className="w-8 h-8 border-2 border-white/40 border-t-white animate-spin rounded-full" />
+                <div className="w-8 h-8 border-2 border-white/40 border-t-[#39AEA9] animate-spin rounded-full" />
                 <p className="text-xs text-white/70">Loading trailer...</p>
               </div>
             ) : trailerKey ? (
               <iframe
                 src={`https://www.youtube-nocookie.com/embed/${trailerKey}?autoplay=1&rel=0`}
                 title={`${title} Official Trailer`}
-                className="w-full h-full"
+                className="w-full h-full border-0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-white p-6 text-center">
-                <Film className="w-12 h-12 text-white/40" />
-                <h3 className="text-lg font-bold">No Official Trailer Found</h3>
-                <p className="text-xs text-white/60 max-w-sm">
+                <Film className="w-12 h-12 text-[#8FA8AD]" />
+                <h3 className="text-lg font-bold text-[#F0F0F0]">No Official Trailer Found</h3>
+                <p className="text-xs text-[#8FA8AD] max-w-sm">
                   We could not find an official YouTube trailer for this title. You can still stream it directly by clicking Watch Now.
                 </p>
                 <Link
                   href={`/watch/${type}/${activeItem.id}`}
-                  className="mt-2 px-6 py-2 rounded-full bg-white text-black font-semibold text-xs hover:bg-white/90 transition"
+                  className="mt-2 px-6 py-2 rounded-full bg-[#F0F0F0] text-[#0B131B] font-semibold text-xs hover:bg-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                 >
                   Watch Now
                 </Link>

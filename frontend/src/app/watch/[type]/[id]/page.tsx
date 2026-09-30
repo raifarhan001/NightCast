@@ -23,7 +23,8 @@ import {
   List,
   Keyboard,
   ShieldCheck,
-  ShieldAlert
+  ShieldAlert,
+  ArrowLeft,
 } from 'lucide-react';
 import { soundFx } from '../../../../lib/soundEffects';
 import AmbientGlow from '../../../../components/shared/AmbientGlow';
@@ -1052,7 +1053,7 @@ export default function WatchPage() {
         isTheater
           ? 'max-w-7xl max-h-[85vh] aspect-video rounded-2xl'
           : 'aspect-video rounded-2xl sm:rounded-3xl'
-      } overflow-hidden border border-white/[0.1] bg-[#0A0F11] shadow-[0_25px_70px_rgba(0,0,0,0.95),0_0_50px_rgba(57,174,169,0.2)]`}
+      } overflow-hidden border border-white/[0.1] bg-[#0B131B] shadow-[0_25px_70px_rgba(0,0,0,0.95),0_0_50px_rgba(57,174,169,0.2)]`}
     >
 
       {!isIframeLoaded && activeServer?.type !== 'hls' && (
@@ -1098,21 +1099,21 @@ export default function WatchPage() {
       {type === 'tv' && nextEpisodeInfo && !showNextOverlay && (
         <button
           onClick={() => handleEpisodeChange(nextEpisodeInfo.season, nextEpisodeInfo.episode)}
-          className="absolute bottom-12 right-3 sm:bottom-16 sm:right-6 z-30 flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#0A0F11]/90 hover:bg-[#0A0F11] backdrop-blur-xl border border-white/[0.2] hover:border-[#39AEA9] text-white text-xs font-sans font-semibold shadow-[0_8px_30px_rgba(0,0,0,0.85)] transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer group"
+          className="absolute bottom-12 right-3 sm:bottom-16 sm:right-6 z-30 flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#0B131B]/75 hover:bg-[#0B131B]/90 backdrop-blur-2xl border border-white/[0.18] hover:border-[#39AEA9] text-white text-xs font-sans font-semibold shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_30px_rgba(0,0,0,0.85)] transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer group"
           title={`Next: Season ${nextEpisodeInfo.season} Episode ${nextEpisodeInfo.episode} - ${nextEpisodeInfo.title}`}
         >
-          <SkipForward className="w-3.5 h-3.5 text-[#A2D5AB] group-hover:scale-110 transition-transform" />
+          <SkipForward className="w-3.5 h-3.5 text-[#39AEA9] group-hover:scale-110 transition-transform" />
           <span>Next Ep (S{nextEpisodeInfo.season} E{nextEpisodeInfo.episode})</span>
         </button>
       )}
 
       {/* Up Next in 10s Countdown Overlay */}
       {type === 'tv' && nextEpisodeInfo && showNextOverlay && (
-        <div className="absolute bottom-12 right-3 sm:bottom-16 sm:right-6 z-40 max-w-sm w-[calc(100%-1.5rem)] sm:w-88 bg-[#0A0F11]/95 backdrop-blur-2xl border border-[#39AEA9]/60 rounded-2xl p-4 shadow-[0_20px_50px_rgba(0,0,0,0.95),0_0_35px_rgba(57,174,169,0.35)] animate-in fade-in slide-in-from-bottom-3 duration-300">
+        <div className="absolute bottom-12 right-3 sm:bottom-16 sm:right-6 z-40 max-w-sm w-[calc(100%-1.5rem)] sm:w-88 bg-[#0B131B]/80 backdrop-blur-3xl backdrop-saturate-150 border border-[#39AEA9]/50 rounded-2xl p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),0_20px_50px_rgba(0,0,0,0.95),0_0_35px_rgba(57,174,169,0.25)] animate-in fade-in slide-in-from-bottom-3 duration-300">
           <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-white/[0.08]">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#A2D5AB] animate-ping" />
-              <span className="text-[11px] font-sans font-bold tracking-wider uppercase text-[#A2D5AB]">
+              <span className="w-2 h-2 rounded-full bg-[#39AEA9] animate-ping" />
+              <span className="text-[11px] font-sans font-bold tracking-wider uppercase text-[#39AEA9]">
                 Up Next in {nextCountdown}s
               </span>
             </div>
@@ -1133,7 +1134,7 @@ export default function WatchPage() {
 
           <div className="py-2.5">
             <div className="flex items-center gap-2 text-xs text-[#8FA8AD] font-sans font-medium mb-1">
-              <span className="px-1.5 py-0.5 rounded bg-[#39AEA9]/20 text-[#A2D5AB] text-[10px] font-semibold border border-[#39AEA9]/30">
+              <span className="px-1.5 py-0.5 rounded bg-[#39AEA9]/20 text-[#39AEA9] text-[10px] font-semibold border border-[#39AEA9]/30">
                 S{nextEpisodeInfo.season} E{nextEpisodeInfo.episode}
               </span>
               <span>{nextEpisodeInfo.isNewSeason ? 'Next Season' : 'Next Chapter'}</span>
@@ -1146,7 +1147,7 @@ export default function WatchPage() {
           {/* Linear Countdown Bar */}
           <div className="w-full h-1.5 bg-white/[0.1] rounded-full overflow-hidden mb-3">
             <div
-              className="h-full bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] transition-all duration-1000 ease-linear shadow-[0_0_10px_rgba(57,174,169,0.8)]"
+              className="h-full bg-gradient-to-r from-[#A4C8E1] to-[#39AEA9] transition-all duration-1000 ease-linear shadow-[0_0_10px_rgba(57,174,169,0.8)]"
               style={{ width: `${Math.max(0, Math.min(100, (nextCountdown / 10) * 100))}%` }}
             />
           </div>
@@ -1154,7 +1155,7 @@ export default function WatchPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleEpisodeChange(nextEpisodeInfo.season, nextEpisodeInfo.episode)}
-              className="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] hover:opacity-95 text-[#0A0F11] font-sans font-bold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
+              className="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-[#A4C8E1] to-[#39AEA9] hover:opacity-95 text-[#0B131B] font-sans font-bold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition-all cursor-pointer"
             >
               <Play className="w-3.5 h-3.5 fill-current" />
               <span>Play Now</span>
@@ -1177,12 +1178,12 @@ export default function WatchPage() {
   );
 
   return (
-    <div className="min-h-screen max-w-7xl mx-auto pt-20 pb-28 px-4 sm:px-6 md:px-12 relative select-none bg-[#0A0F11] text-[#E2E8F0]">
+    <div className="min-h-screen max-w-7xl mx-auto pt-20 pb-28 px-4 sm:px-6 md:px-12 relative bg-[#0B131B] text-[#F0F0F0]">
       <AmbientGlow />
 
       {/* 1. Fullscreen Theater Mode Overlay via React Portal directly into body */}
       {mounted && isTheaterMode && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[99999] w-screen h-screen bg-[#070B0E]/98 backdrop-blur-3xl flex flex-col justify-between items-center p-3 sm:p-5 select-none animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[99999] w-screen h-screen bg-[#0B131B]/98 backdrop-blur-3xl flex flex-col justify-between items-center p-3 sm:p-5 animate-in fade-in duration-200">
           {/* Top HUD Bar */}
           <div className="w-full max-w-7xl flex items-center justify-between pb-2 px-2 sm:px-4 text-white z-20">
             <div className="flex items-center gap-3 min-w-0">
@@ -1190,7 +1191,7 @@ export default function WatchPage() {
               <h2 className="text-sm sm:text-base font-bold font-display text-white truncate max-w-xs sm:max-w-md md:max-w-lg">
                 {movieTitle}
                 {type === 'tv' && (
-                  <span className="text-[#A2D5AB] font-sans text-xs ml-2 font-semibold px-2 py-0.5 rounded bg-white/[0.08] border border-white/[0.1]">
+                  <span className="text-[#39AEA9] font-sans text-xs ml-2 font-semibold px-2 py-0.5 rounded bg-white/[0.08] border border-white/[0.1]">
                     S{currentSeason} E{currentEpisode}
                   </span>
                 )}
@@ -1207,8 +1208,9 @@ export default function WatchPage() {
                     soundFx.playTap();
                     setIsEpisodeDrawerOpen(true);
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#A2D5AB] text-xs font-sans font-medium border border-white/[0.1] transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#39AEA9] text-xs font-sans font-medium border border-white/[0.1] transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                   title="Episodes [E]"
+                  aria-label="Episodes [E]"
                 >
                   <List className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Episodes [E]</span>
@@ -1226,15 +1228,16 @@ export default function WatchPage() {
                     return next;
                   });
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-sans font-medium transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-sans font-medium transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
                   isAdShieldActive
-                    ? 'bg-[#39AEA9]/20 hover:bg-[#39AEA9]/30 text-[#A2D5AB] border-[#39AEA9]/40'
+                    ? 'bg-[#39AEA9]/20 hover:bg-[#39AEA9]/30 text-[#39AEA9] border-[#39AEA9]/40'
                     : 'bg-white/[0.08] hover:bg-white/[0.15] text-[#8FA8AD] hover:text-white border-white/[0.1]'
                 }`}
                 title={isAdShieldActive ? "Ad-Shield is active (Turn off if stream blocks sandbox)" : "Ad-Shield is turned off"}
+                aria-label={isAdShieldActive ? "Ad-Shield is active" : "Ad-Shield is inactive"}
               >
                 {isAdShieldActive ? (
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#A2D5AB]" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#39AEA9]" />
                 ) : (
                   <ShieldAlert className="w-3.5 h-3.5 text-[#8FA8AD]" />
                 )}
@@ -1244,16 +1247,18 @@ export default function WatchPage() {
               </button>
               <button
                 onClick={cycleNextServer}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#8FA8AD] hover:text-white text-xs font-sans font-medium border border-white/[0.1] transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#8FA8AD] hover:text-white text-xs font-sans font-medium border border-white/[0.1] transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                 title="Cycle Server [S]"
+                aria-label="Cycle Server [S]"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Server [S]</span>
               </button>
               <button
                 onClick={toggleNativeFullscreen}
-                className="p-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#8FA8AD] hover:text-white transition-all cursor-pointer"
+                className="p-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#8FA8AD] hover:text-white transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                 title="Toggle Fullscreen [F]"
+                aria-label="Toggle Fullscreen [F]"
               >
                 <Maximize2 className="w-3.5 h-3.5" />
               </button>
@@ -1262,8 +1267,9 @@ export default function WatchPage() {
                   soundFx.playTap();
                   setIsShortcutsOpen(true);
                 }}
-                className="p-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#8FA8AD] hover:text-white transition-all cursor-pointer"
+                className="p-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#8FA8AD] hover:text-white transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                 title="Shortcuts [?]"
+                aria-label="Keyboard Shortcuts [?]"
               >
                 <Keyboard className="w-3.5 h-3.5" />
               </button>
@@ -1272,8 +1278,9 @@ export default function WatchPage() {
                   soundFx.playChime();
                   setIsTheaterMode(false);
                 }}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11] font-bold text-xs shadow-lg hover:opacity-95 transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#A4C8E1] to-[#39AEA9] text-[#0B131B] font-bold text-xs shadow-lg hover:opacity-95 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                 title="Exit Theater Mode [Esc or T]"
+                aria-label="Exit Theater Mode [Esc or T]"
               >
                 <Minimize2 className="w-3.5 h-3.5" />
                 <span>Exit Theater [Esc]</span>
@@ -1285,13 +1292,13 @@ export default function WatchPage() {
           <div className="w-full max-w-7xl max-h-[86vh] flex-1 flex items-center justify-center relative my-auto">
             <div className="relative w-full h-full flex items-center justify-center">
               {/* Ambilight Aurora Halo Behind Player */}
-              <div className="absolute -inset-4 sm:-inset-8 bg-gradient-to-r from-[#39AEA9]/25 via-[#5B8FB9]/20 to-[#A2D5AB]/25 rounded-[40px] blur-3xl -z-10 opacity-70 pointer-events-none" />
+              <div className="absolute -inset-4 sm:-inset-8 bg-gradient-to-r from-[#39AEA9]/25 via-[#5B8FB9]/20 to-[#39AEA9]/25 rounded-[40px] blur-3xl -z-10 opacity-70 pointer-events-none" />
               {renderPlayerScreen(true)}
             </div>
           </div>
 
           <div className="text-[11px] text-[#8FA8AD] font-sans pb-1 text-center">
-            Press <kbd className="px-1.5 py-0.5 rounded bg-white/[0.1] text-[#A2D5AB] font-mono">T</kbd> or <kbd className="px-1.5 py-0.5 rounded bg-white/[0.1] text-[#A2D5AB] font-mono">Esc</kbd> to exit • <kbd className="px-1.5 py-0.5 rounded bg-white/[0.1] text-[#A2D5AB] font-mono">F</kbd> for fullscreen • <kbd className="px-1.5 py-0.5 rounded bg-white/[0.1] text-[#A2D5AB] font-mono">N</kbd> next episode
+            Press <kbd className="px-1.5 py-0.5 rounded bg-white/[0.1] text-[#39AEA9] font-mono">T</kbd> or <kbd className="px-1.5 py-0.5 rounded bg-white/[0.1] text-[#39AEA9] font-mono">Esc</kbd> to exit • <kbd className="px-1.5 py-0.5 rounded bg-white/[0.1] text-[#39AEA9] font-mono">F</kbd> for fullscreen • <kbd className="px-1.5 py-0.5 rounded bg-white/[0.1] text-[#39AEA9] font-mono">N</kbd> next episode
           </div>
         </div>,
         document.body
@@ -1299,17 +1306,36 @@ export default function WatchPage() {
 
       {/* 2. Normal View Player Container */}
       <div className="space-y-6">
+        {/* Back to Browse Navigation Button */}
+        <div className="flex items-center justify-between pb-1">
+          <button
+            onClick={() => {
+              soundFx.playTap();
+              if (typeof window !== 'undefined' && window.history.length > 1) {
+                router.back();
+              } else {
+                router.push('/');
+              }
+            }}
+            aria-label="Back to browse"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] text-xs font-semibold text-[#F0F0F0] transition-all duration-200 cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] shadow-sm active:scale-95"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 text-[#39AEA9] group-hover:-translate-x-0.5 transition-transform duration-200" />
+            <span>Back</span>
+          </button>
+        </div>
+
         <div className="relative w-full">
           {/* Ambilight Aurora Halo Behind Player */}
-          <div className="absolute -inset-4 sm:-inset-8 bg-gradient-to-r from-[#39AEA9]/20 via-[#5B8FB9]/15 to-[#A2D5AB]/20 rounded-[40px] blur-3xl -z-10 opacity-70 pointer-events-none transition-opacity duration-1000 animate-pulse" />
+          <div className="absolute -inset-4 sm:-inset-8 bg-gradient-to-r from-[#39AEA9]/20 via-[#5B8FB9]/15 to-[#39AEA9]/20 rounded-[40px] blur-3xl -z-10 opacity-70 pointer-events-none transition-opacity duration-1000 animate-pulse" />
 
           {/* Screen Box */}
           {isTheaterMode ? (
-            <div className="relative w-full aspect-video rounded-2xl sm:rounded-3xl overflow-hidden border border-white/[0.08] bg-[#0A0F11] flex flex-col items-center justify-center gap-3 text-[#8FA8AD]">
+            <div className="relative w-full aspect-video rounded-2xl sm:rounded-3xl overflow-hidden border border-white/[0.08] bg-[#0B131B] flex flex-col items-center justify-center gap-3 text-[#8FA8AD]">
               <p className="text-sm font-sans font-medium text-white">Playing in Cinema Theater Mode</p>
               <button
                 onClick={() => setIsTheaterMode(false)}
-                className="px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#A2D5AB] text-xs font-semibold transition cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-[#39AEA9] text-xs font-semibold transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
               >
                 Return to Normal View
               </button>
@@ -1323,12 +1349,12 @@ export default function WatchPage() {
         {toastMessage && (
           <div className="p-3.5 px-5 bg-[#39AEA9]/15 border border-[#39AEA9]/40 rounded-2xl flex items-center justify-between text-xs font-sans text-[#F8FAFC] shadow-xl animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center gap-2.5">
-              <AlertTriangle className="w-4 h-4 text-[#A2D5AB] shrink-0" />
+              <AlertTriangle className="w-4 h-4 text-[#39AEA9] shrink-0" />
               <span>{toastMessage}</span>
             </div>
             <button
               onClick={() => setToastMessage(null)}
-              className="text-[#A2D5AB] hover:text-white text-xs font-sans font-semibold px-2.5 py-1 rounded-full hover:bg-[#39AEA9]/20 transition-all cursor-pointer"
+              className="text-[#39AEA9] hover:text-white text-xs font-sans font-semibold px-2.5 py-1 rounded-full hover:bg-[#39AEA9]/20 transition-all cursor-pointer"
             >
               Dismiss
             </button>
@@ -1353,7 +1379,7 @@ export default function WatchPage() {
                 }
                 setToastMessage("Ad-Shield disabled. Full playback permissions restored.");
               }}
-              className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-[#0A0F11] font-bold text-xs shadow-md transition-all cursor-pointer shrink-0"
+              className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-[#0B131B] font-bold text-xs shadow-md transition-all cursor-pointer shrink-0"
             >
               Disable Sandbox &amp; Play
             </button>
@@ -1361,10 +1387,10 @@ export default function WatchPage() {
         )}
 
         {/* Server Selector Bar */}
-        <div className="p-5 bg-[#121A1D]/85 backdrop-blur-xl border border-white/[0.08] rounded-2xl flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shadow-xl">
+        <div className="p-5 bg-white/[0.04] backdrop-blur-2xl backdrop-saturate-150 border border-white/[0.12] rounded-2xl flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12),0_16px_40px_rgba(0,0,0,0.6)]">
           <div className="flex-1">
             <div className="flex items-center gap-2 text-xs font-sans font-medium text-[#8FA8AD] mb-1">
-              <span className="w-2 h-2 bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] animate-pulse rounded-full" />
+              <span className="w-2 h-2 bg-gradient-to-r from-[#A4C8E1] to-[#39AEA9] animate-pulse rounded-full" />
               <span>Stream Engine</span>
             </div>
             <h1 className="text-xl md:text-2xl font-bold tracking-tight font-display text-[#F8FAFC]">
@@ -1375,7 +1401,7 @@ export default function WatchPage() {
           {/* Server Selection & Action Row */}
           <div className="flex flex-wrap items-center gap-3">
             {/* Server List */}
-            <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-[#0A0F11]/80 border border-white/[0.08] rounded-xl">
+            <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-[#0B131B]/60 backdrop-blur-xl border border-white/[0.1] rounded-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
               {servers.map((srv) => {
                 const isActive = srv.id === activeServerId;
                 const isFailed = failedServerIds.includes(srv.id);
@@ -1396,7 +1422,7 @@ export default function WatchPage() {
                       isFailed
                         ? "px-3.5 py-1.5 rounded-lg text-xs font-sans text-[#8FA8AD]/30 line-through cursor-not-allowed"
                         : isActive
-                        ? "px-3.5 py-1.5 rounded-lg text-xs font-sans font-semibold bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11] shadow-[0_0_12px_rgba(57,174,169,0.5)] transition-all cursor-pointer"
+                        ? "px-3.5 py-1.5 rounded-lg text-xs font-sans font-semibold bg-gradient-to-r from-[#A4C8E1] to-[#39AEA9] text-[#0B131B] shadow-[0_0_12px_rgba(57,174,169,0.5)] transition-all cursor-pointer"
                         : "px-3.5 py-1.5 rounded-lg text-xs font-sans font-medium text-[#8FA8AD] hover:text-white hover:bg-white/[0.08] transition-all cursor-pointer"
                     }
                   >
@@ -1421,15 +1447,16 @@ export default function WatchPage() {
                     return next;
                   });
                 }}
-                className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs font-sans font-medium transition-all active:scale-95 cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs font-sans font-medium transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
                   isAdShieldActive
-                    ? 'bg-[#39AEA9]/15 hover:bg-[#39AEA9]/25 text-[#A2D5AB] border-[#39AEA9]/40 shadow-[0_0_12px_rgba(57,174,169,0.25)]'
+                    ? 'bg-[#39AEA9]/15 hover:bg-[#39AEA9]/25 text-[#39AEA9] border-[#39AEA9]/40 shadow-[0_0_12px_rgba(57,174,169,0.25)]'
                     : 'bg-white/[0.08] hover:bg-white/[0.14] text-[#8FA8AD] hover:text-white border-white/[0.1]'
                 }`}
                 title={isAdShieldActive ? "Ad-Shield is active (Turn off if stream blocks sandbox)" : "Ad-Shield is turned off (Allow all permissions)"}
+                aria-label={isAdShieldActive ? "Ad-Shield is active" : "Ad-Shield is inactive"}
               >
                 {isAdShieldActive ? (
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#A2D5AB]" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#39AEA9]" />
                 ) : (
                   <ShieldAlert className="w-3.5 h-3.5 text-[#8FA8AD]" />
                 )}
@@ -1444,14 +1471,15 @@ export default function WatchPage() {
                   soundFx.playChime();
                   setIsTheaterMode(prev => !prev);
                 }}
-                className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-xs font-sans font-medium transition-all active:scale-95 cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-xs font-sans font-medium transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
                   isTheaterMode
-                    ? 'bg-[#39AEA9] text-[#0A0F11] border-[#39AEA9] font-bold shadow-[0_0_15px_rgba(57,174,169,0.5)]'
+                    ? 'bg-[#39AEA9] text-[#0B131B] border-[#39AEA9] font-bold shadow-[0_0_15px_rgba(57,174,169,0.5)]'
                     : 'bg-white/[0.08] hover:bg-white/[0.14] text-[#E2E8F0] hover:text-white border-white/[0.1]'
                 }`}
                 title="Cinema Theater Mode [T]"
+                aria-label="Cinema Theater Mode [T]"
               >
-                <Maximize2 className="w-3.5 h-3.5 text-[#A2D5AB]" />
+                <Maximize2 className="w-3.5 h-3.5 text-[#39AEA9]" />
                 <span className="hidden sm:inline">Theater [T]</span>
               </button>
 
@@ -1462,10 +1490,11 @@ export default function WatchPage() {
                     soundFx.playTap();
                     setIsEpisodeDrawerOpen(true);
                   }}
-                  className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-[#E2E8F0] hover:text-white font-sans font-medium text-xs border border-white/[0.1] transition-all active:scale-95 cursor-pointer"
+                  className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-[#E2E8F0] hover:text-white font-sans font-medium text-xs border border-white/[0.1] transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                   title="Quick Episode Drawer [E]"
+                  aria-label="Quick Episode Drawer [E]"
                 >
-                  <List className="w-3.5 h-3.5 text-[#A2D5AB]" />
+                  <List className="w-3.5 h-3.5 text-[#39AEA9]" />
                   <span className="hidden sm:inline">Episodes [E]</span>
                 </button>
               )}
@@ -1476,10 +1505,11 @@ export default function WatchPage() {
                   soundFx.playTap();
                   setIsShortcutsOpen(true);
                 }}
-                className="p-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-[#8FA8AD] hover:text-white font-sans text-xs border border-white/[0.1] transition-all active:scale-95 cursor-pointer"
+                className="p-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-[#8FA8AD] hover:text-white font-sans text-xs border border-white/[0.1] transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                 title="Keyboard Shortcuts [?]"
+                aria-label="Keyboard Shortcuts [?]"
               >
-                <Keyboard className="w-3.5 h-3.5 text-[#A2D5AB]" />
+                <Keyboard className="w-3.5 h-3.5 text-[#39AEA9]" />
               </button>
             </div>
 
@@ -1490,8 +1520,9 @@ export default function WatchPage() {
                   soundFx.playTap();
                   handleEpisodeChange(nextEpisodeInfo.season, nextEpisodeInfo.episode);
                 }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] hover:opacity-95 text-[#0A0F11] font-sans font-bold text-xs shadow-[0_0_16px_rgba(57,174,169,0.45)] transition-all active:scale-95 cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#A4C8E1] to-[#39AEA9] hover:opacity-95 text-[#0B131B] font-sans font-bold text-xs shadow-[0_0_16px_rgba(57,174,169,0.45)] transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                 title={`Play Next: Season ${nextEpisodeInfo.season} Episode ${nextEpisodeInfo.episode} - ${nextEpisodeInfo.title}`}
+                aria-label={`Play Next: Season ${nextEpisodeInfo.season} Episode ${nextEpisodeInfo.episode} - ${nextEpisodeInfo.title}`}
               >
                 <SkipForward className="w-3.5 h-3.5 fill-current" />
                 <span>Next Episode (S{nextEpisodeInfo.season} E{nextEpisodeInfo.episode})</span>
@@ -1508,7 +1539,12 @@ export default function WatchPage() {
               className="fixed inset-0 cursor-pointer"
               onClick={() => setIsEpisodeDrawerOpen(false)}
             />
-            <div className="relative w-full max-w-md h-full bg-[#0A0F11]/95 backdrop-blur-2xl border-l border-white/[0.1] p-6 flex flex-col shadow-[-20px_0_60px_rgba(0,0,0,0.9)] z-10 animate-in slide-in-from-right duration-300">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Episode Drawer"
+              className="relative w-full max-w-md h-full bg-[#0B131B]/95 backdrop-blur-2xl border-l border-white/[0.1] p-3.5 sm:p-6 flex flex-col shadow-[-20px_0_60px_rgba(0,0,0,0.9)] z-10 animate-in slide-from-right duration-300"
+            >
               <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
                 <div>
                   <div className="flex items-center gap-2 text-xs text-[#8FA8AD] font-sans">
@@ -1524,8 +1560,9 @@ export default function WatchPage() {
                     soundFx.playTap();
                     setIsEpisodeDrawerOpen(false);
                   }}
-                  className="w-8 h-8 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-white flex items-center justify-center transition-colors cursor-pointer"
+                  className="w-8 h-8 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-white flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                   title="Close [Esc]"
+                  aria-label="Close episode drawer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1540,9 +1577,9 @@ export default function WatchPage() {
                       soundFx.playTap();
                       handleEpisodeChange(s.season_number, 1);
                     }}
-                    className={`px-3 py-1 rounded-lg text-xs font-sans shrink-0 transition-all cursor-pointer ${
+                    className={`px-3 py-1 rounded-lg text-xs font-sans shrink-0 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
                       currentSeason === s.season_number
-                        ? 'bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11] font-bold shadow-[0_0_10px_rgba(57,174,169,0.4)]'
+                        ? 'bg-gradient-to-r from-[#A4C8E1] to-[#39AEA9] text-[#0B131B] font-bold shadow-[0_0_10px_rgba(57,174,169,0.4)]'
                         : 'bg-white/[0.06] text-[#8FA8AD] hover:text-white'
                     }`}
                   >
@@ -1568,19 +1605,19 @@ export default function WatchPage() {
                           handleEpisodeChange(currentSeason, ep.episode_number);
                           setIsEpisodeDrawerOpen(false);
                         }}
-                        className={`w-full p-3 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer ${
+                        className={`w-full p-3 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
                           isActive
                             ? 'bg-[#39AEA9]/20 border-[#39AEA9] text-white shadow-[0_0_15px_rgba(57,174,169,0.3)]'
-                            : 'bg-[#121A1D]/80 border-white/[0.06] text-[#8FA8AD] hover:text-white hover:border-[#39AEA9]/50'
+                            : 'bg-white/[0.04] backdrop-blur-xl border-white/[0.08] text-[#8FA8AD] hover:text-white hover:border-[#39AEA9]/50'
                         }`}
                       >
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                          isActive ? 'bg-gradient-to-tr from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11]' : 'bg-[#0A0F11] text-[#8FA8AD]'
+                          isActive ? 'bg-gradient-to-tr from-[#A4C8E1] to-[#39AEA9] text-[#0B131B]' : 'bg-[#0B131B] text-[#8FA8AD]'
                         }`}>
                           <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className={`text-[10px] font-sans font-semibold ${isActive ? 'text-[#A2D5AB]' : 'text-[#8FA8AD]'}`}>
+                          <p className={`text-[10px] font-sans font-semibold ${isActive ? 'text-[#39AEA9]' : 'text-[#8FA8AD]'}`}>
                             Episode {ep.episode_number}
                           </p>
                           <h4 className="text-xs font-medium text-white truncate">{ep.name || `Episode ${ep.episode_number}`}</h4>
@@ -1600,19 +1637,19 @@ export default function WatchPage() {
                           handleEpisodeChange(currentSeason, epNum);
                           setIsEpisodeDrawerOpen(false);
                         }}
-                        className={`w-full p-3 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer ${
+                        className={`w-full p-3 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
                           isActive
                             ? 'bg-[#39AEA9]/20 border-[#39AEA9] text-white shadow-[0_0_15px_rgba(57,174,169,0.3)]'
-                            : 'bg-[#121A1D]/80 border-white/[0.06] text-[#8FA8AD] hover:text-white hover:border-[#39AEA9]/50'
+                            : 'bg-white/[0.04] backdrop-blur-xl border-white/[0.08] text-[#8FA8AD] hover:text-white hover:border-[#39AEA9]/50'
                         }`}
                       >
                         <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-                          isActive ? 'bg-gradient-to-tr from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11]' : 'bg-[#0A0F11] text-[#8FA8AD]'
+                          isActive ? 'bg-gradient-to-tr from-[#A4C8E1] to-[#39AEA9] text-[#0B131B]' : 'bg-[#0B131B] text-[#8FA8AD]'
                         }`}>
                           <Play className="w-3 h-3 fill-current ml-0.5" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className={`text-[10px] font-sans font-semibold ${isActive ? 'text-[#A2D5AB]' : 'text-[#8FA8AD]'}`}>
+                          <p className={`text-[10px] font-sans font-semibold ${isActive ? 'text-[#39AEA9]' : 'text-[#8FA8AD]'}`}>
                             Episode {epNum}
                           </p>
                           <h4 className="text-xs font-medium text-white truncate">Chapter {epNum}</h4>
@@ -1634,10 +1671,15 @@ export default function WatchPage() {
               className="fixed inset-0 cursor-pointer"
               onClick={() => setIsShortcutsOpen(false)}
             />
-            <div className="relative bg-[#121A1D]/95 border border-[#39AEA9]/40 rounded-3xl p-6 max-w-md w-full shadow-[0_0_60px_rgba(57,174,169,0.25)] space-y-5 z-10 animate-in zoom-in-95 duration-200">
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Cinema Pro Keyboard Shortcuts"
+              className="relative bg-[#0B131B]/95 backdrop-blur-2xl border border-white/[0.15] rounded-3xl p-6 max-w-md w-full shadow-[0_0_60px_rgba(57,174,169,0.25)] space-y-5 z-10 animate-in zoom-in-95 duration-200"
+            >
               <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-[#39AEA9]/20 text-[#A2D5AB]">
+                  <div className="p-2 rounded-xl bg-[#39AEA9]/20 text-[#39AEA9]">
                     <Keyboard className="w-5 h-5" />
                   </div>
                   <div>
@@ -1650,8 +1692,9 @@ export default function WatchPage() {
                     soundFx.playTap();
                     setIsShortcutsOpen(false);
                   }}
-                  className="w-7 h-7 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-white flex items-center justify-center transition-colors cursor-pointer"
+                  className="w-7 h-7 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-white flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                   title="Close"
+                  aria-label="Close shortcuts dialog"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1660,52 +1703,52 @@ export default function WatchPage() {
               <div className="space-y-2 text-xs font-sans">
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
                   <span className="text-[#E2E8F0] font-medium">Cinema Theater Mode</span>
-                  <kbd className="px-2.5 py-1 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                  <kbd className="px-2.5 py-1 rounded-lg bg-[#0B131B] text-[#39AEA9] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
                     T
                   </kbd>
                 </div>
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
                   <span className="text-[#E2E8F0] font-medium">Toggle Native Fullscreen</span>
-                  <kbd className="px-2.5 py-1 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                  <kbd className="px-2.5 py-1 rounded-lg bg-[#0B131B] text-[#39AEA9] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
                     F
                   </kbd>
                 </div>
                 {type === 'tv' && (
                   <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
                     <span className="text-[#E2E8F0] font-medium">Toggle Episode Drawer</span>
-                    <kbd className="px-2.5 py-1 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                    <kbd className="px-2.5 py-1 rounded-lg bg-[#0B131B] text-[#39AEA9] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
                       E
                     </kbd>
                   </div>
                 )}
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
                   <span className="text-[#E2E8F0] font-medium">Cycle Stream Engine (Servers)</span>
-                  <kbd className="px-2.5 py-1 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                  <kbd className="px-2.5 py-1 rounded-lg bg-[#0B131B] text-[#39AEA9] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
                     S
                   </kbd>
                 </div>
                 {type === 'tv' && (
                   <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
                     <span className="text-[#E2E8F0] font-medium">Skip to Next Episode</span>
-                    <kbd className="px-2.5 py-1 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                    <kbd className="px-2.5 py-1 rounded-lg bg-[#0B131B] text-[#39AEA9] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
                       N
                     </kbd>
                   </div>
                 )}
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
                   <span className="text-[#E2E8F0] font-medium">Toggle This Shortcuts Cheat Sheet</span>
-                  <kbd className="px-2.5 py-1 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                  <kbd className="px-2.5 py-1 rounded-lg bg-[#0B131B] text-[#39AEA9] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
                     ?
                   </kbd>
                 </div>
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
                   <span className="text-[#E2E8F0] font-medium">Quick Seek ±5 Minutes</span>
                   <div className="flex items-center gap-1">
-                    <kbd className="px-2 py-0.5 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                    <kbd className="px-2 py-0.5 rounded-lg bg-[#0B131B] text-[#39AEA9] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
                       Shift
                     </kbd>
                     <span className="text-[#8FA8AD] text-xs">+</span>
-                    <kbd className="px-2 py-0.5 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                    <kbd className="px-2 py-0.5 rounded-lg bg-[#0B131B] text-[#39AEA9] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
                       ➔ / ⬅
                     </kbd>
                   </div>
@@ -1713,11 +1756,11 @@ export default function WatchPage() {
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
                   <span className="text-[#E2E8F0] font-medium">Quick Seek ±10 Minutes</span>
                   <div className="flex items-center gap-1">
-                    <kbd className="px-2 py-0.5 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                    <kbd className="px-2 py-0.5 rounded-lg bg-[#0B131B] text-[#39AEA9] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
                       Alt
                     </kbd>
                     <span className="text-[#8FA8AD] text-xs">+</span>
-                    <kbd className="px-2 py-0.5 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                    <kbd className="px-2 py-0.5 rounded-lg bg-[#0B131B] text-[#39AEA9] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
                       ➔ / ⬅
                     </kbd>
                   </div>
@@ -1725,18 +1768,18 @@ export default function WatchPage() {
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
                   <span className="text-[#E2E8F0] font-medium">Fine Seek ±1 Minute</span>
                   <div className="flex items-center gap-1">
-                    <kbd className="px-2 py-0.5 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                    <kbd className="px-2 py-0.5 rounded-lg bg-[#0B131B] text-[#39AEA9] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
                       [
                     </kbd>
                     <span className="text-[#8FA8AD] text-xs">/</span>
-                    <kbd className="px-2 py-0.5 rounded-lg bg-[#0A0F11] text-[#A2D5AB] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                    <kbd className="px-2 py-0.5 rounded-lg bg-[#0B131B] text-[#39AEA9] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
                       ]
                     </kbd>
                   </div>
                 </div>
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.05]">
                   <span className="text-[#E2E8F0] font-medium">Close Overlay / Exit Theater</span>
-                  <kbd className="px-2 py-1 rounded-lg bg-[#0A0F11] text-[#8FA8AD] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
+                  <kbd className="px-2 py-1 rounded-lg bg-[#0B131B] text-[#8FA8AD] border border-white/[0.1] font-mono text-[11px] font-bold shadow">
                     Esc
                   </kbd>
                 </div>
@@ -1748,7 +1791,7 @@ export default function WatchPage() {
                     soundFx.playTap();
                     setIsShortcutsOpen(false);
                   }}
-                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11] font-bold text-xs shadow-md cursor-pointer hover:opacity-95 transition-all"
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#A4C8E1] to-[#39AEA9] text-[#0B131B] font-bold text-xs shadow-md cursor-pointer hover:opacity-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                 >
                   Got It
                 </button>
@@ -1770,22 +1813,23 @@ export default function WatchPage() {
                 {nextEpisodeInfo && (
                   <button
                     onClick={() => handleEpisodeChange(nextEpisodeInfo.season, nextEpisodeInfo.episode)}
-                    className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/[0.08] hover:bg-[#39AEA9]/20 text-[#A2D5AB] hover:text-white border border-[#39AEA9]/30 text-xs font-sans font-semibold transition-all cursor-pointer ml-1"
+                    className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/[0.08] hover:bg-[#39AEA9]/20 text-[#39AEA9] hover:text-white border border-[#39AEA9]/30 text-xs font-sans font-semibold transition-all cursor-pointer ml-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                     title={`Skip directly to S${nextEpisodeInfo.season} E${nextEpisodeInfo.episode}`}
+                    aria-label={`Skip directly to S${nextEpisodeInfo.season} E${nextEpisodeInfo.episode}`}
                   >
                     <SkipForward className="w-3 h-3 fill-current" />
                     <span>Next: S{nextEpisodeInfo.season} E{nextEpisodeInfo.episode}</span>
                   </button>
                 )}
               </div>
-              <div className="flex flex-wrap gap-1.5 p-1.5 bg-[#121A1D]/80 border border-white/[0.08] rounded-xl">
+              <div className="flex flex-wrap gap-1.5 p-1.5 bg-[#0B131B]/60 backdrop-blur-xl border border-white/[0.08] rounded-xl">
                 {seasons.map((s: any) => (
                   <button
                     key={s.season_number}
                     onClick={() => handleEpisodeChange(s.season_number, 1)}
                     className={
                       currentSeason === s.season_number
-                        ? "px-3.5 py-1.5 rounded-lg text-xs font-sans font-semibold bg-gradient-to-r from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11] shadow-[0_0_12px_rgba(57,174,169,0.4)] cursor-pointer"
+                        ? "px-3.5 py-1.5 rounded-lg text-xs font-sans font-semibold bg-gradient-to-r from-[#A4C8E1] to-[#39AEA9] text-[#0B131B] shadow-[0_0_12px_rgba(57,174,169,0.4)] cursor-pointer"
                         : "px-3.5 py-1.5 rounded-lg text-xs font-sans font-medium text-[#8FA8AD] hover:text-white hover:bg-white/[0.08] cursor-pointer"
                     }
                   >
@@ -1798,7 +1842,7 @@ export default function WatchPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
               {episodesLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="p-3.5 rounded-2xl border border-white/[0.08] bg-[#121A1D] animate-pulse h-16" />
+                  <div key={i} className="p-3.5 rounded-2xl border border-white/[0.08] bg-white/[0.04] animate-pulse h-16" />
                 ))
               ) : seasonEpisodes.length > 0 ? (
                 seasonEpisodes.map((ep: any) => {
@@ -1807,19 +1851,19 @@ export default function WatchPage() {
                     <button
                       key={ep.episode_number}
                       onClick={() => handleEpisodeChange(currentSeason, ep.episode_number)}
-                      className={`group text-left p-3.5 rounded-2xl border transition-all flex items-start gap-3 cursor-pointer ${
+                      className={`group text-left p-3.5 rounded-2xl border transition-all flex items-start gap-3 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
                         isActive
                           ? 'bg-[#39AEA9]/20 text-white font-semibold border-[#39AEA9] shadow-[0_0_20px_rgba(57,174,169,0.3)]'
-                          : 'border-white/[0.08] bg-[#121A1D]/80 text-[#8FA8AD] hover:text-white hover:border-[#39AEA9]/60 hover:bg-[#1A2529]'
+                          : 'border-white/[0.08] bg-white/[0.04] backdrop-blur-xl text-[#8FA8AD] hover:text-white hover:border-[#39AEA9]/60 hover:bg-white/[0.08]'
                       }`}
                     >
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                        isActive ? 'bg-gradient-to-tr from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11]' : 'bg-[#0A0F11] group-hover:bg-[#39AEA9] group-hover:text-[#0A0F11] text-[#8FA8AD]'
+                        isActive ? 'bg-gradient-to-tr from-[#A4C8E1] to-[#39AEA9] text-[#0B131B]' : 'bg-[#0B131B] group-hover:bg-[#39AEA9] group-hover:text-[#0B131B] text-[#8FA8AD]'
                       }`}>
                         <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className={`text-[10px] font-sans font-semibold ${isActive ? 'text-[#A2D5AB]' : 'text-[#8FA8AD]'}`}>
+                        <p className={`text-[10px] font-sans font-semibold ${isActive ? 'text-[#39AEA9]' : 'text-[#8FA8AD]'}`}>
                           Episode {ep.episode_number}
                         </p>
                         <h4 className="text-xs font-medium truncate text-[#F8FAFC]">{ep.name || `Episode ${ep.episode_number}`}</h4>
@@ -1835,19 +1879,19 @@ export default function WatchPage() {
                     <button
                       key={epNum}
                       onClick={() => handleEpisodeChange(currentSeason, epNum)}
-                      className={`group text-left p-3.5 rounded-2xl border transition-all flex items-start gap-3 cursor-pointer ${
+                      className={`group text-left p-3.5 rounded-2xl border transition-all flex items-start gap-3 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
                         isActive
                           ? 'bg-[#39AEA9]/20 text-white font-semibold border-[#39AEA9] shadow-[0_0_20px_rgba(57,174,169,0.4)]'
-                          : 'border-white/[0.08] bg-[#121A1D]/80 text-[#8FA8AD] hover:text-white hover:border-[#39AEA9] hover:bg-[#1A2529]'
+                          : 'border-white/[0.08] bg-white/[0.04] backdrop-blur-xl text-[#8FA8AD] hover:text-white hover:border-[#39AEA9] hover:bg-white/[0.08]'
                       }`}
                     >
                       <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-                        isActive ? 'bg-gradient-to-tr from-[#39AEA9] to-[#A2D5AB] text-[#0A0F11]' : 'bg-[#0A0F11] group-hover:bg-[#39AEA9] group-hover:text-[#0A0F11] text-[#8FA8AD]'
+                        isActive ? 'bg-gradient-to-tr from-[#A4C8E1] to-[#39AEA9] text-[#0B131B]' : 'bg-[#0B131B] group-hover:bg-[#39AEA9] group-hover:text-[#0B131B] text-[#8FA8AD]'
                       }`}>
                         <Play className="w-3 h-3 fill-current ml-0.5" />
                       </div>
                       <div className="min-w-0">
-                        <p className={`text-[10px] font-sans font-semibold ${isActive ? 'text-[#A2D5AB]' : 'text-[#8FA8AD]'}`}>
+                        <p className={`text-[10px] font-sans font-semibold ${isActive ? 'text-[#39AEA9]' : 'text-[#8FA8AD]'}`}>
                           Episode {epNum}
                         </p>
                         <h4 className="text-xs font-medium truncate text-[#F8FAFC]">Chapter {epNum}</h4>
@@ -1864,7 +1908,7 @@ export default function WatchPage() {
         {meta?.cast && meta.cast.length > 0 && (
           <section className="space-y-4 pt-6 border-t border-white/[0.08]">
             <div className="flex items-center gap-3">
-              <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-[#39AEA9] to-[#A2D5AB]" />
+              <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-[#A4C8E1] to-[#39AEA9]" />
               <div>
                 <h3 className="font-display text-lg font-bold text-[#F8FAFC]">Cast Showcase</h3>
                 <p className="text-xs text-[#8FA8AD] font-sans">Actors &amp; Roles</p>
@@ -1875,7 +1919,7 @@ export default function WatchPage() {
                 const avatar = ImageService.getProfile(c.profile_path, c.name);
                 return (
                   <div key={idx} className="flex flex-col items-center shrink-0 w-24 gap-2 text-center">
-                    <div className="relative w-14 h-14 rounded-2xl overflow-hidden border border-white/[0.1] bg-[#121A1D]">
+                    <div className="relative w-14 h-14 rounded-2xl overflow-hidden border border-white/[0.1] bg-[#0B131B]">
                       <Image src={avatar} alt={c.name} fill sizes="56px" className="object-cover" />
                     </div>
                     <div className="space-y-0.5">

@@ -9,12 +9,28 @@ import HeroCarousel from "../components/home/HeroCarousel";
 import AmbientGlow from "../components/shared/AmbientGlow";
 import MovieRow from "../components/shared/MovieRow";
 import Top10RankedRow from "../components/home/Top10RankedRow";
-import StudiosRow from "../components/home/StudiosRow";
 import { HeroSkeleton, MovieRowSkeleton } from "../components/shared/Skeletons";
+
+const selectHomeFeed = (data: any) => ({
+  top_picks: (data?.top_picks || []) as MediaItem[],
+  new_movies: ((data?.new_movies || []) as MediaItem[]).map((m) => ({ ...m, media_type: "movie" as const })),
+  popular_tv: ((data?.popular_tv || []) as MediaItem[]).map((t) => ({ ...t, media_type: "tv" as const })),
+  action_movies: ((data?.action_movies || []) as MediaItem[]).map((m) => ({ ...m, media_type: "movie" as const })),
+  comedy_movies: ((data?.comedy_movies || []) as MediaItem[]).map((m) => ({ ...m, media_type: "movie" as const })),
+  drama_movies: ((data?.drama_movies || []) as MediaItem[]).map((m) => ({ ...m, media_type: "movie" as const })),
+  horror_movies: ((data?.horror_movies || []) as MediaItem[]).map((m) => ({ ...m, media_type: "movie" as const })),
+  scifi_movies: ((data?.scifi_movies || []) as MediaItem[]).map((m) => ({ ...m, media_type: "movie" as const })),
+  thriller_movies: ((data?.thriller_movies || []) as MediaItem[]).map((m) => ({ ...m, media_type: "movie" as const })),
+  romance_movies: ((data?.romance_movies || []) as MediaItem[]).map((m) => ({ ...m, media_type: "movie" as const })),
+  animation_movies: ((data?.animation_movies || []) as MediaItem[]).map((m) => ({ ...m, media_type: "movie" as const })),
+  crime_movies: ((data?.crime_movies || []) as MediaItem[]).map((m) => ({ ...m, media_type: "movie" as const })),
+  documentary_movies: ((data?.documentary_movies || []) as MediaItem[]).map((m) => ({ ...m, media_type: "movie" as const })),
+});
 
 function HomePageContent() {
   const { activeProfile } = useUserStore();
   const queryClient = useQueryClient();
+  const hasScrolledRef = React.useRef(false);
 
   const [localContinueWatching, setLocalContinueWatching] = React.useState<LocalProgressItem[]>([]);
 
@@ -39,24 +55,11 @@ function HomePageContent() {
   }, [activeProfile, queryClient]);
 
   // 1. Aggregated Composite Home Feed (1 single cached request replacing 13 individual queries)
-  const { data: homeFeed, isLoading: isFeedLoading } = useQuery<{
-    top_picks?: MediaItem[];
-    new_movies?: MediaItem[];
-    popular_tv?: MediaItem[];
-    action_movies?: MediaItem[];
-    comedy_movies?: MediaItem[];
-    drama_movies?: MediaItem[];
-    horror_movies?: MediaItem[];
-    scifi_movies?: MediaItem[];
-    thriller_movies?: MediaItem[];
-    romance_movies?: MediaItem[];
-    animation_movies?: MediaItem[];
-    crime_movies?: MediaItem[];
-    documentary_movies?: MediaItem[];
-  }>({
-    queryKey: ["home-feed"],
-    queryFn: () => apiFetch("/api/tmdb/home_feed"),
-    staleTime: 1000 * 60 * 10,
+  const { data: homeFeed, isLoading: isFeedLoading } = useQuery({
+    queryKey: ["home-feed-v3"],
+    queryFn: () => apiFetch("/api/v1/tmdb/home_feed"),
+    select: selectHomeFeed,
+    staleTime: 1000 * 60 * 3,
   });
 
   const topPicks = homeFeed?.top_picks || [];
@@ -75,7 +78,8 @@ function HomePageContent() {
 
   // Auto-scroll to #top10 if hash is present
   React.useEffect(() => {
-    if (typeof window !== "undefined" && window.location.hash === "#top10" && topPicks.length > 0) {
+    if (!hasScrolledRef.current && typeof window !== "undefined" && window.location.hash === "#top10" && topPicks.length > 0) {
+      hasScrolledRef.current = true;
       const timer = setTimeout(() => {
         const el = document.getElementById("top10");
         if (el) el.scrollIntoView({ behavior: "smooth" });
@@ -218,91 +222,88 @@ function HomePageContent() {
         />
       </div>
 
-      {/* 2. Studios & Platform */}
-      <StudiosRow />
-
-      {/* 3. New Movies */}
+      {/* 2. New Movies */}
       <MovieRow
         title="New Movies"
         subtitle="Latest releases & fresh premieres"
-        items={newMovies.map((m) => ({ ...m, media_type: "movie" }))}
+        items={newMovies}
       />
 
       {/* 4. Popular TV Shows */}
       <MovieRow
         title="Popular TV Shows"
         subtitle="Top binge-worthy series"
-        items={popularTvShows.map((t) => ({ ...t, media_type: "tv" }))}
+        items={popularTvShows}
       />
 
       {/* 5. Action */}
       <MovieRow
         title="Action"
         subtitle="High-octane & explosive adventures"
-        items={actionMovies.map((m) => ({ ...m, media_type: "movie" }))}
+        items={actionMovies}
       />
 
       {/* 6. Comedy */}
       <MovieRow
         title="Comedy"
         subtitle="Hilarious & feel-good hits"
-        items={comedyMovies.map((m) => ({ ...m, media_type: "movie" }))}
+        items={comedyMovies}
       />
 
       {/* 7. Drama */}
       <MovieRow
         title="Drama"
         subtitle="Compelling stories & cinematic masterpieces"
-        items={dramaMovies.map((m) => ({ ...m, media_type: "movie" }))}
+        items={dramaMovies}
       />
 
       {/* 8. Horror */}
       <MovieRow
         title="Horror"
         subtitle="Nightmares & supernatural chills"
-        items={horrorMovies.map((m) => ({ ...m, media_type: "movie" }))}
+        items={horrorMovies}
       />
 
       {/* 9. Sci Fi */}
       <MovieRow
         title="Sci-Fi"
         subtitle="Futuristic visions & space epics"
-        items={sciFiMovies.map((m) => ({ ...m, media_type: "movie" }))}
+        items={sciFiMovies}
       />
 
       {/* 10. Thriller */}
       <MovieRow
         title="Thriller"
         subtitle="Edge-of-your-seat suspense"
-        items={thrillerMovies.map((m) => ({ ...m, media_type: "movie" }))}
+        items={thrillerMovies}
       />
 
       {/* 11. Romance */}
       <MovieRow
         title="Romance"
         subtitle="Heartwarming passion & love stories"
-        items={romanceMovies.map((m) => ({ ...m, media_type: "movie" }))}
+        items={romanceMovies}
       />
 
       {/* 12. Animation */}
       <MovieRow
         title="Animation"
         subtitle="Anime & animated wonders"
-        items={animationMovies.map((m) => ({ ...m, media_type: "movie" }))}
+        items={animationMovies}
       />
 
       {/* 13. Crime */}
       <MovieRow
         title="Crime"
         subtitle="Underworld sagas & detective mysteries"
-        items={crimeMovies.map((m) => ({ ...m, media_type: "movie" }))}
+        items={crimeMovies}
       />
 
         {/* 14. Documentary */}
         <MovieRow
           title="Documentary"
           subtitle="Real stories & untold truths"
-          items={documentaryMovies.map((m) => ({ ...m, media_type: "movie" }))}
+          items={documentaryMovies}
         />
       </div>
     </div>

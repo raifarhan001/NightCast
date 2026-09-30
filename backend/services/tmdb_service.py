@@ -9,24 +9,26 @@ logger = logging.getLogger("nightcast_tmdb")
 
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 
-# Luxury mock assets (Unsplash curation for cinematic looks)
+# Luxury mock assets (Verified TMDB paths for cinematic looks)
 MOCK_ASSETS = {
-    "interstellar_backdrop": "/rAiw1Z447C1NId1q68c92V2rPum.jpg",
-    "interstellar_poster": "/gEU2Qv6IL7nOSYn2Pbr82V2R7Jd.jpg",
-    "dune_backdrop": "/lzv7UjNn22ZgE0vm9qppQ7gFTPb.jpg",
-    "dune_poster": "/d5NXSklXkiZt14AL4C4LwunCcNA.jpg",
+    "interstellar_backdrop": "/8sNiAPPYU14PUepFNeSNGUTiHW.jpg",
+    "interstellar_poster": "/yQvGrMoipbRoddT0ZR8tPoR7NfX.jpg",
+    "dune_backdrop": "/zRKQW58MBEY078AxkHxEJzUskCl.jpg",
+    "dune_poster": "/v1tRXZ4JtD2Iv6fjkPvT4GiwslV.jpg",
     "oppenheimer_backdrop": "/fm6KjZLL36MRDv7JYYoaXGsR63d.jpg",
-    "oppenheimer_poster": "/8Gxv2wY4uvUGFA67Xh5fQzIY1d5.jpg",
-    "dark_backdrop": "/5EzKw67119CHn452zwPLv05tQ16.jpg",
-    "dark_poster": "/apbrVmFBzv232cCOI79oL8gupwk.jpg",
-    "succession_backdrop": "/x5g630801a61dfb6ff3f17316ef.jpg",
-    "succession_poster": "/7594wZ14d5V5xZ2Qd5tEHGJLYHN.jpg",
-    "wednesday_backdrop": "/iH7v9j8sXjypG4J32VbrvyAX5PX.jpg",
-    "wednesday_poster": "/9PF05o444X5af3mQQYqEZLYHGJb.jpg",
-    "severance_backdrop": "/9d8v9a1efbfbe3e1f0e21a221f1d.jpg",
-    "severance_poster": "/lZ2mJqjKBgyUg43562g14d5V5xZ.jpg",
-    "creator_backdrop": "/t5z43mNs4Tepe7tTL7o4P4j5iHs.jpg",
-    "creator_poster": "/vB6tYMR42liZPhl88NEfg7x9mQQ.jpg"
+    "oppenheimer_poster": "/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+    "avengers_backdrop": "/7RyHsO4yDXtBv1zUU3mTpHeQ0d5.jpg",
+    "avengers_poster": "/ulzhLuWrPK07P1YkdWQLZnQh1JL.jpg",
+    "dark_backdrop": "/3jDXL4Xvj3AzDOF6UH1xeyHW8MH.jpg",
+    "dark_poster": "/apbrbWs8M9lyOpJYU5WXrpFbk1Z.jpg",
+    "succession_backdrop": "/d87JXX3DLkRJMfm5StCmmnmhHuX.jpg",
+    "succession_poster": "/z0XiwdrCQ9yVIr4O0pxzaAYRxdW.jpg",
+    "wednesday_backdrop": "/iHSwvRVsRyxpX7FE7GbviaDvgGZ.jpg",
+    "wednesday_poster": "/9PFonBhy4cQy7Jz20NpMygczOkv.jpg",
+    "severance_backdrop": "/39bifj2FNytJ2m1cqOBcWMTKgmV.jpg",
+    "severance_poster": "/6rWIip9MZELAA0SKii5WqsBDCYW.jpg",
+    "creator_backdrop": "/8VyTWJrNEyV2MTWvniDVp0MpOAe.jpg",
+    "creator_poster": "/cpf7vsRZ0MYRQcnLWteD5jK9ymT.jpg"
 }
 
 MOCK_MOVIES = {
@@ -89,8 +91,8 @@ MOCK_MOVIES = {
         "id": 299534,
         "title": "Avengers: Endgame",
         "overview": "After the devastating events of Avengers: Infinity War, the universe is in ruins. With the help of remaining allies, the Avengers assemble once more in order to reverse Thanos' actions.",
-        "backdrop_path": MOCK_ASSETS["oppenheimer_backdrop"],
-        "poster_path": MOCK_ASSETS["oppenheimer_poster"],
+        "backdrop_path": MOCK_ASSETS["avengers_backdrop"],
+        "poster_path": MOCK_ASSETS["avengers_poster"],
         "release_date": "2019-04-24",
         "vote_average": 8.3,
         "runtime": 181,
@@ -183,8 +185,8 @@ class TMDBClient:
     def get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(
-                timeout=httpx.Timeout(10.0, connect=5.0),
-                limits=httpx.Limits(max_keepalive_connections=20, max_connections=50),
+                timeout=httpx.Timeout(25.0, connect=12.0, read=20.0),
+                limits=httpx.Limits(max_keepalive_connections=25, max_connections=50),
                 follow_redirects=True
             )
         return self._client
@@ -214,7 +216,7 @@ class TMDBClient:
             pass
 
         client = self.get_client()
-        backoffs = [0.5]
+        backoffs = [0.8, 1.8, 3.0]
         for attempt, delay in enumerate(backoffs + [0], start=1):
             try:
                 response = await client.get(url, params=params)
@@ -225,12 +227,12 @@ class TMDBClient:
                 except Exception:
                     pass
                 return data
-            except httpx.HTTPError as e:
+            except Exception as e:
                 if attempt <= len(backoffs):
-                    logger.warning(f"TMDB request retry ({attempt}). Error: {str(e)}")
+                    logger.warning(f"TMDB request retry ({attempt}) for {endpoint}. Error: {repr(e)}")
                     await asyncio.sleep(delay)
                 else:
-                    logger.error(f"TMDB request failed. Error: {str(e)}")
+                    logger.error(f"TMDB request failed for {endpoint}. Error: {repr(e)}")
                     raise e
         return {}
 

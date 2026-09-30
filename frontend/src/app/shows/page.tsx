@@ -7,19 +7,25 @@ import HeroCarousel from "../../components/home/HeroCarousel";
 import AmbientGlow from "../../components/shared/AmbientGlow";
 import MovieRow from "../../components/shared/MovieRow";
 import Top10RankedRow from "../../components/home/Top10RankedRow";
-import StudiosRow from "../../components/home/StudiosRow";
 import { HeroSkeleton, MovieRowSkeleton } from "../../components/shared/Skeletons";
 
+const selectTvMedia = (data: MediaItem[]) =>
+  data.map(t => ({ ...t, media_type: "tv" as const }));
+
 function ShowsPageContent() {
+  const hasScrolledRef = React.useRef(false);
+
   // 1. Trending TV Shows
   const { data: trendingShows = [], isLoading: trendingLoading } = useQuery<MediaItem[]>({
     queryKey: ["shows-page-trending"],
     queryFn: () => apiFetch("/api/tmdb/trending?media_type=tv&time_window=week"),
+    select: selectTvMedia,
   });
 
   // Auto-scroll to #top10 if hash is present
   React.useEffect(() => {
-    if (typeof window !== "undefined" && window.location.hash === "#top10" && trendingShows.length > 0) {
+    if (!hasScrolledRef.current && typeof window !== "undefined" && window.location.hash === "#top10" && trendingShows.length > 0) {
+      hasScrolledRef.current = true;
       const timer = setTimeout(() => {
         const el = document.getElementById("top10");
         if (el) el.scrollIntoView({ behavior: "smooth" });
@@ -32,47 +38,54 @@ function ShowsPageContent() {
   const { data: popularShows = [] } = useQuery<MediaItem[]>({
     queryKey: ["shows-page-popular"],
     queryFn: () => apiFetch("/api/tmdb/popular?media_type=tv"),
+    select: selectTvMedia,
   });
 
   // 3. Top Rated Series
   const { data: topRatedShows = [] } = useQuery<MediaItem[]>({
     queryKey: ["shows-page-top-rated"],
     queryFn: () => apiFetch("/api/tmdb/top_rated?media_type=tv"),
+    select: selectTvMedia,
   });
 
   // 4. Sci-Fi & Fantasy Series (Genre 10765)
   const { data: sciFiShows = [] } = useQuery<MediaItem[]>({
     queryKey: ["shows-page-scifi"],
     queryFn: () => apiFetch("/api/tmdb/discover/tv?with_genres=10765"),
+    select: selectTvMedia,
   });
 
   // 5. Drama Series (Genre 18)
   const { data: dramaShows = [] } = useQuery<MediaItem[]>({
     queryKey: ["shows-page-drama"],
     queryFn: () => apiFetch("/api/tmdb/discover/tv?with_genres=18"),
+    select: selectTvMedia,
   });
 
   // 6. Action & Adventure Series (Genre 10759)
   const { data: actionShows = [] } = useQuery<MediaItem[]>({
     queryKey: ["shows-page-action"],
     queryFn: () => apiFetch("/api/tmdb/discover/tv?with_genres=10759"),
+    select: selectTvMedia,
   });
 
   // 7. Crime & Mystery Series (Genres 80, 9648)
   const { data: mysteryShows = [] } = useQuery<MediaItem[]>({
     queryKey: ["shows-page-mystery"],
     queryFn: () => apiFetch("/api/tmdb/discover/tv?with_genres=80,9648"),
+    select: selectTvMedia,
   });
 
   // 8. Comedy Series (Genre 35)
   const { data: comedyShows = [] } = useQuery<MediaItem[]>({
     queryKey: ["shows-page-comedy"],
     queryFn: () => apiFetch("/api/tmdb/discover/tv?with_genres=35"),
+    select: selectTvMedia,
   });
 
   const heroItems = trendingShows.length > 0
-    ? trendingShows.slice(0, 7).map(t => ({ ...t, media_type: "tv" as const }))
-    : popularShows.slice(0, 7).map(t => ({ ...t, media_type: "tv" as const }));
+    ? trendingShows.slice(0, 7)
+    : popularShows.slice(0, 7);
 
   if (trendingLoading) {
     return (
@@ -98,59 +111,56 @@ function ShowsPageContent() {
         <div id="top10" className="scroll-mt-8">
           <Top10RankedRow
             title="Top 10 TV Series"
-            items={trendingShows.map(t => ({ ...t, media_type: "tv" as const }))}
+            items={trendingShows}
           />
         </div>
 
-      {/* 2. Studios & Platforms */}
-      <StudiosRow />
+        {/* Trending Shows */}
+        <MovieRow
+          title="Trending Shows"
+          items={trendingShows}
+        />
 
-      {/* 3. Trending Shows */}
-      <MovieRow
-        title="Trending Shows"
-        items={trendingShows.map(t => ({ ...t, media_type: "tv" as const }))}
-      />
+        {/* 4. Popular TV Shows */}
+        <MovieRow
+          title="Popular TV Series"
+          items={popularShows}
+        />
 
-      {/* 4. Popular TV Shows */}
-      <MovieRow
-        title="Popular TV Series"
-        items={popularShows.map(t => ({ ...t, media_type: "tv" as const }))}
-      />
+        {/* 5. Top Rated Series */}
+        <MovieRow
+          title="Top Rated Series"
+          items={topRatedShows}
+        />
 
-      {/* 5. Top Rated Series */}
-      <MovieRow
-        title="Top Rated Series"
-        items={topRatedShows.map(t => ({ ...t, media_type: "tv" as const }))}
-      />
+        {/* 6. Sci-Fi & Fantasy Series */}
+        <MovieRow
+          title="Sci-Fi & Fantasy Series"
+          items={sciFiShows}
+        />
 
-      {/* 6. Sci-Fi & Fantasy Series */}
-      <MovieRow
-        title="Sci-Fi & Fantasy Series"
-        items={sciFiShows.map(t => ({ ...t, media_type: "tv" as const }))}
-      />
+        {/* 7. Drama Series */}
+        <MovieRow
+          title="Drama & Emotion"
+          items={dramaShows}
+        />
 
-      {/* 7. Drama Series */}
-      <MovieRow
-        title="Drama & Emotion"
-        items={dramaShows.map(t => ({ ...t, media_type: "tv" as const }))}
-      />
+        {/* 8. Action & Thrills */}
+        <MovieRow
+          title="Action & Thrills"
+          items={actionShows}
+        />
 
-      {/* 8. Action & Thrills */}
-      <MovieRow
-        title="Action & Thrills"
-        items={actionShows.map(t => ({ ...t, media_type: "tv" as const }))}
-      />
-
-      {/* 9. Crime & Mystery */}
-      <MovieRow
-        title="Crime & Mystery"
-        items={mysteryShows.map(t => ({ ...t, media_type: "tv" as const }))}
-      />
+        {/* 9. Crime & Mystery */}
+        <MovieRow
+          title="Crime & Mystery"
+          items={mysteryShows}
+        />
 
         {/* 10. Comedy Series */}
         <MovieRow
           title="Comedy Series"
-          items={comedyShows.map(t => ({ ...t, media_type: "tv" as const }))}
+          items={comedyShows}
         />
       </div>
     </div>

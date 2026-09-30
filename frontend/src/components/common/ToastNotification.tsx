@@ -42,7 +42,7 @@ export default function ToastNotification() {
 
       setTimeout(() => {
         removeToast(newToast.id);
-      }, 2500);
+      }, 3500);
     };
 
     window.addEventListener("nightcast:toast", handleToastEvent);
@@ -50,7 +50,12 @@ export default function ToastNotification() {
   }, [removeToast]);
 
   return (
-    <div className="fixed bottom-5 right-5 sm:bottom-8 sm:right-8 z-[99999] flex flex-col gap-2 pointer-events-none select-none">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      className="fixed bottom-20 right-4 sm:bottom-8 sm:right-8 z-[99999] flex flex-col gap-2 pointer-events-none select-none"
+    >
       <AnimatePresence mode="popLayout">
         {toasts.map((t) => {
           const isSuccess = t.type === "success" || !t.type;
@@ -65,17 +70,17 @@ export default function ToastNotification() {
               transition={{ duration: 0.2, ease: "easeOut" }}
               className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.85)] border backdrop-blur-2xl transition-all ${
                 isError
-                  ? "bg-[#180C11]/95 border-rose-500/40 text-rose-200"
+                  ? "bg-rose-950/75 border-rose-500/40 text-rose-200 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]"
                   : isSuccess
-                  ? "bg-[#0A1618]/95 border-[#39AEA9]/50 text-[#F8FAFC] shadow-[0_0_20px_rgba(57,174,169,0.2)]"
-                  : "bg-[#121A24]/95 border-[#4A6E8D]/50 text-[#F0F0F0]"
+                  ? "bg-[#0B131B]/80 border-[#39AEA9]/50 text-[#F0F0F0] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_0_24px_rgba(57,174,169,0.3)]"
+                  : "bg-[#0B131B]/80 border-white/[0.12] text-[#F0F0F0] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]"
               }`}
             >
               <div className="shrink-0">
                 {isError ? (
                   <AlertCircle className="w-4 h-4 text-rose-400" />
                 ) : isSuccess ? (
-                  <Check className="w-4 h-4 text-[#A2D5AB]" />
+                  <Check className="w-4 h-4 text-[#39AEA9]" />
                 ) : (
                   <Bookmark className="w-4 h-4 text-[#A4C8E1]" />
                 )}
@@ -86,7 +91,7 @@ export default function ToastNotification() {
               <button
                 type="button"
                 onClick={() => removeToast(t.id)}
-                className="ml-2 text-white/50 hover:text-white p-0.5 rounded-full transition cursor-pointer"
+                className="ml-2 text-[#8FA8AD] hover:text-[#F0F0F0] p-1 rounded-full transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                 aria-label="Dismiss toast"
               >
                 <X className="w-3.5 h-3.5" />

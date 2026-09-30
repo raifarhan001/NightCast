@@ -328,19 +328,19 @@ function ProfilePageContent() {
 
       <div className="max-w-7xl mx-auto px-6 sm:px-10 md:px-14 relative z-10 space-y-8">
         {/* Top Header Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#4A6E8D]/25">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.08]">
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl sm:text-3xl font-black text-[#F0F0F0] tracking-tight">
                 {user ? 'My Library & Profile' : 'My List & Watchlist'}
               </h1>
               {user && (
-                <span className="px-2.5 py-0.5 rounded-full bg-[#39AEA9]/20 border border-[#39AEA9]/35 text-[#A2D5AB] text-[11px] font-semibold">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#39AEA9]/20 border border-[#39AEA9]/35 text-[#39AEA9] text-[11px] font-semibold">
                   Active
                 </span>
               )}
             </div>
-            <p className="text-xs sm:text-sm text-[#4A6E8D] mt-1">
+            <p className="text-xs sm:text-sm text-[#8FA8AD] mt-1">
               {user
                 ? `Logged in as ${user.email}`
                 : 'Your saved watchlist and continue watching progress on this device'}
@@ -352,7 +352,7 @@ function ProfilePageContent() {
               <button
                 type="button"
                 onClick={() => setShowAuthCard((prev) => !prev)}
-                className="px-5 py-2.5 rounded-full bg-[#F0F0F0] text-[#0B131B] font-semibold text-xs tracking-wide flex items-center gap-2 hover:bg-[#A4C8E1] active:scale-95 transition-all shadow-lg cursor-pointer w-fit"
+                className="px-5 py-2.5 rounded-full bg-[#F0F0F0] text-[#0B131B] font-semibold text-xs tracking-wide flex items-center gap-2 hover:bg-white active:scale-95 transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.6),0_4px_16px_rgba(240,240,240,0.3)] cursor-pointer w-fit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
               >
                 <LogIn className="w-4 h-4" />
                 <span>{showAuthCard ? 'Close Sign In' : 'Sign In / Register'}</span>
@@ -361,7 +361,7 @@ function ProfilePageContent() {
               <button
                 type="button"
                 onClick={() => logout()}
-                className="px-5 py-2.5 rounded-full bg-[#1B3A57]/60 hover:bg-rose-500/20 hover:border-rose-500/40 hover:text-rose-300 border border-[#4A6E8D]/35 text-[#F0F0F0]/80 font-medium text-xs tracking-wide flex items-center gap-2 transition cursor-pointer w-fit"
+                className="px-5 py-2.5 rounded-full bg-white/[0.06] hover:bg-rose-500/20 hover:border-rose-500/40 hover:text-rose-300 border border-white/[0.12] text-[#F0F0F0]/80 font-medium text-xs tracking-wide flex items-center gap-2 backdrop-blur-xl transition cursor-pointer w-fit focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Sign Out</span>
@@ -372,12 +372,12 @@ function ProfilePageContent() {
 
         {/* Inline Auth Form Dropdown for Guest Users */}
         {!user && showAuthCard && (
-          <div className="max-w-md mx-auto p-6 rounded-3xl bg-[#1B3A57]/40 backdrop-blur-2xl border border-[#4A6E8D]/35 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="max-w-md mx-auto p-6 rounded-3xl bg-[#0B131B]/90 backdrop-blur-3xl backdrop-saturate-150 border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_25px_60px_rgba(0,0,0,0.95)] space-y-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="text-center space-y-1">
               <h3 className="text-lg font-bold text-[#F0F0F0] uppercase tracking-wider">
                 {authMode === 'login' ? 'Sign In to Nightcast' : 'Create an Account'}
               </h3>
-              <p className="text-xs text-[#4A6E8D]">
+              <p className="text-xs text-[#8FA8AD]">
                 Sync your watchlist across devices and unlock customized profiles.
               </p>
             </div>
@@ -390,9 +390,10 @@ function ProfilePageContent() {
 
             <form onSubmit={handleAuthSubmit} className="space-y-3.5">
               <div className="space-y-1">
-                <label className="text-[11px] uppercase tracking-wider font-semibold text-[#4A6E8D]">Email</label>
+                <label htmlFor="auth-email-field" className="text-[11px] uppercase tracking-wider font-semibold text-[#8FA8AD]">Email</label>
                 <div className="relative">
                   <input
+                    id="auth-email-field"
                     type="email"
                     required
                     autoCapitalize="none"
@@ -402,16 +403,17 @@ function ProfilePageContent() {
                     onChange={(e) => setEmail(e.target.value)}
                     onBlur={() => setEmail((prev) => prev.trim().toLowerCase())}
                     placeholder="name@domain.com"
-                    className="w-full pl-10 pr-4 py-2.5 bg-[#0B131B]/80 rounded-xl border border-[#4A6E8D]/40 text-[#F0F0F0] placeholder-[#4A6E8D] text-xs focus:outline-none focus:border-[#A4C8E1]/60 transition"
+                    className="w-full pl-10 pr-4 py-2.5 bg-[#0B131B]/70 rounded-xl border border-white/[0.12] text-[#F0F0F0] placeholder-[#8FA8AD]/60 text-xs focus:outline-none focus:border-[#39AEA9] transition shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]"
                   />
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4A6E8D]" />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8FA8AD]" />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] uppercase tracking-wider font-semibold text-[#4A6E8D]">Password</label>
+                <label htmlFor="auth-password-field" className="text-[11px] uppercase tracking-wider font-semibold text-[#8FA8AD]">Password</label>
                 <div className="relative">
                   <input
+                    id="auth-password-field"
                     type="password"
                     required
                     autoCapitalize="none"
@@ -420,15 +422,15 @@ function ProfilePageContent() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-10 pr-4 py-2.5 bg-[#0B131B]/80 rounded-xl border border-[#4A6E8D]/40 text-[#F0F0F0] placeholder-[#4A6E8D] text-xs focus:outline-none focus:border-[#A4C8E1]/60 transition"
+                    className="w-full pl-10 pr-4 py-2.5 bg-[#0B131B]/70 rounded-xl border border-white/[0.12] text-[#F0F0F0] placeholder-[#8FA8AD]/60 text-xs focus:outline-none focus:border-[#39AEA9] transition shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]"
                   />
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#4A6E8D]" />
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8FA8AD]" />
                 </div>
               </div>
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-full bg-[#F0F0F0] text-[#0B131B] font-semibold text-xs uppercase tracking-wider hover:bg-[#A4C8E1] transition shadow-lg cursor-pointer active:scale-95"
+                className="w-full py-3 rounded-full bg-[#F0F0F0] text-[#0B131B] font-semibold text-xs uppercase tracking-wider hover:bg-white transition shadow-lg cursor-pointer active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
               >
                 {authMode === 'login' ? 'Sign In' : 'Create Account'}
               </button>
@@ -438,7 +440,7 @@ function ProfilePageContent() {
               <button
                 type="button"
                 onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
-                className="text-xs text-[#4A6E8D] hover:text-[#A4C8E1] transition cursor-pointer"
+                className="text-xs text-[#8FA8AD] hover:text-[#F0F0F0] transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] rounded px-2 py-1"
               >
                 {authMode === 'login' ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
               </button>
@@ -454,7 +456,7 @@ function ProfilePageContent() {
               <h2 className="text-lg font-bold text-[#F0F0F0] tracking-wide">Continue Watching</h2>
             </div>
             {mergedContinueWatching.length > 0 && (
-              <span className="text-xs text-[#4A6E8D] font-medium">
+              <span className="text-xs text-[#8FA8AD] font-medium">
                 {mergedContinueWatching.length} {mergedContinueWatching.length === 1 ? 'title' : 'titles'}
               </span>
             )}
@@ -471,9 +473,9 @@ function ProfilePageContent() {
               ))}
             </div>
           ) : (
-            <div className="p-8 rounded-2xl bg-[#1B3A57]/20 border border-[#4A6E8D]/25 text-center space-y-1.5 backdrop-blur-md">
+            <div className="p-8 rounded-2xl bg-white/[0.04] backdrop-blur-2xl border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] text-center space-y-1.5">
               <p className="text-sm font-semibold text-[#F0F0F0]">No in-progress titles</p>
-              <p className="text-xs text-[#4A6E8D] max-w-sm mx-auto">
+              <p className="text-xs text-[#8FA8AD] max-w-sm mx-auto">
                 Titles you begin watching will automatically remember your exact resume spot right here.
               </p>
             </div>
@@ -497,9 +499,9 @@ function ProfilePageContent() {
               ))}
             </div>
           ) : (
-            <div className="p-8 rounded-2xl bg-[#1B3A57]/20 border border-[#4A6E8D]/25 text-center space-y-1.5 backdrop-blur-md">
+            <div className="p-8 rounded-2xl bg-white/[0.04] backdrop-blur-2xl border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] text-center space-y-1.5">
               <p className="text-sm font-semibold text-[#F0F0F0]">Your watchlist is currently empty</p>
-              <p className="text-xs text-[#4A6E8D] max-w-sm mx-auto">
+              <p className="text-xs text-[#8FA8AD] max-w-sm mx-auto">
                 Click the Bookmark or Heart icon on any movie or show to add it to your personal streaming queue.
               </p>
             </div>
@@ -508,7 +510,7 @@ function ProfilePageContent() {
 
         {/* Authenticated User Settings & Profiles Section */}
         {user && (
-          <div className="pt-8 border-t border-[#4A6E8D]/25 space-y-8">
+          <div className="pt-8 border-t border-white/[0.08] space-y-8">
             {/* Profiles Selector */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -520,7 +522,7 @@ function ProfilePageContent() {
                   <button
                     type="button"
                     onClick={() => setShowCreateForm(true)}
-                    className="px-3 py-1.5 rounded-full bg-[#1B3A57]/60 hover:bg-[#2C3E50]/80 border border-[#4A6E8D]/35 text-[#F0F0F0] text-xs font-medium flex items-center gap-1.5 transition cursor-pointer"
+                    className="px-3 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/[0.14] text-[#F0F0F0] text-xs font-medium flex items-center gap-1.5 backdrop-blur-md transition cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>New Profile</span>
@@ -529,7 +531,7 @@ function ProfilePageContent() {
               </div>
 
               {showCreateForm && (
-                <form onSubmit={handleCreateProfile} className="max-w-md p-5 rounded-2xl bg-[#1B3A57]/40 border border-[#4A6E8D]/35 backdrop-blur-xl space-y-3">
+                <form onSubmit={handleCreateProfile} className="max-w-md p-5 rounded-2xl bg-[#0B131B]/80 border border-white/[0.16] backdrop-blur-3xl space-y-3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
                   <h4 className="text-xs font-bold uppercase text-[#F0F0F0]">Add New Profile</h4>
                   {profileCreateError && <p className="text-xs text-red-400">{profileCreateError}</p>}
                   <input
@@ -538,19 +540,19 @@ function ProfilePageContent() {
                     required
                     value={newProfileName}
                     onChange={(e) => setNewProfileName(e.target.value)}
-                    className="w-full bg-[#0B131B]/80 border border-[#4A6E8D]/40 rounded-xl px-3.5 py-2 text-xs text-[#F0F0F0] placeholder-[#4A6E8D] focus:outline-none focus:border-[#A4C8E1]/60"
+                    className="w-full bg-[#0B131B]/70 border border-white/[0.14] rounded-xl px-3.5 py-2 text-xs text-[#F0F0F0] placeholder-[#8FA8AD] focus:outline-none focus:border-white/[0.3] shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]"
                   />
                   <div className="flex gap-2">
                     <button
                       type="submit"
-                      className="flex-grow py-2 rounded-xl bg-[#F0F0F0] text-[#0B131B] font-semibold text-xs cursor-pointer hover:bg-[#A4C8E1]"
+                      className="flex-grow py-2 rounded-xl bg-[#F0F0F0] text-[#0B131B] font-semibold text-xs cursor-pointer hover:bg-[#A4C8E1] transition"
                     >
                       Save Profile
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowCreateForm(false)}
-                      className="px-4 py-2 rounded-xl bg-[#1B3A57]/60 hover:bg-[#2C3E50]/80 text-[#F0F0F0] text-xs border border-[#4A6E8D]/30 cursor-pointer"
+                      className="px-4 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.16] text-[#F0F0F0] text-xs border border-white/[0.12] cursor-pointer"
                     >
                       Cancel
                     </button>
@@ -562,10 +564,10 @@ function ProfilePageContent() {
                 {profiles.map((p) => (
                   <div
                     key={p.id}
-                    className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${
+                    className={`flex items-center justify-between p-3 rounded-2xl border backdrop-blur-xl transition-all ${
                       activeProfile?.id === p.id
-                        ? 'border-[#A4C8E1] bg-[#1B3A57]/60 shadow-[0_0_20px_rgba(164,200,225,0.2)] text-[#F0F0F0]'
-                        : 'border-[#4A6E8D]/25 bg-[#1B3A57]/20 text-[#F0F0F0]/70 hover:text-[#F0F0F0] hover:border-[#4A6E8D]/50'
+                        ? 'border-white/[0.3] bg-white/[0.1] shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),0_0_20px_rgba(164,200,225,0.2)] text-[#F0F0F0]'
+                        : 'border-white/[0.08] bg-white/[0.04] text-[#8FA8AD] hover:text-[#F0F0F0] hover:border-white/[0.2] hover:bg-white/[0.08]'
                     }`}
                   >
                     <button
@@ -573,7 +575,7 @@ function ProfilePageContent() {
                       onClick={() => setActiveProfile(p)}
                       className="flex items-center gap-3 text-left focus:outline-none flex-grow cursor-pointer min-w-0"
                     >
-                      <div className="relative w-8 h-8 rounded-full overflow-hidden border border-[#4A6E8D]/40 shrink-0">
+                      <div className="relative w-8 h-8 rounded-full overflow-hidden border border-white/[0.14] shrink-0">
                         <Image src={p.avatar_url} alt={p.name} fill sizes="32px" className="object-cover" />
                       </div>
                       <span className="text-xs font-semibold truncate">{p.name}</span>
@@ -582,7 +584,7 @@ function ProfilePageContent() {
                       <button
                         type="button"
                         onClick={() => handleDeleteProfile(p.id)}
-                        className="p-1.5 text-[#4A6E8D] hover:text-red-400 transition cursor-pointer"
+                        className="p-1.5 text-[#8FA8AD] hover:text-red-400 transition cursor-pointer"
                         title="Delete Profile"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -600,7 +602,7 @@ function ProfilePageContent() {
                   <SettingsIcon className="w-5 h-5 text-[#A4C8E1]" />
                   <h3 className="text-base font-bold text-[#F0F0F0]">Playback Preferences</h3>
                 </div>
-                <div className="p-5 rounded-2xl bg-[#1B3A57]/30 border border-[#4A6E8D]/30 backdrop-blur-xl space-y-4 text-xs">
+                <div className="p-5 rounded-2xl bg-white/[0.04] border border-white/[0.12] backdrop-blur-2xl space-y-4 text-xs shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
                   <div className="flex items-center justify-between">
                     <span className="text-[#F0F0F0] font-medium">Autoplay Next Episode</span>
                     <input
@@ -620,11 +622,11 @@ function ProfilePageContent() {
                     />
                   </div>
                   <div className="space-y-1.5 pt-1">
-                    <span className="text-[#4A6E8D] block">Preferred Audio Language</span>
+                    <span className="text-[#8FA8AD] block">Preferred Audio Language</span>
                     <select
                       value={settings.preferred_language}
                       onChange={(e) => updateSettings({ preferred_language: e.target.value })}
-                      className="w-full bg-[#0B131B] border border-[#4A6E8D]/40 rounded-xl px-3 py-2 text-[#F0F0F0] focus:outline-none focus:border-[#A4C8E1]/60 cursor-pointer"
+                      className="w-full bg-[#0B131B]/70 border border-white/[0.14] rounded-xl px-3 py-2 text-[#F0F0F0] focus:outline-none focus:border-white/[0.3] cursor-pointer shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]"
                     >
                       <option value="en">English (US)</option>
                       <option value="hi">Hindi</option>
@@ -648,7 +650,7 @@ function ProfilePageContent() {
                   <button
                     type="button"
                     onClick={() => clearHistoryMutation.mutate()}
-                    className="text-xs text-[#4A6E8D] hover:text-red-400 transition cursor-pointer font-medium"
+                    className="text-xs text-[#8FA8AD] hover:text-red-400 transition cursor-pointer font-medium"
                   >
                     Clear History
                   </button>
@@ -662,21 +664,21 @@ function ProfilePageContent() {
                     return (
                       <div
                         key={h.id}
-                        className="p-3.5 rounded-xl bg-[#1B3A57]/20 border border-[#4A6E8D]/25 hover:border-[#A4C8E1]/40 flex items-center justify-between transition group"
+                        className="p-3.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.1] hover:border-white/[0.22] backdrop-blur-xl flex items-center justify-between transition group shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]"
                       >
                         <Link href={watchUrl} className="flex items-center gap-3 min-w-0 flex-grow hover:opacity-90">
-                          <div className="w-8 h-8 bg-[#2C3E50]/50 rounded-lg flex items-center justify-center text-[#A4C8E1] shrink-0 group-hover:bg-[#22C55E]/20 group-hover:text-[#22C55E] transition-colors">
+                          <div className="w-8 h-8 bg-white/[0.08] rounded-lg flex items-center justify-center text-[#A4C8E1] shrink-0 group-hover:bg-[#39AEA9]/20 group-hover:text-[#39AEA9] transition-colors border border-white/[0.1]">
                             <PlayCircle className="w-4 h-4" />
                           </div>
                           <div className="min-w-0">
-                            <h4 className="text-xs font-semibold text-[#F0F0F0] truncate max-w-sm group-hover:text-[#22C55E] transition-colors">{h.title}</h4>
-                            <p className="text-[10px] text-[#4A6E8D] uppercase tracking-wider">
+                            <h4 className="text-xs font-semibold text-[#F0F0F0] truncate max-w-sm group-hover:text-[#A4C8E1] transition-colors">{h.title}</h4>
+                            <p className="text-[10px] text-[#8FA8AD] uppercase tracking-wider">
                               {h.media_type} &middot; {Math.max(1, Math.round(Number(h.progress_percent || 0)))}% watched
                             </p>
                           </div>
                         </Link>
                         <div className="flex items-center gap-3 shrink-0">
-                          <span className="text-[11px] text-[#4A6E8D] font-mono">
+                          <span className="text-[11px] text-[#8FA8AD] font-mono">
                             {new Date(h.watched_at).toLocaleDateString()}
                           </span>
                           <button
@@ -685,7 +687,7 @@ function ProfilePageContent() {
                               e.stopPropagation();
                               deleteHistoryItemMutation.mutate(h.id);
                             }}
-                            className="p-1 rounded text-[#4A6E8D] hover:text-red-400 hover:bg-red-500/10 transition cursor-pointer"
+                            className="p-1 rounded text-[#8FA8AD] hover:text-red-400 hover:bg-red-500/10 transition cursor-pointer"
                             title="Remove from history"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -696,7 +698,7 @@ function ProfilePageContent() {
                   })}
                 </div>
               ) : (
-                <div className="p-6 rounded-2xl bg-[#1B3A57]/20 border border-[#4A6E8D]/25 text-center text-xs text-[#4A6E8D]">
+                <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-center text-xs text-[#8FA8AD] backdrop-blur-md">
                   No watch history recorded yet.
                 </div>
               )}

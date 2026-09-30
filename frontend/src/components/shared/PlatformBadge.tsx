@@ -1,52 +1,44 @@
-"use client";
-
 import React from "react";
 
 export type PlatformType = "netflix" | "prime" | "disney" | "appletv" | "hbo" | "hulu" | "paramount";
 
-export function getPlatformForItem(item: {
-  id: string | number;
-  title?: string;
-  name?: string;
-  overview?: string;
-  networks?: Array<{ name: string }>;
-  production_companies?: Array<{ name: string }>;
-}): PlatformType {
+function getPlatformForItem(item: { id: string | number; title?: string; name?: string; overview?: string }): PlatformType {
   const text = `${item.title || ""} ${item.name || ""} ${item.overview || ""}`.toLowerCase();
-
-  // Known Franchises & Network patterns
-  if (
-    text.includes("disney") ||
-    text.includes("marvel") ||
-    text.includes("star wars") ||
-    text.includes("pixar") ||
-    text.includes("mandalorian") ||
-    text.includes("loki") ||
-    text.includes("avengers") ||
-    text.includes("x-men")
-  ) {
-    return "disney";
-  }
 
   if (
     text.includes("stranger things") ||
     text.includes("squid game") ||
     text.includes("wednesday") ||
-    text.includes("money heist") ||
+    text.includes("witcher") ||
     text.includes("bridgerton") ||
+    text.includes("crown") ||
     text.includes("black mirror") ||
-    text.includes("arcane") ||
-    text.includes("the witcher") ||
+    text.includes("narcos") ||
+    text.includes("ozark") ||
     text.includes("netflix")
   ) {
     return "netflix";
   }
 
   if (
-    text.includes("reacher") ||
+    text.includes("mandalorian") ||
+    text.includes("loki") ||
+    text.includes("marvel") ||
+    text.includes("star wars") ||
+    text.includes("pixar") ||
+    text.includes("disney") ||
+    text.includes("avengers") ||
+    text.includes("guardians")
+  ) {
+    return "disney";
+  }
+
+  if (
     text.includes("the boys") ||
-    text.includes("invincible") ||
     text.includes("rings of power") ||
+    text.includes("reacher") ||
+    text.includes("invincible") ||
+    text.includes("wheel of time") ||
     text.includes("fallout") ||
     text.includes("jack ryan") ||
     text.includes("prime video") ||
@@ -88,9 +80,19 @@ export function getPlatformForItem(item: {
     return "hulu";
   }
 
+  if (
+    text.includes("paramount") ||
+    text.includes("yellowstone") ||
+    text.includes("halo") ||
+    text.includes("star trek") ||
+    text.includes("top gun")
+  ) {
+    return "paramount";
+  }
+
   // Deterministic fallback distribution based on item ID
   const numId = typeof item.id === "number" ? item.id : parseInt(String(item.id).replace(/\D/g, "") || "0", 10);
-  const platforms: PlatformType[] = ["netflix", "prime", "disney", "hbo", "appletv", "netflix", "prime"];
+  const platforms: PlatformType[] = ["netflix", "prime", "disney", "hbo", "appletv", "paramount", "hulu"];
   return platforms[Math.abs(numId) % platforms.length];
 }
 
@@ -110,7 +112,7 @@ export default function PlatformBadge({ item, className = "" }: PlatformBadgePro
   switch (platform) {
     case "netflix":
       return (
-        <div className={`px-2 py-0.5 rounded-full bg-[#E50914]/20 border border-[#E50914]/40 backdrop-blur-md flex items-center shadow-sm ${className}`}>
+        <div className={`px-2 py-0.5 rounded-full bg-[#E50914]/20 border border-[#E50914]/40 backdrop-blur-2xl flex items-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] ${className}`}>
           <span className="font-mono font-bold text-[9px] text-[#FF2E3B] leading-none">
             NETFLIX
           </span>
@@ -119,7 +121,7 @@ export default function PlatformBadge({ item, className = "" }: PlatformBadgePro
 
     case "prime":
       return (
-        <div className={`px-2 py-0.5 rounded-full bg-[#151524]/90 border border-[#282844] backdrop-blur-md flex items-center shadow-sm ${className}`}>
+        <div className={`px-2 py-0.5 rounded-full bg-[#00A8E1]/20 border border-[#00A8E1]/40 backdrop-blur-2xl flex items-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] ${className}`}>
           <span className="font-mono font-bold text-[9px] text-[#38BDF8] uppercase leading-none tracking-wider">
             PRIME
           </span>
@@ -128,7 +130,7 @@ export default function PlatformBadge({ item, className = "" }: PlatformBadgePro
 
     case "disney":
       return (
-        <div className={`px-2 py-0.5 rounded-full bg-[#00D2FF]/15 border border-[#00D2FF]/40 backdrop-blur-md flex items-center shadow-sm ${className}`}>
+        <div className={`px-2 py-0.5 rounded-full bg-[#00D2FF]/20 border border-[#00D2FF]/40 backdrop-blur-2xl flex items-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] ${className}`}>
           <span className="font-mono font-bold text-[9px] text-[#00D2FF] leading-none tracking-wider">
             DISNEY+
           </span>
@@ -137,14 +139,14 @@ export default function PlatformBadge({ item, className = "" }: PlatformBadgePro
 
     case "appletv":
       return (
-        <div className={`px-2 py-0.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md flex items-center gap-1 shadow-sm text-white ${className}`}>
+        <div className={`px-2 py-0.5 rounded-full bg-white/[0.12] border border-white/[0.22] backdrop-blur-2xl flex items-center gap-1 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25)] text-white ${className}`}>
           <span className="font-mono font-bold text-[9px] leading-none tracking-wider">APPLE TV+</span>
         </div>
       );
 
     case "hbo":
       return (
-        <div className={`px-2 py-0.5 rounded-full bg-[#9945FF]/20 border border-[#9945FF]/40 backdrop-blur-md flex items-center shadow-sm ${className}`}>
+        <div className={`px-2 py-0.5 rounded-full bg-[#9945FF]/20 border border-[#9945FF]/40 backdrop-blur-2xl flex items-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] ${className}`}>
           <span className="font-mono font-bold text-[9px] text-[#C084FC] leading-none tracking-wider">
             MAX
           </span>
@@ -153,7 +155,7 @@ export default function PlatformBadge({ item, className = "" }: PlatformBadgePro
 
     case "hulu":
       return (
-        <div className={`px-2 py-0.5 rounded-full bg-[#1CE783]/15 border border-[#1CE783]/40 backdrop-blur-md flex items-center shadow-sm ${className}`}>
+        <div className={`px-2 py-0.5 rounded-full bg-[#1CE783]/20 border border-[#1CE783]/40 backdrop-blur-2xl flex items-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] ${className}`}>
           <span className="font-mono font-bold text-[9px] text-[#1CE783] uppercase leading-none tracking-wider">
             HULU
           </span>
@@ -162,7 +164,7 @@ export default function PlatformBadge({ item, className = "" }: PlatformBadgePro
 
     case "paramount":
       return (
-        <div className={`px-2 py-0.5 rounded-full bg-[#0064FF]/20 border border-[#0064FF]/40 backdrop-blur-md flex items-center shadow-sm ${className}`}>
+        <div className={`px-2 py-0.5 rounded-full bg-[#0064FF]/20 border border-[#0064FF]/40 backdrop-blur-2xl flex items-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] ${className}`}>
           <span className="font-mono font-bold text-[9px] text-[#3385FF] leading-none tracking-wider">
             PARAMOUNT+
           </span>

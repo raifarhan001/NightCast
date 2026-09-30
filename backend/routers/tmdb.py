@@ -16,16 +16,24 @@ router = APIRouter(prefix="/tmdb", tags=["tmdb"])
 @router.get("/home_feed")
 async def get_home_feed():
     """Returns an aggregated and cached composite feed of all core categories for instant home page loading."""
-    cache_key = "tmdb:home_feed:v2"
+    cache_key = "tmdb:home_feed:v3"
     cached = await redis_cache.get(cache_key)
-    if cached:
-        return cached
+    if cached and isinstance(cached, dict) and cached.get("new_movies"):
+        first_movie = cached["new_movies"][0] if cached["new_movies"] else {}
+        # Only return cached if it contains real TMDB data, not stale mock fallback
+        if first_movie.get("title") != "Interstellar":
+            return cached
+
+    # Use a Semaphore to prevent connection exhaustion / socket timeouts on Windows
+    sem = asyncio.Semaphore(4)
 
     async def fetch_category(coro):
-        try:
-            return await coro
-        except Exception:
-            return []
+        async with sem:
+            try:
+                return await coro
+            except Exception as e:
+                logger.warning(f"fetch_category error: {repr(e)}")
+                return []
 
     results = await asyncio.gather(
         fetch_category(tmdb_client.get_trending("all", "week")),
@@ -46,7 +54,10 @@ async def get_home_feed():
     mock_movie_list = [{**m, "media_type": "movie"} for m in MOCK_MOVIES.values()]
     mock_tv_list = [{**t, "media_type": "tv"} for t in MOCK_TV.values()]
 
+    is_fallback = False
+
     def extract_items(data, default_type="movie"):
+        nonlocal is_fallback
         if isinstance(data, list):
             items = data
         elif isinstance(data, dict):
@@ -54,6 +65,7 @@ async def get_home_feed():
         else:
             items = []
         if not items:
+            is_fallback = True
             items = mock_tv_list if default_type == "tv" else mock_movie_list
         for item in items:
             if not isinstance(item, dict):
@@ -78,7 +90,13 @@ async def get_home_feed():
         "documentary_movies": extract_items(results[12], "movie"),
     }
 
-    await redis_cache.set(cache_key, feed, expire_seconds=900)
+    # Only cache for 900 seconds if real data was fetched; don't trap the user in mock fallback
+    if not is_fallback:
+        await redis_cache.set(cache_key, feed, expire_seconds=900)
+    else:
+        logger.warning("Home feed used fallback data; caching for 3 seconds only.")
+        await redis_cache.set(cache_key, feed, expire_seconds=3)
+
     return feed
 
 @router.get("/trending")

@@ -21,7 +21,7 @@ function AmbientGlow({ className = "" }: AmbientGlowProps) {
   return (
     <div
       className={`fixed inset-0 pointer-events-none overflow-hidden z-0 select-none ${className}`}
-      style={{ contain: "strict" }}
+      style={{ contain: "strict", willChange: "transform" }}
     >
       {/* 1. Dynamic Hover-Synced Cinema Backdrop Canvas */}
       <AnimatePresence mode="wait">
@@ -31,15 +31,15 @@ function AmbientGlow({ className = "" }: AmbientGlowProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 0.35 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="absolute inset-0 transform-gpu will-change-opacity overflow-hidden z-10"
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="absolute inset-0 transform-gpu overflow-hidden z-10"
           >
             <Image
               src={backdropUrl}
               alt={activeTitle || "Ambient Backdrop"}
               fill
               sizes="50vw"
-              className="object-cover object-center scale-105 filter blur-2xl saturate-[1.3] brightness-[0.7] transform-gpu"
+              className="object-cover object-center scale-105 filter blur-[32px] saturate-[1.4] brightness-[0.7]"
               priority={false}
               loading="lazy"
             />
