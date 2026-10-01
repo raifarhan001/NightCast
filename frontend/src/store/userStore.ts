@@ -14,7 +14,7 @@ interface UserState {
   setUser: (user: any | null) => void;
   setActiveProfile: (profile: Profile | null) => void;
   setProfiles: (profiles: Profile[]) => void;
-  fetchProfiles: () => Promise<void>;
+  fetchProfiles: () => Promise<Profile[]>;
   updateSettings: (newSettings: Partial<Settings>) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -59,7 +59,8 @@ export const useUserStore = create<UserState>((set, get) => ({
         get().setActiveProfile(active);
       }
     } catch (e) {
-      // Not authenticated, clean up state
+      // Not authenticated, clean up state and stale token
+      setStoredToken(null);
       set({ user: null, activeProfile: null, profiles: [], settings: null });
     } finally {
       set({ loading: false, initialized: true });
@@ -86,7 +87,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       syncUserDataWithCloud(profile.id).catch(() => {});
     } else {
       localStorage.removeItem('active_profile');
-      document.cookie = `profile_id=; path=/; max-age=0`;
+      document.cookie = `profile_id=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
       set({ activeProfile: null, settings: null });
     }
   },
@@ -98,8 +99,10 @@ export const useUserStore = create<UserState>((set, get) => ({
       const rawProfiles = await apiFetch('/api/auth/profiles');
       const profiles = Array.isArray(rawProfiles) ? rawProfiles : [];
       set({ profiles });
+      return profiles;
     } catch (_) {
       set({ profiles: [] });
+      return [];
     }
   },
 
@@ -133,6 +136,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       localStorage.removeItem('active_profile');
       localStorage.removeItem('nightcast_watchlist');
       localStorage.removeItem('nightcast_dismissed_cw');
+      document.cookie = `profile_id=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
       window.dispatchEvent(new CustomEvent('nightcast:progress-update', { detail: { clearedAll: true } }));
       window.dispatchEvent(new CustomEvent('nightcast:watchlist-update'));
     }

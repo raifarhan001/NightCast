@@ -12,8 +12,8 @@ import auth
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-@router.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
-def register(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
+@router.post("/register", response_model=schemas.Token, status_code=status.HTTP_201_CREATED)
+def register(response: Response, user_data: schemas.UserCreate, db: Session = Depends(get_db)):
     clean_email = user_data.email.strip().lower()
     existing_user = db.query(models.User).filter(func.lower(models.User.email) == clean_email).first()
     if existing_user:
@@ -51,7 +51,25 @@ def register(user_data: schemas.UserCreate, db: Session = Depends(get_db)):
     db.add(default_settings)
     db.commit()
 
-    return new_user
+    # Create access token and set session cookie
+    access_token = auth.create_access_token(data={"sub": new_user.email.strip().lower()})
+    is_prod = bool(os.getenv("VERCEL") or os.getenv("RENDER") or os.getenv("ENVIRONMENT") == "production")
+    response.set_cookie(
+        key="access_token",
+        value=f"Bearer {access_token}",
+        httponly=True,
+        max_age=2592000,  # 30 days
+        samesite="lax",
+        secure=is_prod,
+        path="/"
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "is_admin": new_user.is_admin,
+        "user": new_user
+    }
 
 @router.post("/login", response_model=schemas.Token)
 def login(response: Response, login_data: schemas.UserLogin, db: Session = Depends(get_db)):
@@ -66,7 +84,7 @@ def login(response: Response, login_data: schemas.UserLogin, db: Session = Depen
     
     access_token = auth.create_access_token(data={"sub": user.email.strip().lower()})
     
-    # Store token in cookie
+    # Store token in cookie with explicit path="/"
     is_prod = bool(os.getenv("VERCEL") or os.getenv("RENDER") or os.getenv("ENVIRONMENT") == "production")
     response.set_cookie(
         key="access_token",
@@ -74,19 +92,22 @@ def login(response: Response, login_data: schemas.UserLogin, db: Session = Depen
         httponly=True,
         max_age=2592000,  # 30 days
         samesite="lax",
-        secure=is_prod
+        secure=is_prod,
+        path="/"
     )
 
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "is_admin": user.is_admin
+        "is_admin": user.is_admin,
+        "user": user
     }
 
 @router.post("/logout")
 def logout(response: Response):
-    response.delete_cookie("access_token")
-    response.delete_cookie("profile_id")
+    is_prod = bool(os.getenv("VERCEL") or os.getenv("RENDER") or os.getenv("ENVIRONMENT") == "production")
+    response.delete_cookie("access_token", path="/", httponly=True, samesite="lax", secure=is_prod)
+    response.delete_cookie("profile_id", path="/", samesite="lax")
     return {"message": "Successfully logged out"}
 
 @router.get("/me", response_model=schemas.UserResponse)

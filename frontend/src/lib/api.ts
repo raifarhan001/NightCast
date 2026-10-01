@@ -204,7 +204,7 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
 
   const response = await fetch(url, options);
   
-  if (!response.ok) {
+    if (!response.ok) {
     let errorDetail = 'API Request Failed';
     try {
       const errJson = await response.json();
@@ -216,6 +216,12 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
         errorDetail = JSON.stringify(errJson.detail);
       }
     } catch (_) {}
+
+    // Clear stale stored token if 401 occurs on authenticated endpoints
+    if (response.status === 401 && !cleanEndpoint.includes('/auth/login') && !cleanEndpoint.includes('/auth/register')) {
+      setStoredToken(null);
+    }
+
     throw new Error(errorDetail);
   }
   

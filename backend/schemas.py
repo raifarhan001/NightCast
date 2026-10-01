@@ -1,25 +1,9 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 from typing import Optional, List, Union
 from uuid import UUID
 from datetime import datetime
 
 # --- Token & Auth Schemas ---
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-    is_admin: bool = False
-
-class TokenData(BaseModel):
-    email: Optional[str] = None
-
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
-
-class UserCreate(BaseModel):
-    email: EmailStr
-    password: str
-
 class UserResponse(BaseModel):
     id: UUID
     email: EmailStr
@@ -29,6 +13,38 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    is_admin: bool = False
+    user: Optional[UserResponse] = None
+
+class TokenData(BaseModel):
+    email: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=1, description="Password cannot be empty")
+
+    @field_validator("password")
+    @classmethod
+    def validate_login_password(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Password cannot be empty")
+        return v
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str = Field(..., min_length=6, max_length=128, description="Password must be between 6 and 128 characters")
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        stripped = v.strip()
+        if len(stripped) < 6:
+            raise ValueError("Password must be at least 6 characters long")
+        return stripped
 
 # --- Settings Schemas ---
 class SettingBase(BaseModel):

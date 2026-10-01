@@ -46,6 +46,10 @@ async def lifespan(app: FastAPI):
             
     asyncio.create_task(background_startup())
     
+    # Check JWT Secret security on startup
+    if settings.JWT_SECRET == "supersecretjwtkey123!":
+        logger.warning("SECURITY WARNING: Using default weak JWT_SECRET! Please configure a secure JWT_SECRET in .env for production.")
+        
     yield
     # Shutdown actions
 
@@ -105,7 +109,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.requests = {}  # {ip: [timestamps]}
 
     async def dispatch(self, request: Request, call_next):
-        client_ip = request.client.host if request.client else "unknown"
+        # Extract true client IP from proxy headers first
+        forwarded = request.headers.get("x-forwarded-for") or request.headers.get("X-Forwarded-For")
+        real_ip = request.headers.get("x-real-ip") or request.headers.get("X-Real-IP")
+        if forwarded:
+            client_ip = forwarded.split(",")[0].strip()
+        elif real_ip:
+            client_ip = real_ip.strip()
+        else:
+            client_ip = request.client.host if request.client else "unknown"
+
         if "/auth/login" in request.url.path or "/auth/register" in request.url.path:
             now = time.time()
             timestamps = self.requests.get(client_ip, [])

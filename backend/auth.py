@@ -50,6 +50,12 @@ def get_current_user_from_token(token: str, db: Session) -> models.User:
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session expired. Please sign in again.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     except jwt.PyJWTError:
         raise credentials_exception
     
@@ -65,15 +71,27 @@ def get_current_user(
     db: Session = Depends(get_db)
 ) -> models.User:
     # 1. Try checking for Authorization header first
-    # 2. Try checking for cookies if header isn't present
     actual_token = token
     if not actual_token:
-        actual_token = request.cookies.get("access_token")
-        if actual_token:
-            if actual_token.startswith("Bearer "):
-                actual_token = actual_token[7:]
-            elif actual_token.startswith("Bearer%20"):
-                actual_token = actual_token[9:]
+        auth_header = request.headers.get("Authorization") or request.headers.get("authorization")
+        if auth_header:
+            if auth_header.startswith("Bearer "):
+                actual_token = auth_header[7:].strip()
+            elif auth_header.startswith("Bearer%20"):
+                actual_token = auth_header[9:].strip()
+            else:
+                actual_token = auth_header.strip()
+
+    # 2. Try checking for cookies if header isn't present
+    if not actual_token:
+        cookie_val = request.cookies.get("access_token")
+        if cookie_val:
+            if cookie_val.startswith("Bearer "):
+                actual_token = cookie_val[7:]
+            elif cookie_val.startswith("Bearer%20"):
+                actual_token = cookie_val[9:]
+            else:
+                actual_token = cookie_val
             actual_token = actual_token.strip()
             
     if not actual_token:

@@ -22,6 +22,7 @@ function ProfilePageContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
+  const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
   // Auto-open login form if ?signin=1 is in URL
   const [showAuthCard, setShowAuthCard] = useState(() => searchParams.get('signin') === '1');
   const [newProfileName, setNewProfileName] = useState('');
@@ -217,42 +218,57 @@ function ProfilePageContent() {
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
 
+    if (!cleanEmail) {
+      setAuthError('Please enter a valid email address.');
+      return;
+    }
+
+    if (authMode === 'register' && cleanPassword.length < 6) {
+      setAuthError('Password must be at least 6 characters long.');
+      return;
+    }
+
+    if (!cleanPassword) {
+      setAuthError('Password cannot be empty.');
+      return;
+    }
+
+    setIsSubmittingAuth(true);
+
     try {
-      if (authMode === 'login') {
-        const loginRes = await apiFetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email: cleanEmail, password: cleanPassword }) });
-        if (!loginRes?.access_token) {
-          throw new Error('Invalid email or password');
-        }
-        setStoredToken(loginRes.access_token);
-        const me = await apiFetch('/api/auth/me');
-        if (!me || !me.id) throw new Error('Failed to load user profile');
-        setUser(me);
-        queryClient.invalidateQueries({ queryKey: ['trending'] });
-        await fetchProfiles();
-        const freshProfiles = useUserStore.getState().profiles;
-        if (freshProfiles.length > 0) {
-          setActiveProfile(freshProfiles[0]);
-          await syncUserDataWithCloud(freshProfiles[0].id);
-        }
-      } else {
-        await apiFetch('/api/auth/register', { method: 'POST', body: JSON.stringify({ email: cleanEmail, password: cleanPassword }) });
-        const loginRes = await apiFetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ email: cleanEmail, password: cleanPassword }) });
-        if (!loginRes?.access_token) {
-          throw new Error('Account created, but sign in failed. Please sign in manually.');
-        }
-        setStoredToken(loginRes.access_token);
-        const me = await apiFetch('/api/auth/me');
-        setUser(me);
-        await fetchProfiles();
-        const freshProfiles = useUserStore.getState().profiles;
-        if (freshProfiles.length > 0) {
-          setActiveProfile(freshProfiles[0]);
-          await syncUserDataWithCloud(freshProfiles[0].id);
-        }
+      const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+      const authRes = await apiFetch(endpoint, {
+        method: 'POST',
+        body: JSON.stringify({ email: cleanEmail, password: cleanPassword })
+      });
+
+      if (!authRes?.access_token) {
+        throw new Error('Authentication failed. No access token received.');
       }
+
+      setStoredToken(authRes.access_token);
+
+      // Fetch current user details
+      const me = authRes.user && authRes.user.id ? authRes.user : await apiFetch('/api/auth/me');
+      if (!me || !me.id) throw new Error('Failed to load user profile');
+      setUser(me);
+
+      queryClient.invalidateQueries({ queryKey: ['trending'] });
+
+      // Fetch profiles directly and prevent race conditions
+      const freshProfiles = await fetchProfiles();
+      if (freshProfiles.length > 0) {
+        setActiveProfile(freshProfiles[0]);
+        await syncUserDataWithCloud(freshProfiles[0].id);
+      }
+
       setShowAuthCard(false);
+      setEmail('');
+      setPassword('');
     } catch (err: any) {
       setAuthError(err.message || 'Authentication failed');
+    } finally {
+      setIsSubmittingAuth(false);
     }
   };
 
@@ -410,12 +426,18 @@ function ProfilePageContent() {
               </div>
 
               <div className="space-y-1">
-                <label htmlFor="auth-password-field" className="text-[11px] uppercase tracking-wider font-semibold text-[#8FA8AD]">Password</label>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="auth-password-field" className="text-[11px] uppercase tracking-wider font-semibold text-[#8FA8AD]">Password</label>
+                  {authMode === 'register' && (
+                    <span className="text-[10px] text-[#8FA8AD]/80">Min 6 characters</span>
+                  )}
+                </div>
                 <div className="relative">
                   <input
                     id="auth-password-field"
                     type="password"
                     required
+                    minLength={authMode === 'register' ? 6 : 1}
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck={false}
@@ -430,16 +452,29 @@ function ProfilePageContent() {
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-full bg-[#F0F0F0] text-[#0B131B] font-semibold text-xs uppercase tracking-wider hover:bg-white transition shadow-lg cursor-pointer active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
+                disabled={isSubmittingAuth}
+                className="w-full py-3 rounded-full bg-[#F0F0F0] disabled:opacity-50 disabled:cursor-not-allowed text-[#0B131B] font-semibold text-xs uppercase tracking-wider hover:bg-white transition shadow-lg cursor-pointer active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] flex items-center justify-center gap-2"
               >
-                {authMode === 'login' ? 'Sign In' : 'Create Account'}
+                {isSubmittingAuth && (
+                  <div className="w-3.5 h-3.5 border-2 border-[#0B131B]/30 border-t-[#0B131B] animate-spin rounded-full" />
+                )}
+                <span>
+                  {isSubmittingAuth
+                    ? 'Please wait...'
+                    : authMode === 'login'
+                    ? 'Sign In'
+                    : 'Create Account'}
+                </span>
               </button>
             </form>
 
             <div className="text-center pt-1">
               <button
                 type="button"
-                onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+                onClick={() => {
+                  setAuthMode(authMode === 'login' ? 'register' : 'login');
+                  setAuthError('');
+                }}
                 className="text-xs text-[#8FA8AD] hover:text-[#F0F0F0] transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] rounded px-2 py-1"
               >
                 {authMode === 'login' ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
