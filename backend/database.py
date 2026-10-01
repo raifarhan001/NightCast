@@ -1,8 +1,14 @@
-import logging
+import sys
 import os
+import logging
 import tempfile
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
+
+backend_dir = os.path.dirname(os.path.abspath(__file__))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
 from config import settings
 
 logger = logging.getLogger("nightcast_database")
@@ -14,7 +20,7 @@ def get_db_engine():
     global is_sqlite
     if "postgresql" in DATABASE_URL:
         import time
-        max_retries = 3
+        max_retries = 2
         for attempt in range(1, max_retries + 1):
             try:
                 logger.info(f"Connecting to PostgreSQL (attempt {attempt}/{max_retries})...")
@@ -23,7 +29,7 @@ def get_db_engine():
                     pool_size=10,
                     max_overflow=5,
                     pool_pre_ping=True,
-                    connect_args={"connect_timeout": 15}
+                    connect_args={"connect_timeout": 5}
                 )
                 # Test connection eagerly so we fail-fast and fallback to SQLite if host is unreachable
                 with eng.connect() as conn:
@@ -34,7 +40,7 @@ def get_db_engine():
             except Exception as e:
                 logger.warning(f"PostgreSQL connection attempt {attempt} failed: {e}")
                 if attempt < max_retries:
-                    time.sleep(2)
+                    time.sleep(1)
         logger.warning("All PostgreSQL connection attempts failed. Falling back to SQLite.")
     
     is_sqlite = True
