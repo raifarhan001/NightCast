@@ -58,9 +58,15 @@ export const useUserStore = create<UserState>((set, get) => ({
       if (active) {
         get().setActiveProfile(active);
       }
-    } catch (e) {
-      // Not authenticated, clean up state and stale token
-      setStoredToken(null);
+    } catch (e: any) {
+      const errMsg = e?.message || '';
+      // Only clear stored token if explicitly invalid/expired credentials, NOT network/server errors
+      const isExplicitInvalidToken = errMsg.includes('Session expired') || 
+                                     errMsg.includes('Not authenticated') ||
+                                     errMsg.includes('Could not validate credentials');
+      if (isExplicitInvalidToken) {
+        setStoredToken(null);
+      }
       set({ user: null, activeProfile: null, profiles: [], settings: null });
     } finally {
       set({ loading: false, initialized: true });

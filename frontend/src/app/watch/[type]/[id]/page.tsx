@@ -475,21 +475,6 @@ export default function WatchPage() {
     return null;
   }, [type, seasons, seasonEpisodes, currentSeason, currentEpisode]);
 
-  const handleEpisodeChange = useCallback((s: number, ep: number) => {
-    setShowNextOverlay(false);
-    showNextOverlayRef.current = false;
-    setIsAutoPlayDismissed(false);
-    isAutoPlayDismissedRef.current = false;
-    setNextCountdown(10);
-    setCurrentSeason(s);
-    setCurrentEpisode(ep);
-    playbackSecondsRef.current = 0;
-    watchDurationSecondsRef.current = 0;
-    hasRealPlayerEventsRef.current = false;
-    setIsIframeLoaded(false);
-    router.push(`/watch/tv/${id}?season=${s}&episode=${ep}`, { scroll: false });
-  }, [id, router]);
-
   const getEstimatedDuration = useCallback((): number => {
     if (type === 'movie') {
       if (meta?.runtime && meta.runtime > 0) return meta.runtime * 60;
@@ -503,6 +488,63 @@ export default function WatchPage() {
     }
     return 2700;
   }, [type, meta, seasonEpisodes, currentEpisode]);
+
+  const handleEpisodeChange = useCallback((s: number, ep: number) => {
+    // Before switching, record the current episode as completed/skipped in Watch History
+    if (id && meta) {
+      const curTime = playbackSecondsRef.current || 0;
+      const estDuration = getEstimatedDuration();
+      const cleanMediaId = getCleanMediaId(id);
+
+      saveWatchProgress({
+        id: cleanMediaId,
+        media_type: 'tv',
+        title: meta.title || meta.name || 'Untitled',
+        poster_path: meta.poster_path || null,
+        backdrop_path: meta.backdrop_path || null,
+        season: currentSeason,
+        episode: currentEpisode,
+        timestamp_seconds: curTime,
+        duration_seconds: estDuration,
+        progress_percent: 100.0,
+        next_season: s,
+        next_episode: ep,
+      }, activeProfile?.id);
+
+      if (activeProfile?.id) {
+        apiFetch('/api/v1/progress/update', {
+          method: 'POST',
+          headers: { 'X-Profile-ID': activeProfile.id },
+          body: JSON.stringify({
+            mediaType: 'tv',
+            id: cleanMediaId,
+            currentTime: curTime > 0 ? curTime : estDuration,
+            duration: estDuration,
+            progress: 100.0,
+            season: currentSeason,
+            episode: currentEpisode,
+            event: 'skipped',
+            title: meta.title || meta.name || 'Untitled',
+            posterPath: meta.poster_path,
+            backdropPath: meta.backdrop_path,
+          })
+        }).catch(console.error);
+      }
+    }
+
+    setShowNextOverlay(false);
+    showNextOverlayRef.current = false;
+    setIsAutoPlayDismissed(false);
+    isAutoPlayDismissedRef.current = false;
+    setNextCountdown(10);
+    setCurrentSeason(s);
+    setCurrentEpisode(ep);
+    playbackSecondsRef.current = 0;
+    watchDurationSecondsRef.current = 0;
+    hasRealPlayerEventsRef.current = false;
+    setIsIframeLoaded(false);
+    router.push(`/watch/tv/${id}?season=${s}&episode=${ep}`, { scroll: false });
+  }, [id, router, meta, activeProfile?.id, currentSeason, currentEpisode, getEstimatedDuration]);
 
   const triggerNextEpisodeOverlay = useCallback(() => {
     if (type === 'tv' && nextEpisodeInfo && !isAutoPlayDismissedRef.current && !showNextOverlayRef.current) {

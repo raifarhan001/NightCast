@@ -170,11 +170,31 @@ function HomePageContent() {
 
     if (activeProfile) {
       try {
+        // Record as completed/skipped in backend Watch History
+        await apiFetch('/api/v1/progress/update', {
+          method: 'POST',
+          headers: { 'X-Profile-ID': activeProfile.id },
+          body: JSON.stringify({
+            mediaType: item.media_type || (item.season ? 'tv' : 'movie'),
+            id: cleanId,
+            currentTime: item.duration_seconds || item.timestamp_seconds || 100,
+            duration: item.duration_seconds || 100,
+            progress: 100.0,
+            season: item.season,
+            episode: item.episode,
+            event: 'skipped',
+            title: item.title,
+            posterPath: item.poster_path,
+            backdropPath: item.backdrop_path,
+          })
+        }).catch(() => {});
+
         await apiFetch(`/api/v1/progress/continue/${cleanId}`, {
           method: "DELETE",
           headers: { "X-Profile-ID": activeProfile.id },
         });
         queryClient.invalidateQueries({ queryKey: ["continue-watching", activeProfile.id] });
+        queryClient.invalidateQueries({ queryKey: ["profile-history", activeProfile.id] });
       } catch (err) {
         console.error("Failed to delete continue watching from backend", err);
       }

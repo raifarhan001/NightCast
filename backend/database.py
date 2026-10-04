@@ -20,7 +20,7 @@ def get_db_engine():
     global is_sqlite
     if "postgresql" in DATABASE_URL:
         import time
-        max_retries = 2
+        max_retries = 4
         for attempt in range(1, max_retries + 1):
             try:
                 logger.info(f"Connecting to PostgreSQL (attempt {attempt}/{max_retries})...")
@@ -29,7 +29,7 @@ def get_db_engine():
                     pool_size=10,
                     max_overflow=5,
                     pool_pre_ping=True,
-                    connect_args={"connect_timeout": 5}
+                    connect_args={"connect_timeout": 10}
                 )
                 # Test connection eagerly so we fail-fast and fallback to SQLite if host is unreachable
                 with eng.connect() as conn:
@@ -40,7 +40,7 @@ def get_db_engine():
             except Exception as e:
                 logger.warning(f"PostgreSQL connection attempt {attempt} failed: {e}")
                 if attempt < max_retries:
-                    time.sleep(1)
+                    time.sleep(2)
         logger.warning("All PostgreSQL connection attempts failed. Falling back to SQLite.")
     
     is_sqlite = True

@@ -76,16 +76,18 @@ def update_progress(
         db.add(new_cw)
     db.commit()
 
-    # Log into watch history only when content was actually engaged with (>= 1.5% or >= 25s or ended)
-    if payload.progress >= 1.5 or payload.current_time >= 25.0 or payload.event == "ended":
+    # Log into watch history when content was engaged with (>= 1.5% or >= 25s) or ended/skipped
+    if (payload.progress or 0.0) >= 1.5 or (payload.current_time or 0.0) >= 25.0 or payload.event in ("ended", "skipped"):
         existing_history = db.query(models.WatchHistory).filter(
             models.WatchHistory.profile_id == active_profile.id,
             (models.WatchHistory.media_id == clean_id) | (models.WatchHistory.media_id == str(payload.id))
         ).first()
 
+        eff_progress = 100.0 if payload.event in ("ended", "skipped") else max(payload.progress or 0.0, 0.0)
+
         if existing_history:
             existing_history.media_id = clean_id
-            existing_history.progress_percent = max(existing_history.progress_percent or 0, payload.progress)
+            existing_history.progress_percent = max(existing_history.progress_percent or 0, eff_progress)
             existing_history.watched_at = datetime.utcnow()
             if payload.title:
                 existing_history.title = payload.title
@@ -98,19 +100,27 @@ def update_progress(
                 media_type=payload.media_type or ("tv" if s_num is not None else "movie"),
                 title=payload.title or "Untitled",
                 poster_path=payload.poster_path,
-                progress_percent=payload.progress
+                progress_percent=eff_progress
             )
             db.add(history_entry)
         db.commit()
 
-    # Clean up continue watching list if play has ended (progress >= 90% or ended event)
-    if payload.progress >= 90.0 or (payload.duration > 60 and payload.current_time >= payload.duration - 25) or payload.event == "ended":
-        db.query(models.ContinueWatching).filter(
+    # Clean up continue watching list if play has ended (progress >= 90% or ended/skipped event)
+    if (payload.progress or 0.0) >= 90.0 or ((payload.duration or 0.0) > 60 and (payload.current_time or 0.0) >= (payload.duration or 0.0) - 25) or payload.event in ("ended", "skipped"):
+        cw_delete_query = db.query(models.ContinueWatching).filter(
             models.ContinueWatching.profile_id == active_profile.id,
-            (models.ContinueWatching.media_id == clean_id) | (models.ContinueWatching.media_id == str(payload.id)),
-            models.ContinueWatching.season == s_num,
-            models.ContinueWatching.episode == ep_num
-        ).delete(synchronize_session=False)
+            (models.ContinueWatching.media_id == clean_id) | (models.ContinueWatching.media_id == str(payload.id))
+        )
+        if s_num is not None or ep_num is not None:
+            cw_delete_query = cw_delete_query.filter(
+                models.ContinueWatching.season == s_num,
+                models.ContinueWatching.episode == ep_num
+            )
+        else:
+            cw_delete_query = cw_delete_query.filter(
+                (models.ContinueWatching.season.is_(None)) | (models.ContinueWatching.season == 0)
+            )
+        cw_delete_query.delete(synchronize_session=False)
         db.commit()
 
     return {"status": "success"}

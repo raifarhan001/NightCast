@@ -217,9 +217,15 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
       }
     } catch (_) {}
 
-    // Clear stale stored token if 401 occurs on authenticated endpoints
+    // Clear stale stored token only on explicit auth failures (not transient server/proxy errors)
     if (response.status === 401 && !cleanEndpoint.includes('/auth/login') && !cleanEndpoint.includes('/auth/register')) {
-      setStoredToken(null);
+      const isExplicitInvalidToken =
+        errorDetail.includes('Could not validate') ||
+        errorDetail.includes('Session expired') ||
+        errorDetail.includes('Not authenticated');
+      if (isExplicitInvalidToken) {
+        setStoredToken(null);
+      }
     }
 
     throw new Error(errorDetail);
