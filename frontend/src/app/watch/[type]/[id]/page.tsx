@@ -42,8 +42,9 @@ function attachTimestampToUrl(url: string, seconds: number): string {
       const s = Math.floor(seconds).toString();
       // VidLink uses 'startAt'
       urlObj.searchParams.set('startAt', s);
-      // Fallback aliases for other providers
+      // VidBolt & standard iframe players accept start, time, t
       urlObj.searchParams.set('start', s);
+      urlObj.searchParams.set('time', s);
       urlObj.searchParams.set('t', s);
       urlObj.searchParams.set('progress', s);
     }
@@ -56,14 +57,14 @@ function attachTimestampToUrl(url: string, seconds: number): string {
       }
     } else if (url.includes('vidbolt.xyz')) {
       if (!urlObj.searchParams.has('theme')) {
-        urlObj.searchParams.set('theme', '22c55e');
+        urlObj.searchParams.set('theme', '39AEA9');
       }
     }
     return urlObj.toString();
   } catch {
     if (seconds > 3) {
       const sep = url.includes('?') ? '&' : '?';
-      return `${url}${sep}startAt=${Math.floor(seconds)}&start=${Math.floor(seconds)}&t=${Math.floor(seconds)}`;
+      return `${url}${sep}startAt=${Math.floor(seconds)}&start=${Math.floor(seconds)}&time=${Math.floor(seconds)}&t=${Math.floor(seconds)}`;
     }
     return url;
   }
@@ -118,28 +119,20 @@ export default function WatchPage() {
   const buildServers = useCallback((seasonNum: number, episodeNum: number) => {
     return [
       {
-        id: 'vidsrc',
-        name: 'Server 1 (VidSrc - Main Stream)',
+        id: 'vidbolt',
+        name: 'Server 1 (VidBolt - Fast HD Stream)',
         url: type === 'tv'
-          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${seasonNum}&episode=${episodeNum}`
-          : `https://vidsrc.me/embed/movie?tmdb=${id}`,
+          ? `https://vidbolt.xyz/tv/${id}/${seasonNum}/${episodeNum}?theme=39AEA9`
+          : type === 'anime'
+          ? `https://vidbolt.xyz/anime/${id}/${episodeNum}?theme=39AEA9`
+          : `https://vidbolt.xyz/movie/${id}?theme=39AEA9`,
         type: 'iframe',
         language: 'en',
-        language_name: 'vidsrc.me'
-      },
-      {
-        id: 'vidsrc-to',
-        name: 'Server 2 (VidSrc VIP)',
-        url: type === 'tv'
-          ? `https://vidsrc.to/embed/tv/${id}/${seasonNum}/${episodeNum}`
-          : `https://vidsrc.to/embed/movie/${id}`,
-        type: 'iframe',
-        language: 'en',
-        language_name: 'vidsrc.to'
+        language_name: 'vidbolt.xyz'
       },
       {
         id: 'vidlink',
-        name: 'Server 3 (VidLink Pro)',
+        name: 'Server 2 (VidLink Pro)',
         url: type === 'tv'
           ? `https://vidlink.pro/tv/${id}/${seasonNum}/${episodeNum}?primaryColor=39AEA9&autoplay=true`
           : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`,
@@ -148,33 +141,41 @@ export default function WatchPage() {
         language_name: 'vidlink.pro'
       },
       {
-        id: 'vidbolt',
-        name: 'Server 4 (VidBolt)',
-        url: type === 'tv'
-          ? `https://vidbolt.xyz/tv/${id}/${seasonNum}/${episodeNum}`
-          : type === 'anime'
-          ? `https://vidbolt.xyz/anime/${id}/${episodeNum}`
-          : `https://vidbolt.xyz/movie/${id}`,
-        type: 'iframe',
-        language: 'en',
-        language_name: 'vidbolt.xyz'
-      },
-      {
         id: 'nightcast-native',
-        name: 'Server 5 (AutoEmbed)',
+        name: 'Server 3 (AutoEmbed - Fast)',
         url: type === 'tv'
           ? `https://player.autoembed.cc/embed/tv/${id}/${seasonNum}/${episodeNum}`
           : `https://player.autoembed.cc/embed/movie/${id}`,
         type: 'iframe',
         language: 'en',
         language_name: 'AutoEmbed'
+      },
+      {
+        id: 'vidsrc-to',
+        name: 'Server 4 (VidSrc VIP)',
+        url: type === 'tv'
+          ? `https://vidsrc.to/embed/tv/${id}/${seasonNum}/${episodeNum}`
+          : `https://vidsrc.to/embed/movie/${id}`,
+        type: 'iframe',
+        language: 'en',
+        language_name: 'vidsrc.to'
+      },
+      {
+        id: 'vidsrc',
+        name: 'Server 5 (VidSrc Mirror)',
+        url: type === 'tv'
+          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${seasonNum}&episode=${episodeNum}`
+          : `https://vidsrc.me/embed/movie?tmdb=${id}`,
+        type: 'iframe',
+        language: 'en',
+        language_name: 'vidsrc.me'
       }
     ];
   }, [type, id]);
 
   const [servers, setServers] = useState<any[]>(() => buildServers(initialSeason, initialEpisode));
 
-  const [activeServerId, setActiveServerId] = useState<string>('vidsrc');
+  const [activeServerId, setActiveServerId] = useState<string>('vidbolt');
   const [resumeTime, setResumeTime] = useState<number>(0);
   const [playerUrl, setPlayerUrl] = useState<string>("");
 
@@ -203,9 +204,12 @@ export default function WatchPage() {
         localStorage.removeItem('nightcast_preferred_server');
         localStorage.removeItem('nightcast_preferred_server_v2');
         localStorage.removeItem('nightcast_preferred_server_v4');
-        const savedServer = localStorage.getItem('nightcast_preferred_server_v5');
-        if (savedServer && ['vidsrc', 'vidsrc-to', 'vidlink', 'vidbolt', 'nightcast-native'].includes(savedServer)) {
+        localStorage.removeItem('nightcast_preferred_server_v6');
+        const savedServer = localStorage.getItem('nightcast_preferred_server_v7');
+        if (savedServer && ['vidbolt', 'vidlink', 'nightcast-native', 'vidsrc-to', 'vidsrc'].includes(savedServer)) {
           setActiveServerId(savedServer);
+        } else {
+          setActiveServerId('vidbolt');
         }
         const savedShield = localStorage.getItem('nightcast_ad_shield_v2');
         if (savedShield !== null) {
@@ -262,22 +266,30 @@ export default function WatchPage() {
             : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`
         };
       }
-      if (target.id === 'vidsrc-to') {
+      if (target.id === 'nightcast-native') {
         return {
           ...target,
           url: type === 'tv'
-            ? `https://vidsrc.to/embed/tv/${id}/${currentSeason}/${currentEpisode}`
-            : `https://vidsrc.to/embed/movie/${id}`
+            ? `https://player.autoembed.cc/embed/tv/${id}/${currentSeason}/${currentEpisode}`
+            : `https://player.autoembed.cc/embed/movie/${id}`
         };
       }
       if (target.id === 'vidbolt') {
         return {
           ...target,
           url: type === 'tv'
-            ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}`
+            ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}?theme=39AEA9`
             : type === 'anime'
-            ? `https://vidbolt.xyz/anime/${id}/${currentEpisode}`
-            : `https://vidbolt.xyz/movie/${id}`
+            ? `https://vidbolt.xyz/anime/${id}/${currentEpisode}?theme=39AEA9`
+            : `https://vidbolt.xyz/movie/${id}?theme=39AEA9`
+        };
+      }
+      if (target.id === 'vidsrc-to') {
+        return {
+          ...target,
+          url: type === 'tv'
+            ? `https://vidsrc.to/embed/tv/${id}/${currentSeason}/${currentEpisode}`
+            : `https://vidsrc.to/embed/movie/${id}`
         };
       }
       if (target.id === 'vidsrc') {
@@ -297,22 +309,26 @@ export default function WatchPage() {
     if (!rawActiveServer) return null;
     if (isServerFailed) {
       let fallbackUrl = rawActiveServer.url;
-      if (rawActiveServer.id === 'vidsrc') {
-        fallbackUrl = type === 'tv'
-          ? `https://vidsrc.to/embed/tv/${id}/${currentSeason}/${currentEpisode}`
-          : `https://vidsrc.to/embed/movie/${id}`;
-      } else if (rawActiveServer.id === 'vidsrc-to') {
+      if (rawActiveServer.id === 'vidbolt') {
         fallbackUrl = type === 'tv'
           ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}?primaryColor=39AEA9&autoplay=true`
           : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`;
       } else if (rawActiveServer.id === 'vidlink') {
         fallbackUrl = type === 'tv'
-          ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}`
-          : `https://vidbolt.xyz/movie/${id}`;
-      } else if (rawActiveServer.id === 'vidbolt') {
+          ? `https://player.autoembed.cc/embed/tv/${id}/${currentSeason}/${currentEpisode}`
+          : `https://player.autoembed.cc/embed/movie/${id}`;
+      } else if (rawActiveServer.id === 'nightcast-native') {
+        fallbackUrl = type === 'tv'
+          ? `https://vidsrc.to/embed/tv/${id}/${currentSeason}/${currentEpisode}`
+          : `https://vidsrc.to/embed/movie/${id}`;
+      } else if (rawActiveServer.id === 'vidsrc-to') {
         fallbackUrl = type === 'tv'
           ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
           : `https://vidsrc.me/embed/movie?tmdb=${id}`;
+      } else if (rawActiveServer.id === 'vidsrc') {
+        fallbackUrl = type === 'tv'
+          ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}?theme=39AEA9`
+          : `https://vidbolt.xyz/movie/${id}?theme=39AEA9`;
       }
       return {
         ...rawActiveServer,
@@ -383,13 +399,13 @@ export default function WatchPage() {
         if (data?.servers && data.servers.length > 0) {
           setServers(data.servers);
           const preferred = typeof window !== 'undefined'
-            ? localStorage.getItem('nightcast_preferred_server_v5')
+            ? localStorage.getItem('nightcast_preferred_server_v7')
             : null;
           if (preferred && data.servers.some((s: any) => s.id === preferred)) {
             setActiveServerId(preferred);
           } else {
-            const vidsrcServer = data.servers.find((s: any) => s.id === 'vidsrc');
-            setActiveServerId(vidsrcServer ? 'vidsrc' : data.servers[0].id);
+            const vidboltServer = data.servers.find((s: any) => s.id === 'vidbolt');
+            setActiveServerId(vidboltServer ? 'vidbolt' : data.servers[0].id);
           }
         }
       } catch (err) {
@@ -740,11 +756,11 @@ export default function WatchPage() {
               const epKey = `s${currentSeason}e${currentEpisode}`;
               const epProg = mediaEntry.show_progress[epKey]?.progress || mediaEntry.progress;
               if (epProg) {
-                watchedSec = epProg.watched ?? epProg.currentTime;
+                watchedSec = epProg.currentTime ?? epProg.timestamp ?? epProg.watched;
                 durSec = epProg.duration;
               }
             } else if (mediaEntry.progress) {
-              watchedSec = mediaEntry.progress.watched ?? mediaEntry.progress.currentTime;
+              watchedSec = mediaEntry.progress.currentTime ?? mediaEntry.progress.timestamp ?? mediaEntry.progress.watched;
               durSec = mediaEntry.progress.duration;
             }
           }
@@ -752,7 +768,7 @@ export default function WatchPage() {
           // Direct fallback if data.data is already the progress object
           if (watchedSec === undefined) {
             const p = data.data.progress;
-            watchedSec = p?.watched ?? data.data.watched ?? data.data.currentTime ?? data.data.timestamp;
+            watchedSec = p?.currentTime ?? p?.timestamp ?? data.data.currentTime ?? data.data.timestamp ?? p?.watched ?? data.data.watched;
             durSec = p?.duration ?? data.data.duration;
           }
 
@@ -765,7 +781,7 @@ export default function WatchPage() {
           hasRealPlayerEventsRef.current = true;
           const pData = data.data;
           const p = pData.progress;
-          const watchedSec = pData.currentTime ?? pData.timestamp ?? p?.watched ?? pData.watched;
+          const watchedSec = pData.currentTime ?? pData.timestamp ?? p?.currentTime ?? p?.timestamp ?? pData.watched ?? p?.watched;
           const durSec = pData.duration ?? p?.duration;
 
           if (watchedSec !== undefined && !isNaN(Number(watchedSec))) {
@@ -785,10 +801,40 @@ export default function WatchPage() {
           dur = typeof data.duration === 'number' ? data.duration : undefined;
         }
 
+        // C. Universal time/progress extraction fallback
+        if (curTime === undefined) {
+          const rawCurrent =
+            data.currentTime ??
+            data.current_time ??
+            data.data?.currentTime ??
+            data.data?.current_time ??
+            data.position ??
+            data.time ??
+            data.seconds ??
+            data.data?.position ??
+            data.data?.time ??
+            data.data?.seconds ??
+            data.watched ??
+            data.data?.watched;
+          const rawDuration =
+            data.duration ??
+            data.duration_seconds ??
+            data.data?.duration ??
+            data.data?.duration_seconds;
+
+          if (rawCurrent !== undefined && !isNaN(Number(rawCurrent))) {
+            curTime = Number(rawCurrent);
+            if (rawDuration !== undefined && !isNaN(Number(rawDuration))) {
+              dur = Number(rawDuration);
+            }
+          }
+        }
+
         if (curTime !== undefined && !isNaN(curTime) && curTime >= 1) {
           lastRealPlayerEventTimeRef.current = Date.now();
           hasRealPlayerEventsRef.current = true;
           playbackSecondsRef.current = curTime;
+          setResumeTime(curTime);
           const validDur = (dur && !isNaN(dur) && dur > 0) ? dur : getEstimatedDuration();
           handlePlayerProgress(curTime, validDur);
         }
@@ -960,7 +1006,7 @@ export default function WatchPage() {
     if (nextServer && !failedServerIds.includes(nextServer.id)) {
       setActiveServerId(nextServer.id);
       if (typeof window !== 'undefined') {
-        localStorage.setItem('nightcast_preferred_server_v5', nextServer.id);
+        localStorage.setItem('nightcast_preferred_server_v7', nextServer.id);
       }
       soundFx.playTap();
       setToastMessage(`Switched stream engine to ${nextServer.name}`);
@@ -1387,6 +1433,7 @@ export default function WatchPage() {
           )}
         </div>
 
+
         {/* Source Error / Fallback Notification Toast */}
         {toastMessage && (
           <div className="p-3.5 px-5 bg-[#39AEA9]/15 border border-[#39AEA9]/40 rounded-2xl flex items-center justify-between text-xs font-sans text-[#F8FAFC] shadow-xl animate-in fade-in slide-in-from-top-2">
@@ -1455,7 +1502,7 @@ export default function WatchPage() {
                         soundFx.playTap();
                         setActiveServerId(srv.id);
                         if (typeof window !== 'undefined') {
-                          localStorage.setItem('nightcast_preferred_server_v5', srv.id);
+                          localStorage.setItem('nightcast_preferred_server_v7', srv.id);
                         }
                       }
                     }}
