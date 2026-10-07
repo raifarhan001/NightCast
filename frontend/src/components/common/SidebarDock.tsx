@@ -12,7 +12,6 @@ import {
   Layers,
   X,
   Compass,
-  Trophy,
 } from "lucide-react";
 import { useUserStore } from "../../store/userStore";
 
@@ -134,13 +133,6 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
       icon: Tv,
       href: "/shows",
       isActive: pathname.startsWith("/shows") || pathname.startsWith("/tv") || pathname.startsWith("/watch/tv"),
-    },
-    {
-      id: "sports",
-      label: "Live Sports",
-      icon: Trophy,
-      href: "/sports",
-      isActive: pathname.startsWith("/sports"),
     },
     {
       id: "top-rated",
@@ -360,23 +352,6 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
           </div>
           <span className={`text-[10px] font-sans font-medium tracking-tight ${pathname.startsWith("/shows") || pathname.startsWith("/tv") ? "text-[#39AEA9] font-semibold" : ""}`}>
             Shows
-          </span>
-        </Link>
-
-        {/* 3.5 Sports */}
-        <Link
-          href="/sports"
-          onClick={(e) => handleNavClick(navItems[3], e)}
-          aria-label="Live Sports"
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
-            pathname.startsWith("/sports") ? "text-white" : "text-[#8FA8AD] hover:text-white"
-          }`}
-        >
-          <div className={`p-1 rounded-full transition-colors ${pathname.startsWith("/sports") ? "bg-[#39AEA9]/20 text-[#39AEA9]" : ""}`}>
-            <Trophy className="w-5 h-5" />
-          </div>
-          <span className={`text-[10px] font-sans font-medium tracking-tight ${pathname.startsWith("/sports") ? "text-[#39AEA9] font-semibold" : ""}`}>
-            Sports
           </span>
         </Link>
 
