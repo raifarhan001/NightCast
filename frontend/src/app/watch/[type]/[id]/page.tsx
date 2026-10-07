@@ -25,6 +25,7 @@ import {
   ShieldCheck,
   ShieldAlert,
   ArrowLeft,
+  Download,
 } from 'lucide-react';
 import { soundFx } from '../../../../lib/soundEffects';
 import AmbientGlow from '../../../../components/shared/AmbientGlow';
@@ -32,6 +33,7 @@ import { useAmbientStore } from '../../../../store/ambientStore';
 import { useUserStore } from '../../../../store/userStore';
 import NightCastPlayer from '../../../../components/player/NightCastPlayer';
 import MovieRow from '../../../../components/shared/MovieRow';
+import EpisodeCard from '../../../../components/shared/EpisodeCard';
 import { PlayerSkeleton } from '../../../../components/shared/Skeletons';
 
 function attachTimestampToUrl(url: string, seconds: number): string {
@@ -85,7 +87,7 @@ export default function WatchPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { activeProfile } = useUserStore();
+  const { activeProfile, settings } = useUserStore();
   const type = Array.isArray(params.type) ? params.type[0] : params.type;
   const rawId = Array.isArray(params.id) ? params.id[0] : params.id;
   const id = getCleanMediaId(rawId);
@@ -129,6 +131,16 @@ export default function WatchPage() {
         type: 'iframe',
         language: 'en',
         language_name: 'vidbolt.xyz'
+      },
+      {
+        id: 'screenscape',
+        name: 'ScreenScape (Hindi Dubbed 🇮🇳)',
+        url: type === 'tv' || type === 'anime'
+          ? `https://nxsha.screenscape.me/embed?tmdb=${id}&type=tv&s=${seasonNum}&e=${episodeNum}&lan=hindi`
+          : `https://nxsha.screenscape.me/embed?tmdb=${id}&type=movie&lan=hindi`,
+        type: 'iframe',
+        language: 'hi',
+        language_name: 'ScreenScape (Hindi Dubbed)'
       },
       {
         id: 'vidlink',
@@ -206,8 +218,10 @@ export default function WatchPage() {
         localStorage.removeItem('nightcast_preferred_server_v4');
         localStorage.removeItem('nightcast_preferred_server_v6');
         const savedServer = localStorage.getItem('nightcast_preferred_server_v7');
-        if (savedServer && ['vidbolt', 'vidlink', 'nightcast-native', 'vidsrc-to', 'vidsrc'].includes(savedServer)) {
+        if (savedServer && ['screenscape', 'vidbolt', 'vidlink', 'nightcast-native', 'vidsrc-to', 'vidsrc'].includes(savedServer)) {
           setActiveServerId(savedServer);
+        } else if (settings?.preferred_language === 'hi') {
+          setActiveServerId('screenscape');
         } else {
           setActiveServerId('vidbolt');
         }
@@ -224,7 +238,7 @@ export default function WatchPage() {
         if (match?.episode) setCurrentEpisode(match.episode);
       }
     }
-  }, [type, id, searchParams]);
+  }, [type, id, searchParams, settings?.preferred_language]);
   const [isEpisodeDrawerOpen, setIsEpisodeDrawerOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
@@ -258,6 +272,14 @@ export default function WatchPage() {
     const list = servers && servers.length > 0 ? servers : buildServers(currentSeason, currentEpisode);
     const target = list.find((s: any) => s.id === activeServerId) || list[0];
     if (target && target.type === 'iframe') {
+      if (target.id === 'screenscape') {
+        return {
+          ...target,
+          url: type === 'tv' || type === 'anime'
+            ? `https://nxsha.screenscape.me/embed?tmdb=${id}&type=tv&s=${currentSeason}&e=${currentEpisode}&lan=hindi`
+            : `https://nxsha.screenscape.me/embed?tmdb=${id}&type=movie&lan=hindi`
+        };
+      }
       if (target.id === 'vidlink') {
         return {
           ...target,
@@ -309,7 +331,11 @@ export default function WatchPage() {
     if (!rawActiveServer) return null;
     if (isServerFailed) {
       let fallbackUrl = rawActiveServer.url;
-      if (rawActiveServer.id === 'vidbolt') {
+      if (rawActiveServer.id === 'screenscape') {
+        fallbackUrl = type === 'tv'
+          ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}?theme=39AEA9`
+          : `https://vidbolt.xyz/movie/${id}?theme=39AEA9`;
+      } else if (rawActiveServer.id === 'vidbolt') {
         fallbackUrl = type === 'tv'
           ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}?primaryColor=39AEA9&autoplay=true`
           : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`;
@@ -393,8 +419,9 @@ export default function WatchPage() {
     const fetchServers = async () => {
       try {
         if (!id || !type) return;
+        const lang = settings?.preferred_language === 'hi' ? 'hi' : 'all';
         const data = await apiFetch(
-          `/api/tmdb/${type}/${id}/streams?season=${currentSeason}&episode=${currentEpisode}`
+          `/api/tmdb/${type}/${id}/streams?season=${currentSeason}&episode=${currentEpisode}&language=${lang}`
         );
         if (data?.servers && data.servers.length > 0) {
           setServers(data.servers);
@@ -403,6 +430,8 @@ export default function WatchPage() {
             : null;
           if (preferred && data.servers.some((s: any) => s.id === preferred)) {
             setActiveServerId(preferred);
+          } else if (settings?.preferred_language === 'hi' && data.servers.some((s: any) => s.id === 'screenscape')) {
+            setActiveServerId('screenscape');
           } else {
             const vidboltServer = data.servers.find((s: any) => s.id === 'vidbolt');
             setActiveServerId(vidboltServer ? 'vidbolt' : data.servers[0].id);
@@ -413,7 +442,7 @@ export default function WatchPage() {
       }
     };
     fetchServers();
-  }, [id, type, currentSeason, currentEpisode]);
+  }, [id, type, currentSeason, currentEpisode, settings?.preferred_language]);
 
   useEffect(() => {
     if (!activeServer) return;
@@ -444,6 +473,35 @@ export default function WatchPage() {
     }, 2000);
     return () => clearTimeout(fallbackTimer);
   }, [playerUrl]);
+
+  // ScreenScape Progress bridge communication
+  useEffect(() => {
+    if (activeServerId === 'screenscape' && isIframeLoaded) {
+      const iframe = document.getElementById("screenscape-player") as HTMLIFrameElement;
+      if (iframe?.contentWindow) {
+        if (resumeTime > 3) {
+          try {
+            iframe.contentWindow.postMessage({
+              type: "SCREENSCAPE_SET_PROGRESS",
+              tmdb: id,
+              season: type === 'tv' ? currentSeason : undefined,
+              episode: type === 'tv' ? currentEpisode : undefined,
+              progress: resumeTime
+            }, "https://nxsha.screenscape.me");
+          } catch {}
+        }
+        try {
+          iframe.contentWindow.postMessage({
+            type: "SCREENSCAPE_GET_PROGRESS",
+            tmdb: id,
+            season: type === 'tv' ? currentSeason : undefined,
+            episode: type === 'tv' ? currentEpisode : undefined,
+            requestId: `sc-${Date.now()}`
+          }, "https://nxsha.screenscape.me");
+        } catch {}
+      }
+    }
+  }, [activeServerId, isIframeLoaded, resumeTime, id, type, currentSeason, currentEpisode]);
 
   const movieTitle = meta?.title || meta?.name || "Loading Stream...";
   const releaseYear = meta?.release_date || meta?.first_air_date
@@ -792,6 +850,31 @@ export default function WatchPage() {
             if (type === 'tv' && !isAutoPlayDismissedRef.current && !showNextOverlayRef.current) {
               triggerNextEpisodeOverlay();
             }
+          }
+        } else if (
+          data.type === 'SCREENSCAPE_WATCH_HISTORY_WITH_PROGRESS_RESPONSE' ||
+          data.type === 'SCREENSCAPE_GET_PROGRESS_RESPONSE' ||
+          data.type === 'SCREENSCAPE_PROGRESS_RESPONSE'
+        ) {
+          // C. ScreenScape Watch History & Progress Bridge
+          hasRealPlayerEventsRef.current = true;
+          const hist = data.watchHistory || data.progress || data.data;
+          let watchedSec: number | undefined;
+          let durSec: number | undefined;
+          if (Array.isArray(hist) && hist.length > 0) {
+            const entry = hist.find((h: any) => String(h.tmdb) === String(id) || String(h.id) === String(id)) || hist[0];
+            watchedSec = entry?.currentTime ?? entry?.progress ?? entry?.time ?? entry?.watched;
+            durSec = entry?.duration;
+          } else if (typeof hist === 'object' && hist !== null) {
+            watchedSec = hist.currentTime ?? hist.progress ?? hist.time ?? hist.watched;
+            durSec = hist.duration;
+          } else if (typeof data.progress === 'number') {
+            watchedSec = data.progress;
+            durSec = data.duration;
+          }
+          if (watchedSec !== undefined && !isNaN(Number(watchedSec))) {
+            curTime = Number(watchedSec);
+            dur = durSec ? Number(durSec) : undefined;
           }
         } else if (data.event === 'timeupdate' || data.type === 'timeupdate') {
           curTime = Number(data.currentTime ?? data.data?.currentTime);
@@ -1163,6 +1246,7 @@ export default function WatchPage() {
           />
         ) : (
           <iframe
+            id={activeServerId === 'screenscape' ? 'screenscape-player' : undefined}
             key={`${activeServerId}-${id}-${type === 'tv' ? `s${currentSeason}e${currentEpisode}` : 'movie'}-${playerUrl}`}
             src={playerUrl}
             onLoad={() => setIsIframeLoaded(true)}
@@ -1494,6 +1578,7 @@ export default function WatchPage() {
               {servers.map((srv) => {
                 const isActive = srv.id === activeServerId;
                 const isFailed = failedServerIds.includes(srv.id);
+                const isHindi = srv.language === 'hi' || srv.id === 'screenscape';
                 return (
                   <button
                     key={srv.id}
@@ -1511,18 +1596,34 @@ export default function WatchPage() {
                       isFailed
                         ? "px-3.5 py-1.5 rounded-lg text-xs font-sans text-[#8FA8AD]/30 line-through cursor-not-allowed"
                         : isActive
-                        ? "px-3.5 py-1.5 rounded-lg text-xs font-sans font-semibold bg-gradient-to-r from-[#A4C8E1] to-[#39AEA9] text-[#0B131B] shadow-[0_0_12px_rgba(57,174,169,0.5)] transition-all cursor-pointer"
+                        ? "px-3.5 py-1.5 rounded-lg text-xs font-sans font-semibold bg-gradient-to-r from-[#A4C8E1] to-[#39AEA9] text-[#0B131B] shadow-[0_0_12px_rgba(57,174,169,0.5)] transition-all cursor-pointer flex items-center gap-1.5"
+                        : isHindi
+                        ? "px-3.5 py-1.5 rounded-lg text-xs font-sans font-semibold text-[#FFB347] bg-[#FFB347]/10 hover:bg-[#FFB347]/20 border border-[#FFB347]/30 transition-all cursor-pointer flex items-center gap-1.5"
                         : "px-3.5 py-1.5 rounded-lg text-xs font-sans font-medium text-[#8FA8AD] hover:text-white hover:bg-white/[0.08] transition-all cursor-pointer"
                     }
                   >
+                    {isHindi && !isActive && <span className="w-1.5 h-1.5 rounded-full bg-[#FFB347] animate-pulse" />}
                     {srv.name}
                   </button>
                 );
               })}
             </div>
 
-            {/* Quick Action Pill Controls (Ad-Shield, Theater Mode, Episode Drawer, Shortcuts) */}
+            {/* Quick Action Pill Controls (Ad-Shield, Theater Mode, Episode Drawer, Shortcuts, Downloads) */}
             <div className="flex items-center gap-2">
+              {/* Direct Download Mirrors */}
+              <a
+                href={`https://nxsha.screenscape.me/download/${type === 'tv' ? 'tv' : 'movie'}/${id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => soundFx.playTap()}
+                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/[0.1] bg-white/[0.08] hover:bg-white/[0.14] text-[#8FA8AD] hover:text-[#39AEA9] text-xs font-sans font-medium transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
+                title="Direct Download Links Across Mirrors (ScreenScape)"
+                aria-label="Direct Download Links"
+              >
+                <Download className="w-3.5 h-3.5 text-[#39AEA9]" />
+                <span className="hidden sm:inline font-semibold">Downloads</span>
+              </a>
               {/* Ad-Shield Toggle Button */}
               <button
                 onClick={() => {
@@ -1678,40 +1779,28 @@ export default function WatchPage() {
               </div>
 
               {/* Episodes List in Drawer */}
-              <div className="flex-1 overflow-y-auto no-scrollbar py-3 space-y-2">
+              <div className="flex-1 overflow-y-auto no-scrollbar py-3 space-y-2.5">
                 {episodesLoading ? (
                   Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="h-16 rounded-2xl bg-white/[0.04] animate-pulse" />
+                    <div key={i} className="h-16 rounded-xl bg-white/[0.04] animate-pulse" />
                   ))
                 ) : seasonEpisodes.length > 0 ? (
                   seasonEpisodes.map((ep: any) => {
                     const isActive = ep.episode_number === currentEpisode;
                     return (
-                      <button
+                      <EpisodeCard
                         key={ep.episode_number}
+                        episode={ep}
+                        seasonNumber={currentSeason}
+                        isActive={isActive}
+                        fallbackBackdrop={meta?.backdrop_path || meta?.poster_path}
+                        compact={true}
                         onClick={() => {
                           soundFx.playTap();
                           handleEpisodeChange(currentSeason, ep.episode_number);
                           setIsEpisodeDrawerOpen(false);
                         }}
-                        className={`w-full p-3 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
-                          isActive
-                            ? 'bg-[#39AEA9]/20 border-[#39AEA9] text-white shadow-[0_0_15px_rgba(57,174,169,0.3)]'
-                            : 'bg-white/[0.04] backdrop-blur-xl border-white/[0.08] text-[#8FA8AD] hover:text-white hover:border-[#39AEA9]/50'
-                        }`}
-                      >
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                          isActive ? 'bg-gradient-to-tr from-[#A4C8E1] to-[#39AEA9] text-[#0B131B]' : 'bg-[#0B131B] text-[#8FA8AD]'
-                        }`}>
-                          <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className={`text-[10px] font-sans font-semibold ${isActive ? 'text-[#39AEA9]' : 'text-[#8FA8AD]'}`}>
-                            Episode {ep.episode_number}
-                          </p>
-                          <h4 className="text-xs font-medium text-white truncate">{ep.name || `Episode ${ep.episode_number}`}</h4>
-                        </div>
-                      </button>
+                      />
                     );
                   })
                 ) : (
@@ -1719,31 +1808,23 @@ export default function WatchPage() {
                     const epNum = i + 1;
                     const isActive = epNum === currentEpisode;
                     return (
-                      <button
+                      <EpisodeCard
                         key={epNum}
+                        episode={{
+                          episode_number: epNum,
+                          name: `Episode ${epNum}`,
+                          overview: `Episode ${epNum} of Season ${currentSeason}.`
+                        }}
+                        seasonNumber={currentSeason}
+                        isActive={isActive}
+                        fallbackBackdrop={meta?.backdrop_path || meta?.poster_path}
+                        compact={true}
                         onClick={() => {
                           soundFx.playTap();
                           handleEpisodeChange(currentSeason, epNum);
                           setIsEpisodeDrawerOpen(false);
                         }}
-                        className={`w-full p-3 rounded-2xl border text-left flex items-center gap-3 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
-                          isActive
-                            ? 'bg-[#39AEA9]/20 border-[#39AEA9] text-white shadow-[0_0_15px_rgba(57,174,169,0.3)]'
-                            : 'bg-white/[0.04] backdrop-blur-xl border-white/[0.08] text-[#8FA8AD] hover:text-white hover:border-[#39AEA9]/50'
-                        }`}
-                      >
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-                          isActive ? 'bg-gradient-to-tr from-[#A4C8E1] to-[#39AEA9] text-[#0B131B]' : 'bg-[#0B131B] text-[#8FA8AD]'
-                        }`}>
-                          <Play className="w-3 h-3 fill-current ml-0.5" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className={`text-[10px] font-sans font-semibold ${isActive ? 'text-[#39AEA9]' : 'text-[#8FA8AD]'}`}>
-                            Episode {epNum}
-                          </p>
-                          <h4 className="text-xs font-medium text-white truncate">Chapter {epNum}</h4>
-                        </div>
-                      </button>
+                      />
                     );
                   })
                 )}
@@ -1928,36 +2009,26 @@ export default function WatchPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3.5">
+            <div className="space-y-3.5">
               {episodesLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="p-3.5 rounded-2xl border border-white/[0.08] bg-white/[0.04] animate-pulse h-16" />
+                Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.04] animate-pulse h-28" />
                 ))
               ) : seasonEpisodes.length > 0 ? (
                 seasonEpisodes.map((ep: any) => {
                   const isActive = ep.episode_number === currentEpisode;
                   return (
-                    <button
+                    <EpisodeCard
                       key={ep.episode_number}
-                      onClick={() => handleEpisodeChange(currentSeason, ep.episode_number)}
-                      className={`group text-left p-3.5 rounded-2xl border transition-all flex items-start gap-3 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
-                        isActive
-                          ? 'bg-[#39AEA9]/20 text-white font-semibold border-[#39AEA9] shadow-[0_0_20px_rgba(57,174,169,0.3)]'
-                          : 'border-white/[0.08] bg-white/[0.04] backdrop-blur-xl text-[#8FA8AD] hover:text-white hover:border-[#39AEA9]/60 hover:bg-white/[0.08]'
-                      }`}
-                    >
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                        isActive ? 'bg-gradient-to-tr from-[#A4C8E1] to-[#39AEA9] text-[#0B131B]' : 'bg-[#0B131B] group-hover:bg-[#39AEA9] group-hover:text-[#0B131B] text-[#8FA8AD]'
-                      }`}>
-                        <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className={`text-[10px] font-sans font-semibold ${isActive ? 'text-[#39AEA9]' : 'text-[#8FA8AD]'}`}>
-                          Episode {ep.episode_number}
-                        </p>
-                        <h4 className="text-xs font-medium truncate text-[#F8FAFC]">{ep.name || `Episode ${ep.episode_number}`}</h4>
-                      </div>
-                    </button>
+                      episode={ep}
+                      seasonNumber={currentSeason}
+                      isActive={isActive}
+                      fallbackBackdrop={meta?.backdrop_path || meta?.poster_path}
+                      onClick={() => {
+                        soundFx.playTap();
+                        handleEpisodeChange(currentSeason, ep.episode_number);
+                      }}
+                    />
                   );
                 })
               ) : (
@@ -1965,27 +2036,21 @@ export default function WatchPage() {
                   const epNum = i + 1;
                   const isActive = epNum === currentEpisode;
                   return (
-                    <button
+                    <EpisodeCard
                       key={epNum}
-                      onClick={() => handleEpisodeChange(currentSeason, epNum)}
-                      className={`group text-left p-3.5 rounded-2xl border transition-all flex items-start gap-3 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
-                        isActive
-                          ? 'bg-[#39AEA9]/20 text-white font-semibold border-[#39AEA9] shadow-[0_0_20px_rgba(57,174,169,0.4)]'
-                          : 'border-white/[0.08] bg-white/[0.04] backdrop-blur-xl text-[#8FA8AD] hover:text-white hover:border-[#39AEA9] hover:bg-white/[0.08]'
-                      }`}
-                    >
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${
-                        isActive ? 'bg-gradient-to-tr from-[#A4C8E1] to-[#39AEA9] text-[#0B131B]' : 'bg-[#0B131B] group-hover:bg-[#39AEA9] group-hover:text-[#0B131B] text-[#8FA8AD]'
-                      }`}>
-                        <Play className="w-3 h-3 fill-current ml-0.5" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className={`text-[10px] font-sans font-semibold ${isActive ? 'text-[#39AEA9]' : 'text-[#8FA8AD]'}`}>
-                          Episode {epNum}
-                        </p>
-                        <h4 className="text-xs font-medium truncate text-[#F8FAFC]">Chapter {epNum}</h4>
-                      </div>
-                    </button>
+                      episode={{
+                        episode_number: epNum,
+                        name: `Episode ${epNum}`,
+                        overview: `Episode ${epNum} of Season ${currentSeason}.`
+                      }}
+                      seasonNumber={currentSeason}
+                      isActive={isActive}
+                      fallbackBackdrop={meta?.backdrop_path || meta?.poster_path}
+                      onClick={() => {
+                        soundFx.playTap();
+                        handleEpisodeChange(currentSeason, epNum);
+                      }}
+                    />
                   );
                 })
               )}

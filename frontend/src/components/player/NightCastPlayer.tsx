@@ -164,7 +164,8 @@ export default function NightCastPlayer({
     rawUrl.includes("vidsrc") ||
     rawUrl.includes("autoembed") ||
     rawUrl.includes("vidbolt") ||
-    rawUrl.includes("vidking");
+    rawUrl.includes("vidking") ||
+    rawUrl.includes("screenscape");
 
   const isEffectiveHls = (playbackData?.type === "hls" || isHls) && !isEmbedUrl && (rawUrl.includes(".m3u8") || rawUrl.includes(".mp4"));
 

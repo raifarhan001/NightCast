@@ -17,7 +17,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy import text
 
 from database import init_db, SessionLocal, is_sqlite
-from routers import auth, tmdb, progress, user, ai, admin, f1, streams
+from routers import auth, tmdb, progress, user, ai, admin, f1, streams, sports
 from services.ai_service import populate_mock_embeddings
 from services.redis_service import redis_cache
 from config import settings
@@ -195,6 +195,7 @@ app.include_router(user.router, prefix="/api/v1")
 app.include_router(ai.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(f1.router, prefix="/api/v1")
+app.include_router(sports.router, prefix="/api/v1")
 app.include_router(streams.router, prefix="/api/v1")
 
 # Also mount under /api for backwards and unversioned proxy compatibility
@@ -203,6 +204,7 @@ app.include_router(tmdb.router, prefix="/api")
 app.include_router(user.router, prefix="/api")
 app.include_router(progress.router, prefix="/api")
 app.include_router(f1.router, prefix="/api")
+app.include_router(sports.router, prefix="/api")
 app.include_router(streams.router, prefix="/api")
 app.include_router(ai.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")

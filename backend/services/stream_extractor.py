@@ -32,13 +32,13 @@ SOURCE_API_PATTERNS = [
 async def fetch_dual_audio_manifest(
     tmdb_id: str, season: int = 1, episode: int = 1, media_type: str = "tv"
 ) -> Dict[str, Any]:
-    """Free endpoints for primary (English/Original) and secondary (Hindi dubbed) sources."""
+    """Free endpoints for primary (English/Original) and secondary (Hindi dubbed via ScreenScape) sources."""
     if media_type == "tv":
         primary_url = f"https://player.autoembed.cc/embed/tv/{tmdb_id}/{season}/{episode}"
-        hindi_fallback = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}&ds_lang=hi"
+        hindi_fallback = f"https://nxsha.screenscape.me/embed?tmdb={tmdb_id}&type=tv&s={season}&e={episode}&lan=hindi"
     else:
         primary_url = f"https://player.autoembed.cc/embed/movie/{tmdb_id}"
-        hindi_fallback = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}&ds_lang=hi"
+        hindi_fallback = f"https://nxsha.screenscape.me/embed?tmdb={tmdb_id}&type=movie&lan=hindi"
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -68,7 +68,7 @@ async def fetch_dual_audio_manifest(
                 "is_iframe": not bool(streams)
             },
             {
-                "label": "Hindi Dubbed",
+                "label": "Hindi Dubbed (ScreenScape)",
                 "url": hindi_fallback,
                 "is_iframe": True
             }
@@ -94,23 +94,26 @@ class StreamExtractor:
         language_pref: Optional[str] = None
     ) -> Dict[str, Any]:
         """Main entry point. Resolves direct HLS streams, parses audio track metadata, and provides iframe fallbacks."""
-        cache_key = f"streams:v13:{media_type}:{tmdb_id}:{season}:{episode}:{language_pref or 'all'}"
+        cache_key = f"streams:v14:{media_type}:{tmdb_id}:{season}:{episode}:{language_pref or 'all'}"
         cached = await redis_cache.get(cache_key)
         if cached:
             logger.info(f"Cache hit for {cache_key}")
             return cached
 
         if media_type == "movie":
+            s_screenscape = f"https://nxsha.screenscape.me/embed?tmdb={tmdb_id}&type=movie&lan=hindi"
             s1_vidsrc = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
             s2_vidsrc_to = f"https://vidsrc.to/embed/movie/{tmdb_id}"
             s3_vidlink = f"https://vidlink.pro/movie/{tmdb_id}?primaryColor=39AEA9&autoplay=true"
             s4_vidbolt = f"https://vidbolt.xyz/movie/{tmdb_id}?theme=39AEA9"
         elif media_type == "anime":
+            s_screenscape = f"https://nxsha.screenscape.me/embed?tmdb={tmdb_id}&type=tv&s={season}&e={episode}&lan=hindi"
             s1_vidsrc = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
             s2_vidsrc_to = f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}"
             s3_vidlink = f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=39AEA9&autoplay=true"
             s4_vidbolt = f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}?theme=39AEA9"
         else:
+            s_screenscape = f"https://nxsha.screenscape.me/embed?tmdb={tmdb_id}&type=tv&s={season}&e={episode}&lan=hindi"
             s1_vidsrc = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
             s2_vidsrc_to = f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}"
             s3_vidlink = f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=39AEA9&autoplay=true"
@@ -124,6 +127,14 @@ class StreamExtractor:
                 "type": "iframe",
                 "language": "en",
                 "language_name": "vidbolt.xyz"
+            },
+            {
+                "id": "screenscape",
+                "name": "ScreenScape (Hindi Dubbed)",
+                "url": s_screenscape,
+                "type": "iframe",
+                "language": "hi",
+                "language_name": "ScreenScape (Hindi)"
             },
             {
                 "id": "vidlink",

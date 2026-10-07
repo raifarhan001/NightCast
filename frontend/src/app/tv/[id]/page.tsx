@@ -11,6 +11,7 @@ import { ImageService } from '../../../lib/ImageService';
 import { DetailsSkeleton } from '../../../components/shared/Skeletons';
 import { TvErrorBoundary } from '../../../components/shared/ErrorBoundaries';
 import MovieRow from '../../../components/shared/MovieRow';
+import EpisodeCard from '../../../components/shared/EpisodeCard';
 import { Play, Star, Bookmark, BookmarkCheck, Clock, Calendar, Languages, Send, Sparkles, RotateCcw, Tv } from 'lucide-react';
 
 function TvDetailsPage() {
@@ -288,30 +289,16 @@ function TvDetailsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+        <div className="space-y-3.5">
           {episodes.map((ep: any) => (
-            <Link
+            <EpisodeCard
               key={ep.episode_number}
+              episode={ep}
+              seasonNumber={activeSeason}
+              fallbackBackdrop={tv.backdrop_path || tv.poster_path}
+              defaultRuntime={tv.episode_run_time?.[0] || 50}
               href={`/watch/tv/${id}?season=${activeSeason}&episode=${ep.episode_number}`}
-              className="bg-white/[0.04] backdrop-blur-2xl rounded-2xl p-5 flex items-start gap-4 border border-white/[0.1] hover:border-white/[0.22] hover:bg-white/[0.08] transition-all group cursor-pointer shadow-[inset_0_1px_1px_rgba(255,255,255,0.08),0_10px_30px_rgba(0,0,0,0.5)] active:scale-[0.99]"
-            >
-              <div className="w-11 h-11 rounded-xl bg-white/[0.06] backdrop-blur-xl border border-white/[0.15] flex items-center justify-center text-[#8FA8AD] group-hover:bg-[#F0F0F0] group-hover:border-transparent group-hover:text-[#0B131B] shrink-0 transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
-                <Play className="w-4 h-4 fill-current ml-0.5" />
-              </div>
-              <div className="space-y-1 min-w-0 flex-1">
-                <p className="text-[11px] text-[#8FA8AD] font-mono font-bold uppercase tracking-wider">
-                  Episode {ep.episode_number}
-                </p>
-                <h4 className="text-sm font-bold text-[#F0F0F0] group-hover:text-white transition-colors truncate">
-                  {ep.name}
-                </h4>
-                {ep.overview && (
-                  <p className="text-xs text-[#8FA8AD] font-normal leading-relaxed line-clamp-2">
-                    {ep.overview}
-                  </p>
-                )}
-              </div>
-            </Link>
+            />
           ))}
         </div>
       </section>

@@ -272,7 +272,9 @@ ALLOWED_PROXY_DOMAINS = {
     "2embed.to",
     "2embed.cc",
     "embed.su",
-    "multiembed.mov"
+    "multiembed.mov",
+    "screenscape.me",
+    "nxsha.screenscape.me"
 }
 
 def validate_proxy_url(target_url: str):
