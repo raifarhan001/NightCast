@@ -399,7 +399,7 @@ export default function WatchPage() {
   }, [id, type]);
 
   useEffect(() => {
-    if (type !== 'tv' || !id) return;
+    if ((type !== 'tv' && type !== 'anime') || !id) return;
     const fetchEpisodes = async () => {
       setEpisodesLoading(true);
       try {
@@ -1267,17 +1267,6 @@ export default function WatchPage() {
         <PlayerSkeleton />
       )}
 
-      {/* Quick Floating Next Episode Button */}
-      {type === 'tv' && nextEpisodeInfo && !showNextOverlay && (
-        <button
-          onClick={() => handleEpisodeChange(nextEpisodeInfo.season, nextEpisodeInfo.episode)}
-          className="absolute bottom-12 right-3 sm:bottom-16 sm:right-6 z-30 flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#0B131B]/75 hover:bg-[#0B131B]/90 backdrop-blur-2xl border border-white/[0.18] hover:border-[#39AEA9] text-white text-xs font-sans font-semibold shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_30px_rgba(0,0,0,0.85)] transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer group"
-          title={`Next: Season ${nextEpisodeInfo.season} Episode ${nextEpisodeInfo.episode} - ${nextEpisodeInfo.title}`}
-        >
-          <SkipForward className="w-3.5 h-3.5 text-[#39AEA9] group-hover:scale-110 transition-transform" />
-          <span>Next Ep (S{nextEpisodeInfo.season} E{nextEpisodeInfo.episode})</span>
-        </button>
-      )}
 
       {/* Up Next in 10s Countdown Overlay */}
       {type === 'tv' && nextEpisodeInfo && showNextOverlay && (
@@ -1703,21 +1692,6 @@ export default function WatchPage() {
               </button>
             </div>
 
-            {/* Next Episode Button for TV Series */}
-            {type === 'tv' && nextEpisodeInfo && (
-              <button
-                onClick={() => {
-                  soundFx.playTap();
-                  handleEpisodeChange(nextEpisodeInfo.season, nextEpisodeInfo.episode);
-                }}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#A4C8E1] to-[#39AEA9] hover:opacity-95 text-[#0B131B] font-sans font-bold text-xs shadow-[0_0_16px_rgba(57,174,169,0.45)] transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
-                title={`Play Next: Season ${nextEpisodeInfo.season} Episode ${nextEpisodeInfo.episode} - ${nextEpisodeInfo.title}`}
-                aria-label={`Play Next: Season ${nextEpisodeInfo.season} Episode ${nextEpisodeInfo.episode} - ${nextEpisodeInfo.title}`}
-              >
-                <SkipForward className="w-3.5 h-3.5 fill-current" />
-                <span>Next Episode (S{nextEpisodeInfo.season} E{nextEpisodeInfo.episode})</span>
-              </button>
-            )}
 
           </div>
         </div>
@@ -1794,6 +1768,7 @@ export default function WatchPage() {
                         seasonNumber={currentSeason}
                         isActive={isActive}
                         fallbackBackdrop={meta?.backdrop_path || meta?.poster_path}
+                        defaultRuntime={meta?.episode_run_time?.[0]}
                         compact={true}
                         onClick={() => {
                           soundFx.playTap();
@@ -1813,11 +1788,14 @@ export default function WatchPage() {
                         episode={{
                           episode_number: epNum,
                           name: `Episode ${epNum}`,
-                          overview: `Episode ${epNum} of Season ${currentSeason}.`
+                          overview: meta?.overview ? `${meta.overview.slice(0, 100)}...` : `Episode ${epNum} of Season ${currentSeason}.`,
+                          runtime: meta?.episode_run_time?.[0] || null,
+                          still_path: meta?.backdrop_path || null
                         }}
                         seasonNumber={currentSeason}
                         isActive={isActive}
                         fallbackBackdrop={meta?.backdrop_path || meta?.poster_path}
+                        defaultRuntime={meta?.episode_run_time?.[0]}
                         compact={true}
                         onClick={() => {
                           soundFx.playTap();
@@ -2024,6 +2002,7 @@ export default function WatchPage() {
                       seasonNumber={currentSeason}
                       isActive={isActive}
                       fallbackBackdrop={meta?.backdrop_path || meta?.poster_path}
+                      defaultRuntime={meta?.episode_run_time?.[0]}
                       onClick={() => {
                         soundFx.playTap();
                         handleEpisodeChange(currentSeason, ep.episode_number);
@@ -2041,11 +2020,14 @@ export default function WatchPage() {
                       episode={{
                         episode_number: epNum,
                         name: `Episode ${epNum}`,
-                        overview: `Episode ${epNum} of Season ${currentSeason}.`
+                        overview: meta?.overview ? `${meta.overview.slice(0, 140)}...` : `Episode ${epNum} of Season ${currentSeason}.`,
+                        runtime: meta?.episode_run_time?.[0] || null,
+                        still_path: meta?.backdrop_path || null
                       }}
                       seasonNumber={currentSeason}
                       isActive={isActive}
                       fallbackBackdrop={meta?.backdrop_path || meta?.poster_path}
+                      defaultRuntime={meta?.episode_run_time?.[0]}
                       onClick={() => {
                         soundFx.playTap();
                         handleEpisodeChange(currentSeason, epNum);

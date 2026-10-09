@@ -130,7 +130,11 @@ function TvDetailsPage() {
   const seasons = tv.seasons || [{"season_number": 1, "episode_count": 8, "name": "Season 1"}];
   const selectedSeasonData = seasons.find((s) => s.season_number === activeSeason) || seasons[0];
   const episodes = seasonDetails?.episodes || selectedSeasonData?.episodes || Array.from({ length: selectedSeasonData?.episode_count || 8 }).map((_, i) => ({
-    episode_number: i + 1, name: `Episode ${i + 1}`, overview: `Episode ${i + 1} of Season ${activeSeason}.`
+    episode_number: i + 1,
+    name: `Episode ${i + 1}`,
+    overview: tv.overview ? `${tv.overview.slice(0, 140)}...` : `Episode ${i + 1} of Season ${activeSeason}.`,
+    runtime: tv.episode_run_time?.[0] || null,
+    still_path: tv.backdrop_path || null
   }));
 
   return (
@@ -296,7 +300,7 @@ function TvDetailsPage() {
               episode={ep}
               seasonNumber={activeSeason}
               fallbackBackdrop={tv.backdrop_path || tv.poster_path}
-              defaultRuntime={tv.episode_run_time?.[0] || 50}
+              defaultRuntime={tv.episode_run_time?.[0]}
               href={`/watch/tv/${id}?season=${activeSeason}&episode=${ep.episode_number}`}
             />
           ))}

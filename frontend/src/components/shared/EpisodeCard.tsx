@@ -43,13 +43,23 @@ function formatAirDate(dateStr?: string): string {
   }
 }
 
+function formatRuntime(minutes?: number | null): string | null {
+  if (!minutes || minutes <= 0) return null;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h > 0) {
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  }
+  return `${m}m`;
+}
+
 export default function EpisodeCard({
   episode,
   isActive = false,
   onClick,
   href,
   fallbackBackdrop,
-  defaultRuntime = 50,
+  defaultRuntime = 0,
   seasonNumber = 1,
   compact = false
 }: EpisodeCardProps) {
@@ -68,17 +78,25 @@ export default function EpisodeCard({
       : ImageService.FallbackImage("backdrop", episode.name || `Episode ${episode.episode_number}`)
     : rawStill;
 
-  // Rating Display
-  const ratingValue = episode.vote_average && episode.vote_average > 0
-    ? episode.vote_average
-    : 7.8;
-  const formattedRating = Number(ratingValue).toFixed(1);
+  // Rating Display: only show if a valid TMDB rating exists
+  const hasRating = typeof episode.vote_average === "number" && episode.vote_average > 0;
+  const formattedRating = hasRating ? Number(episode.vote_average).toFixed(1) : null;
 
   // Metadata strings
   const formattedDate = formatAirDate(episode.air_date);
-  const runtimeMinutes = episode.runtime && episode.runtime > 0
+  const rawRuntime = (episode.runtime && episode.runtime > 0)
     ? episode.runtime
-    : defaultRuntime;
+    : (defaultRuntime && defaultRuntime > 0 ? defaultRuntime : null);
+  const formattedRuntime = formatRuntime(rawRuntime);
+
+  // Title formatting: if real title exists (e.g. "Reaper Discussions"), format as "Episode 3 • Reaper Discussions"
+  const rawName = (episode.name || "").trim();
+  const isGenericTitle = !rawName || rawName.toLowerCase() === `episode ${episode.episode_number}`;
+  const displayTitle = isGenericTitle
+    ? `Episode ${episode.episode_number}`
+    : rawName.toLowerCase().startsWith(`episode ${episode.episode_number}`)
+    ? rawName
+    : `Episode ${episode.episode_number} • ${rawName}`;
 
   const overviewText = episode.overview && episode.overview.trim().length > 0
     ? episode.overview
@@ -121,12 +139,14 @@ export default function EpisodeCard({
                 : "text-white group-hover:text-purple-400"
             }`}
           >
-            {episode.name || `Episode ${episode.episode_number}`}
+            {displayTitle}
           </h4>
-          <div className="flex items-center gap-1 text-amber-400 font-bold text-[11px] shrink-0">
-            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-            <span>{formattedRating}</span>
-          </div>
+          {formattedRating && (
+            <div className="flex items-center gap-1 text-amber-400 font-bold text-[11px] shrink-0">
+              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+              <span>{formattedRating}</span>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-3 text-[11px] text-[#8ea2b8] mb-1">
           {formattedDate && (
@@ -135,10 +155,12 @@ export default function EpisodeCard({
               {formattedDate}
             </span>
           )}
-          <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3 text-[#8ea2b8]" />
-            {runtimeMinutes}m
-          </span>
+          {formattedRuntime && (
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3 text-[#8ea2b8]" />
+              {formattedRuntime}
+            </span>
+          )}
         </div>
         <p className="text-[11px] text-slate-400 leading-snug line-clamp-1">
           {overviewText}
@@ -198,14 +220,16 @@ export default function EpisodeCard({
                 : "text-white group-hover:text-purple-400"
             }`}
           >
-            {episode.name || `Episode ${episode.episode_number}`}
+            {displayTitle}
           </h4>
 
           {/* Rating Badge */}
-          <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs sm:text-sm shrink-0">
-            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-            <span>{formattedRating}</span>
-          </div>
+          {formattedRating && (
+            <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs sm:text-sm shrink-0">
+              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+              <span>{formattedRating}</span>
+            </div>
+          )}
         </div>
 
         {/* Metadata Row: Air Date + Runtime */}
@@ -216,14 +240,16 @@ export default function EpisodeCard({
               <span>{formattedDate}</span>
             </div>
           )}
-          <div className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5 text-[#8ea2b8]" />
-            <span>{runtimeMinutes}m</span>
-          </div>
+          {formattedRuntime && (
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-[#8ea2b8]" />
+              <span>{formattedRuntime}</span>
+            </div>
+          )}
         </div>
 
-        {/* Synopsis / Overview (2 lines clamped as in reference) */}
-        <p className="text-xs sm:text-sm text-[#94a3b8] leading-relaxed font-sans line-clamp-2">
+        {/* Synopsis / Overview (2-3 lines clamped) */}
+        <p className="text-xs sm:text-sm text-[#94a3b8] leading-relaxed font-sans line-clamp-2 sm:line-clamp-3">
           {overviewText}
         </p>
       </div>

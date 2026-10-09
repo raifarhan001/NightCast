@@ -49,8 +49,30 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       });
     }
 
+    // Ignore third-party browser extension message timeout rejections
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      const reason = String(event.reason?.message || event.reason || '');
+      const stack = String(event.reason?.stack || '');
+      if (
+        reason.includes('chrome-extension://') ||
+        reason.includes('chrome: call method') ||
+        reason.includes('Window message') ||
+        stack.includes('chrome-extension://')
+      ) {
+        event.stopImmediatePropagation();
+        event.preventDefault();
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('unhandledrejection', handleRejection, true);
+    }
+
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('unhandledrejection', handleRejection, true);
+      }
     };
   }, [initialize]);
 

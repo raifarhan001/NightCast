@@ -37,12 +37,19 @@ export const ZodMovieDetailSchema = z.object({
   }).optional().default({ results: [] })
 });
 
-// --- TV Detail Schema ---
+// --- TV Detail & Season Schemas ---
 export const ZodTvEpisode = z.object({
+  id: z.coerce.number().optional(),
   episode_number: z.coerce.number(),
   name: z.string().default('Episode'),
-  overview: z.string().default('Synopsis not provided.')
-});
+  overview: z.string().default(''),
+  still_path: z.string().nullable().optional().default(null),
+  air_date: z.string().nullable().optional().default(''),
+  runtime: z.coerce.number().nullable().optional().default(null),
+  vote_average: z.coerce.number().nullable().optional().default(0),
+  vote_count: z.coerce.number().optional().default(0),
+  season_number: z.coerce.number().optional()
+}).passthrough();
 
 export const ZodTvSeason = z.object({
   season_number: z.coerce.number(),
@@ -50,6 +57,15 @@ export const ZodTvSeason = z.object({
   name: z.string().optional().default('Season'),
   episodes: z.array(ZodTvEpisode).optional().default([])
 });
+
+export const ZodTvSeasonDetailSchema = z.object({
+  id: z.coerce.number().optional(),
+  season_number: z.coerce.number().default(1),
+  name: z.string().optional().default('Season'),
+  overview: z.string().optional().default(''),
+  poster_path: z.string().nullable().optional().default(null),
+  episodes: z.array(ZodTvEpisode).default([])
+}).passthrough();
 
 export const ZodTvDetailSchema = z.object({
   id: z.coerce.number(),

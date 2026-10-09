@@ -1,4 +1,4 @@
-import { ZodMovieDetailSchema, ZodTvDetailSchema, ZodMediaListSchema } from './validation';
+import { ZodMovieDetailSchema, ZodTvDetailSchema, ZodMediaListSchema, ZodTvSeasonDetailSchema } from './validation';
 const IS_SERVER = typeof window === 'undefined';
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8001';
@@ -241,6 +241,14 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
   
   // Apply Zod validation schemas to protect the UI components from undefined keys
   if (cleanEndpoint.includes('/tmdb/')) {
+    // 0. TV Season Detail endpoint (must precede generic /tmdb/tv/ check)
+    if (cleanEndpoint.includes('/season/')) {
+      const itemData = (rawData && typeof rawData === 'object' && 'data' in rawData && rawData.data) ? rawData.data : rawData;
+      const result = ZodTvSeasonDetailSchema.safeParse(itemData);
+      if (result.success) return result.data;
+      return itemData;
+    }
+
     // 1. Movie Detail endpoint
     if (cleanEndpoint.includes('/tmdb/movie/') && !cleanEndpoint.includes('/recommendations') && !cleanEndpoint.includes('/streams')) {
       const itemData = (rawData && typeof rawData === 'object' && 'data' in rawData && rawData.data) ? rawData.data : rawData;
@@ -254,7 +262,7 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
     }
     
     // 2. TV Detail endpoint
-    if (cleanEndpoint.includes('/tmdb/tv/') && !cleanEndpoint.includes('/recommendations') && !cleanEndpoint.includes('/streams')) {
+    if (cleanEndpoint.includes('/tmdb/tv/') && !cleanEndpoint.includes('/recommendations') && !cleanEndpoint.includes('/streams') && !cleanEndpoint.includes('/season/')) {
       const itemData = (rawData && typeof rawData === 'object' && 'data' in rawData && rawData.data) ? rawData.data : rawData;
       const result = ZodTvDetailSchema.safeParse(itemData);
       if (result.success) return result.data;

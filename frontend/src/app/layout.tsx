@@ -36,6 +36,48 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                if (typeof window === 'undefined') return;
+                function isExtensionError(err) {
+                  if (!err) return false;
+                  var msg = String(err.message || err || '');
+                  var stack = String(err.stack || '');
+                  var filename = String(err.filename || '');
+                  return (
+                    filename.indexOf('chrome-extension://') !== -1 ||
+                    filename.indexOf('moz-extension://') !== -1 ||
+                    filename.indexOf('safari-extension://') !== -1 ||
+                    stack.indexOf('chrome-extension://') !== -1 ||
+                    stack.indexOf('moz-extension://') !== -1 ||
+                    stack.indexOf('safari-extension://') !== -1 ||
+                    msg.indexOf('chrome: call method') !== -1 ||
+                    msg.indexOf('Window message') !== -1 ||
+                    msg.indexOf('ResizeObserver loop') !== -1
+                  );
+                }
+                window.addEventListener('error', function(event) {
+                  if (isExtensionError(event.error) || isExtensionError(event)) {
+                    event.stopImmediatePropagation();
+                    event.preventDefault();
+                    return true;
+                  }
+                }, true);
+                window.addEventListener('unhandledrejection', function(event) {
+                  if (isExtensionError(event.reason)) {
+                    event.stopImmediatePropagation();
+                    event.preventDefault();
+                    return true;
+                  }
+                }, true);
+              })();
+            `
+          }}
+        />
+      </head>
       <body className="min-h-screen bg-[#0B131B] text-[#F0F0F0] antialiased selection:bg-[#39AEA9]/30 selection:text-[#F0F0F0] overflow-x-hidden font-sans relative">
         {/* Skip to Main Content Link for Keyboard / Screen Reader Accessibility */}
         <a

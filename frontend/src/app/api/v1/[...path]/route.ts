@@ -61,23 +61,74 @@ function createProxiedResponse(res: Response, data: any, status: number) {
   return nextRes;
 }
 
-export async function GET(req: NextRequest) {
+const TMDB_API_KEY = process.env.TMDB_API_KEY || '8b36fc4dff6127d090085bcebf286978';
+
+async function fetchFromTmdbDirect(pathname: string, searchParams: URLSearchParams) {
   try {
-    const pathname = req.nextUrl.pathname;
-    const search = req.nextUrl.search;
+    const tmdbPrefixIndex = pathname.indexOf('/tmdb/');
+    if (tmdbPrefixIndex === -1) return null;
+    const tmdbSubPath = pathname.slice(tmdbPrefixIndex + 5);
+    const url = new URL(`https://api.themoviedb.org/3${tmdbSubPath}`);
+    searchParams.forEach((val, key) => {
+      url.searchParams.set(key, val);
+    });
+    url.searchParams.set('api_key', TMDB_API_KEY);
+
+    const tmdbRes = await fetch(url.toString(), {
+      headers: { 'Accept': 'application/json' },
+      cache: 'no-store'
+    });
+    if (!tmdbRes.ok) return null;
+    return await tmdbRes.json();
+  } catch (err) {
+    console.warn("Direct TMDB fallback failed:", err);
+    return null;
+  }
+}
+
+export async function GET(req: NextRequest) {
+  const pathname = req.nextUrl.pathname;
+  const search = req.nextUrl.search;
+  const isTmdbRoute = pathname.includes('/tmdb/');
+
+  try {
     const backendUrl = `${BACKEND_URL}${pathname}${search}`;
-    const res = await fetch(backendUrl, {
+    const fetchOptions: RequestInit = {
       headers: buildForwardHeaders(req, false),
       cache: 'no-store',
-    });
+      signal: isTmdbRoute ? AbortSignal.timeout(5000) : undefined,
+    };
+
+    const res = await fetch(backendUrl, fetchOptions);
 
     if (res.status === 204) {
       return createProxiedResponse(res, null, 204);
     }
 
+    if (res.ok) {
+      const data = await res.json().catch(() => ({ detail: res.statusText }));
+      return createProxiedResponse(res, data, res.status);
+    }
+
+    // If backend returned an error on a TMDB route, try direct TMDB fallback
+    if (isTmdbRoute && res.status >= 500) {
+      const directData = await fetchFromTmdbDirect(pathname, req.nextUrl.searchParams);
+      if (directData) {
+        return NextResponse.json(directData);
+      }
+    }
+
     const data = await res.json().catch(() => ({ detail: res.statusText }));
     return createProxiedResponse(res, data, res.status);
   } catch (err: any) {
+    // If backend failed (timeout, network error) on a TMDB route, try direct TMDB fallback
+    if (isTmdbRoute) {
+      const directData = await fetchFromTmdbDirect(pathname, req.nextUrl.searchParams);
+      if (directData) {
+        return NextResponse.json(directData);
+      }
+    }
+
     console.error("Proxy GET error:", err);
     return NextResponse.json({ detail: err?.message || "Proxy GET failed", results: [] }, { status: 502 });
   }
