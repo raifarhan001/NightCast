@@ -3,7 +3,6 @@ import type { Metadata, Viewport } from "next";
 import "../styles/globals.css";
 import Providers from "../components/common/Providers";
 import Header from "../components/common/Header";
-import SidebarDock from "../components/common/SidebarDock";
 import Footer from "../components/common/Footer";
 import RouteProgressBar from "../components/common/RouteProgressBar";
 import RouteScrollRestoration from "../components/common/RouteScrollRestoration";
@@ -91,22 +90,16 @@ export default function RootLayout({
           <Providers>
             <RouteProgressBar />
             <RouteScrollRestoration />
-            <div className="flex min-h-screen relative z-10">
-              {/* Left Vertical Icon Dock */}
-              <SidebarDock />
+            <div className="flex flex-col min-h-screen relative z-10 w-full">
+              {/* Header with full navigation */}
+              <Header />
 
-              {/* Main Content Area */}
-              <div className="flex-1 w-full pl-0 sm:pl-[72px] md:pl-[80px] pb-[calc(4rem+env(safe-area-inset-bottom,0px))] sm:pb-0 flex flex-col min-h-screen relative z-10">
-                {/* Floating Search Capsule in Top Right */}
-                <Header />
-
-                <main id="main-content" className="flex-1 w-full flex flex-col relative z-10">
-                  <div className="flex-grow">
-                    {children}
-                  </div>
-                  <Footer />
-                </main>
-              </div>
+              <main id="main-content" className="flex-1 w-full flex flex-col relative z-10 pb-20 md:pb-0">
+                <div className="flex-grow">
+                  {children}
+                </div>
+                <Footer />
+              </main>
             </div>
           </Providers>
         </GlobalErrorBoundary>

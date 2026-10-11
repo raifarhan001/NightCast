@@ -215,15 +215,15 @@ function HomePageContent() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#0B131B] pb-28 relative overflow-hidden">
+    <div className="w-full min-h-screen bg-transparent pb-28 relative">
       {/* Dynamic Ambient Background Glow */}
       <AmbientGlow />
 
       {/* Immersive Hero Showcase - Flush with Top */}
       <HeroCarousel items={heroItems} />
 
-      {/* Content Rows Container */}
-      <div className="space-y-6 sm:space-y-8 mt-4 sm:mt-6">
+      {/* Content Rows Container (Seamlessly Flowing From Hero) */}
+      <div className="relative z-20 space-y-6 sm:space-y-8 -mt-6 sm:-mt-10">
         {/* Continue Watching (If User Has In-Progress Titles) */}
         {mergedContinueWatching.length > 0 && (
           <MovieRow

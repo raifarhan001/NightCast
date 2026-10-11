@@ -125,7 +125,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
       const backdrop = activeItem.backdrop_path || activeItem.poster_path;
       const activeTitle = activeItem.title || activeItem.name;
       if (backdrop) {
-        useAmbientStore.getState().setActiveBackdrop(backdrop, activeTitle);
+        useAmbientStore.getState().setHeroBackdrop(backdrop, activeTitle);
       }
     }
   }, [activeItem]);
@@ -275,7 +275,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
 
   return (
     <div
-      className="relative w-full h-screen max-h-screen h-[100dvh] max-h-[100dvh] overflow-hidden bg-[#0B131B] select-none flex flex-col justify-between pt-16 sm:pt-7 md:pt-8 pb-20 sm:pb-4 px-4 sm:px-10 md:px-14 lg:px-16"
+      className="relative w-full h-screen max-h-screen h-[100dvh] max-h-[100dvh] overflow-hidden bg-transparent select-none flex flex-col justify-between pt-20 sm:pt-20 md:pt-24 pb-6 sm:pb-6 px-4 sm:px-8 md:px-12 lg:px-16"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -288,6 +288,10 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           className="absolute inset-0 select-none transform-gpu will-change-transform z-0"
+          style={{
+            WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 100%)",
+            maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 100%)",
+          }}
         >
           <Image
             src={backdropUrl}
@@ -302,7 +306,6 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
           {/* Scrim Overlays - Matching Reference Gradient Vignettes */}
           <div className="absolute top-0 inset-x-0 h-32 sm:h-40 bg-gradient-to-b from-[#0B131B]/90 via-[#0B131B]/40 to-transparent z-10 pointer-events-none" />
           <div className="absolute inset-y-0 left-0 w-full sm:w-4/5 md:w-3/5 bg-gradient-to-r from-[#0B131B] via-[#0B131B]/85 to-transparent z-15 pointer-events-none" />
-          <div className="absolute bottom-0 inset-x-0 h-48 sm:h-56 bg-gradient-to-t from-[#0B131B] via-[#0B131B]/80 to-transparent z-15 pointer-events-none" />
         </motion.div>
       </AnimatePresence>
 
