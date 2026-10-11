@@ -122,7 +122,7 @@ export default function WatchPage() {
     return [
       {
         id: 'vidbolt',
-        name: 'Server 1 (VidBolt - Fast HD Stream)',
+        name: 'Server 1 (VidBolt)',
         url: type === 'tv'
           ? `https://vidbolt.xyz/tv/${id}/${seasonNum}/${episodeNum}?theme=39AEA9`
           : type === 'anime'
@@ -133,38 +133,8 @@ export default function WatchPage() {
         language_name: 'vidbolt.xyz'
       },
       {
-        id: 'screenscape',
-        name: 'ScreenScape (Hindi Dubbed 🇮🇳)',
-        url: type === 'tv' || type === 'anime'
-          ? `https://nxsha.screenscape.me/embed?tmdb=${id}&type=tv&s=${seasonNum}&e=${episodeNum}&lan=hindi`
-          : `https://nxsha.screenscape.me/embed?tmdb=${id}&type=movie&lan=hindi`,
-        type: 'iframe',
-        language: 'hi',
-        language_name: 'ScreenScape (Hindi Dubbed)'
-      },
-      {
-        id: 'vidlink',
-        name: 'Server 2 (VidLink Pro)',
-        url: type === 'tv'
-          ? `https://vidlink.pro/tv/${id}/${seasonNum}/${episodeNum}?primaryColor=39AEA9&autoplay=true`
-          : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`,
-        type: 'iframe',
-        language: 'en',
-        language_name: 'vidlink.pro'
-      },
-      {
-        id: 'nightcast-native',
-        name: 'Server 3 (AutoEmbed - Fast)',
-        url: type === 'tv'
-          ? `https://player.autoembed.cc/embed/tv/${id}/${seasonNum}/${episodeNum}`
-          : `https://player.autoembed.cc/embed/movie/${id}`,
-        type: 'iframe',
-        language: 'en',
-        language_name: 'AutoEmbed'
-      },
-      {
         id: 'vidsrc-to',
-        name: 'Server 4 (VidSrc VIP)',
+        name: 'Server 2 (VidSrc VIP)',
         url: type === 'tv'
           ? `https://vidsrc.to/embed/tv/${id}/${seasonNum}/${episodeNum}`
           : `https://vidsrc.to/embed/movie/${id}`,
@@ -174,13 +144,23 @@ export default function WatchPage() {
       },
       {
         id: 'vidsrc',
-        name: 'Server 5 (VidSrc Mirror)',
+        name: 'Server 3 (VidSrc Mirror)',
         url: type === 'tv'
           ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${seasonNum}&episode=${episodeNum}`
           : `https://vidsrc.me/embed/movie?tmdb=${id}`,
         type: 'iframe',
         language: 'en',
         language_name: 'vidsrc.me'
+      },
+      {
+        id: 'screenscape',
+        name: 'Server 4 (Dubbed)',
+        url: type === 'tv' || type === 'anime'
+          ? `https://nxsha.screenscape.me/embed?tmdb=${id}&type=tv&s=${seasonNum}&e=${episodeNum}&lan=hindi`
+          : `https://nxsha.screenscape.me/embed?tmdb=${id}&type=movie&lan=hindi`,
+        type: 'iframe',
+        language: 'hi',
+        language_name: 'ScreenScape (Hindi Dubbed)'
       }
     ];
   }, [type, id]);
@@ -218,7 +198,7 @@ export default function WatchPage() {
         localStorage.removeItem('nightcast_preferred_server_v4');
         localStorage.removeItem('nightcast_preferred_server_v6');
         const savedServer = localStorage.getItem('nightcast_preferred_server_v7');
-        if (savedServer && ['screenscape', 'vidbolt', 'vidlink', 'nightcast-native', 'vidsrc-to', 'vidsrc'].includes(savedServer)) {
+        if (savedServer && ['vidbolt', 'vidsrc-to', 'vidsrc', 'screenscape'].includes(savedServer)) {
           setActiveServerId(savedServer);
         } else if (settings?.preferred_language === 'hi') {
           setActiveServerId('screenscape');
@@ -272,30 +252,6 @@ export default function WatchPage() {
     const list = servers && servers.length > 0 ? servers : buildServers(currentSeason, currentEpisode);
     const target = list.find((s: any) => s.id === activeServerId) || list[0];
     if (target && target.type === 'iframe') {
-      if (target.id === 'screenscape') {
-        return {
-          ...target,
-          url: type === 'tv' || type === 'anime'
-            ? `https://nxsha.screenscape.me/embed?tmdb=${id}&type=tv&s=${currentSeason}&e=${currentEpisode}&lan=hindi`
-            : `https://nxsha.screenscape.me/embed?tmdb=${id}&type=movie&lan=hindi`
-        };
-      }
-      if (target.id === 'vidlink') {
-        return {
-          ...target,
-          url: type === 'tv'
-            ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}?primaryColor=39AEA9&autoplay=true`
-            : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`
-        };
-      }
-      if (target.id === 'nightcast-native') {
-        return {
-          ...target,
-          url: type === 'tv'
-            ? `https://player.autoembed.cc/embed/tv/${id}/${currentSeason}/${currentEpisode}`
-            : `https://player.autoembed.cc/embed/movie/${id}`
-        };
-      }
       if (target.id === 'vidbolt') {
         return {
           ...target,
@@ -322,6 +278,14 @@ export default function WatchPage() {
             : `https://vidsrc.me/embed/movie?tmdb=${id}`
         };
       }
+      if (target.id === 'screenscape') {
+        return {
+          ...target,
+          url: type === 'tv' || type === 'anime'
+            ? `https://nxsha.screenscape.me/embed?tmdb=${id}&type=tv&s=${currentSeason}&e=${currentEpisode}&lan=hindi`
+            : `https://nxsha.screenscape.me/embed?tmdb=${id}&type=movie&lan=hindi`
+        };
+      }
     }
     return target;
   }, [servers, buildServers, currentSeason, currentEpisode, activeServerId, type, id]);
@@ -331,19 +295,7 @@ export default function WatchPage() {
     if (!rawActiveServer) return null;
     if (isServerFailed) {
       let fallbackUrl = rawActiveServer.url;
-      if (rawActiveServer.id === 'screenscape') {
-        fallbackUrl = type === 'tv'
-          ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}?theme=39AEA9`
-          : `https://vidbolt.xyz/movie/${id}?theme=39AEA9`;
-      } else if (rawActiveServer.id === 'vidbolt') {
-        fallbackUrl = type === 'tv'
-          ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}?primaryColor=39AEA9&autoplay=true`
-          : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`;
-      } else if (rawActiveServer.id === 'vidlink') {
-        fallbackUrl = type === 'tv'
-          ? `https://player.autoembed.cc/embed/tv/${id}/${currentSeason}/${currentEpisode}`
-          : `https://player.autoembed.cc/embed/movie/${id}`;
-      } else if (rawActiveServer.id === 'nightcast-native') {
+      if (rawActiveServer.id === 'vidbolt') {
         fallbackUrl = type === 'tv'
           ? `https://vidsrc.to/embed/tv/${id}/${currentSeason}/${currentEpisode}`
           : `https://vidsrc.to/embed/movie/${id}`;
@@ -352,6 +304,10 @@ export default function WatchPage() {
           ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
           : `https://vidsrc.me/embed/movie?tmdb=${id}`;
       } else if (rawActiveServer.id === 'vidsrc') {
+        fallbackUrl = type === 'tv'
+          ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}?theme=39AEA9`
+          : `https://vidbolt.xyz/movie/${id}?theme=39AEA9`;
+      } else if (rawActiveServer.id === 'screenscape') {
         fallbackUrl = type === 'tv'
           ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}?theme=39AEA9`
           : `https://vidbolt.xyz/movie/${id}?theme=39AEA9`;
