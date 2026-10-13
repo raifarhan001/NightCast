@@ -3,16 +3,17 @@
 import React, { useRef } from "react";
 import MovieCard from "./MovieCard";
 import { MediaItem } from "../../lib/api";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 
 interface MovieRowProps {
   title: string;
   subtitle?: string;
   items: MediaItem[];
   onRemoveItem?: (item: any) => void;
+  isAi?: boolean;
 }
 
-function MovieRow({ title, subtitle, items, onRemoveItem }: MovieRowProps) {
+function MovieRow({ title, subtitle, items, onRemoveItem, isAi }: MovieRowProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Restore & save horizontal scroll offset for this row
@@ -63,9 +64,19 @@ function MovieRow({ title, subtitle, items, onRemoveItem }: MovieRowProps) {
   return (
     <div className="py-3 sm:py-4 px-4 sm:px-6 md:px-12 space-y-3.5 relative group select-none hover:z-40">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight font-display text-[#F0F0F0] flex items-center gap-2.5">
-          <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-[#A4C8E1] to-[#39AEA9] shadow-[0_0_12px_rgba(57,174,169,0.7)] shrink-0" />
+        <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight font-display text-[#F0F0F0] flex items-center gap-2.5 flex-wrap">
+          <span className={`w-1.5 h-5 rounded-full shrink-0 ${
+            isAi
+              ? "bg-gradient-to-b from-[#A2D5AB] to-[#39AEA9] shadow-[0_0_12px_rgba(162,213,171,0.8)]"
+              : "bg-gradient-to-b from-[#A4C8E1] to-[#39AEA9] shadow-[0_0_12px_rgba(57,174,169,0.7)]"
+          }`} />
           <span>{title}</span>
+          {isAi && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-sans font-bold tracking-wider uppercase bg-gradient-to-r from-[#39AEA9]/20 via-[#A2D5AB]/20 to-[#39AEA9]/10 text-[#A2D5AB] border border-[#39AEA9]/40 shadow-[0_0_12px_rgba(57,174,169,0.25)]">
+              <Sparkles className="w-3 h-3 text-[#A2D5AB] animate-pulse" />
+              AI Curated
+            </span>
+          )}
         </h2>
         {subtitle && (
           <span className="text-xs font-sans font-medium text-[#8FA8AD] tracking-normal hidden sm:inline-block">

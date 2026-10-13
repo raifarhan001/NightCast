@@ -163,7 +163,7 @@ export default function NightCastPlayer({
     rawUrl.includes("iframe") ||
     rawUrl.includes("vidsrc") ||
     rawUrl.includes("autoembed") ||
-    rawUrl.includes("vidbolt") ||
+    rawUrl.includes("vidlink") ||
     rawUrl.includes("vidking") ||
     rawUrl.includes("screenscape");
 

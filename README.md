@@ -31,16 +31,20 @@
   - Direct genre filter dropdown menu covering Action & Adventure, Comedy, Drama, Sci-Fi & Speculative, Thriller & Suspense, Horror, Animation, Documentary, and Romance.
 
 - **⚡ 4 High-Performance Streaming Servers**:
-  - **Server 1 (VidSrc)**: High-reliability primary full-HD 1080p embed player.
-  - **Server 2 (VidBolt)**: Ultra-fast 1080p full-HD multi-source stream with automatic subtitle loading.
-  - **Server 3 (Hindi Dubbed)**: Dedicated Bollywood, Hindi-dubbed Hollywood, and South Indian dubbed stream.
-  - **Server 4 (Vidking)**: High-speed 1080p player with real-time watch progress tracking (`PLAYER_EVENT`) and resume timestamp integration.
+  - **Server 1 (VidLink)**: High-speed 1080p full-HD player with real-time watch progress sync (`MEDIA_DATA`).
+  - **Server 2 (VidSrc VIP)**: Ultra-reliable VIP multi-source stream.
+  - **Server 3 (VidSrc Mirror)**: Direct high-compatibility embed mirror player.
+  - **Server 4 (ScreenScape Dubbed)**: Dedicated Bollywood, Hindi-dubbed Hollywood, and regional dubbed stream.
 
 - **📥 Direct Offline Download Engine**:
   - Download Hub with one-click direct download links for Movies and TV Episodes across all servers.
 
 - **🏆 Prime Video Top 10 Ranked Row**:
   - Outlined gold/cyan rank numbers (**`1` to `10`**) with 2:3 vertical posters and hover action triggers.
+
+- **✨ Daily AI All-Time Hit Suggestions**:
+  - **AI Movie Suggestions**: Curated all-time hit masterpieces (`vote_average >= 8.0`, thousands of verified votes) rotating daily so users discover new cinematic gems every single day.
+  - **AI Web Series Suggestions**: Legendary critically acclaimed TV shows and binge-worthy web series refreshed daily with deterministic date-based seed curation.
 
 - **🎬 Channels & Studios Discovery**:
   - Interactive network discover filters for **Prime Video**, **Netflix**, **Apple TV+**, **Disney+**, **Hulu**, **HBO Max**, **Paramount+**, and **Marvel Studios**.
@@ -127,15 +131,16 @@ Open your browser at: **[http://localhost:3000](http://localhost:3000)**
 
 ---
 
-## 🔌 3 High-Speed Streaming Servers
+## 🔌 4 Dedicated Streaming Servers
 
-Nightcast provides 3 dedicated streaming servers:
+Nightcast provides 4 dedicated streaming servers:
 
 | Server Name | Identifier | Resolution | Audio | Description |
 |---|---|---|---|---|
-| **Server 1** | `vidsrc` | 1080p Full HD | Original (English) | High-reliability primary embed player |
-| **Server 2** | `vidbolt` | 1080p Full HD | Original (English) | Ultra-fast embed player with subtitles |
-| **Server 3** | `vidking` | 1080p Full HD | Original (English) | High-speed player with real-time watch progress sync |
+| **Server 1** | `vidlink` | 1080p Full HD | Original (English) | High-speed player with real-time watch progress sync |
+| **Server 2** | `vidsrc-to` | 1080p Full HD | Original (English) | High-reliability VIP stream player |
+| **Server 3** | `vidsrc` | 1080p Full HD | Original (English) | Direct high-compatibility embed mirror player |
+| **Server 4** | `screenscape` | 1080p Full HD | Hindi Dubbed | Dedicated Hindi dubbed stream with auto-sync |
 
 ---
 

@@ -13,6 +13,8 @@ import { HeroSkeleton, MovieRowSkeleton } from "../components/shared/Skeletons";
 
 const selectHomeFeed = (data: any) => ({
   top_picks: (data?.top_picks || []) as MediaItem[],
+  ai_movie_suggestions: ((data?.ai_movie_suggestions || []) as MediaItem[]).map((m) => ({ ...m, media_type: "movie" as const })),
+  ai_series_suggestions: ((data?.ai_series_suggestions || []) as MediaItem[]).map((t) => ({ ...t, media_type: "tv" as const })),
   new_movies: ((data?.new_movies || []) as MediaItem[]).map((m) => ({ ...m, media_type: "movie" as const })),
   popular_tv: ((data?.popular_tv || []) as MediaItem[]).map((t) => ({ ...t, media_type: "tv" as const })),
   action_movies: ((data?.action_movies || []) as MediaItem[]).map((m) => ({ ...m, media_type: "movie" as const })),
@@ -81,9 +83,9 @@ function HomePageContent() {
     };
   }, [activeProfile, queryClient]);
 
-  // 1. Aggregated Composite Home Feed (1 single cached request replacing 13 individual queries)
+  // 1. Aggregated Composite Home Feed (1 single cached request replacing individual queries)
   const { data: homeFeed, isLoading: isFeedLoading } = useQuery({
-    queryKey: ["home-feed-v3"],
+    queryKey: ["home-feed-v4"],
     queryFn: () => apiFetch("/api/v1/tmdb/home_feed"),
     select: selectHomeFeed,
     staleTime: 1000 * 60 * 10,
@@ -91,6 +93,8 @@ function HomePageContent() {
   });
 
   const topPicks = homeFeed?.top_picks || [];
+  const aiMovieSuggestions = homeFeed?.ai_movie_suggestions || [];
+  const aiSeriesSuggestions = homeFeed?.ai_series_suggestions || [];
   const newMovies = homeFeed?.new_movies || [];
   const popularTvShows = homeFeed?.popular_tv || [];
   const actionMovies = homeFeed?.action_movies || [];
@@ -270,7 +274,27 @@ function HomePageContent() {
         />
       </div>
 
-      {/* 2. New Movies */}
+      {/* 2. AI Movie Suggestions: All-Time Hits (Refreshed Daily) */}
+      {aiMovieSuggestions.length > 0 && (
+        <MovieRow
+          title="AI Movie Suggestions"
+          subtitle="All-time hit masterpieces • Refreshed daily by AI"
+          isAi
+          items={aiMovieSuggestions}
+        />
+      )}
+
+      {/* 3. AI Web Series Suggestions: All-Time Hits (Refreshed Daily) */}
+      {aiSeriesSuggestions.length > 0 && (
+        <MovieRow
+          title="AI Web Series Suggestions"
+          subtitle="Legendary binge-worthy hits • Refreshed daily by AI"
+          isAi
+          items={aiSeriesSuggestions}
+        />
+      )}
+
+      {/* 4. New Movies */}
       <MovieRow
         title="New Movies"
         subtitle="Latest releases & fresh premieres"

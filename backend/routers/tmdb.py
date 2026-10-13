@@ -1,6 +1,8 @@
 import asyncio
 import ipaddress
 import socket
+import random
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 from typing import List, Dict, Any
 import httpx
@@ -16,16 +18,24 @@ router = APIRouter(prefix="/tmdb", tags=["tmdb"])
 @router.get("/home_feed")
 async def get_home_feed():
     """Returns an aggregated and cached composite feed of all core categories for instant home page loading."""
-    cache_key = "tmdb:home_feed:v3"
+    now = datetime.now(timezone.utc)
+    day_of_year = now.timetuple().tm_yday
+    today_str = now.strftime("%Y-%m-%d")
+
+    cache_key = f"tmdb:home_feed:v5:{today_str}"
     cached = await redis_cache.get(cache_key)
-    if cached and isinstance(cached, dict) and cached.get("new_movies"):
+    if cached and isinstance(cached, dict) and cached.get("new_movies") and cached.get("ai_movie_suggestions"):
         first_movie = cached["new_movies"][0] if cached["new_movies"] else {}
         # Only return cached if it contains real TMDB data, not stale mock fallback
         if first_movie.get("title") != "Interstellar":
             return cached
 
-    # Use a Semaphore with higher concurrency (12) for faster parallel fetching of home feed rows
-    sem = asyncio.Semaphore(12)
+    # Daily dynamic page rotation for all-time hits (cycles every day so suggestions are always fresh)
+    ai_movie_page = (day_of_year % 8) + 1
+    ai_tv_page = (day_of_year % 8) + 1
+
+    # Use a Semaphore with higher concurrency (15) for faster parallel fetching of home feed rows
+    sem = asyncio.Semaphore(15)
 
     async def fetch_category(coro):
         async with sem:
@@ -49,6 +59,18 @@ async def get_home_feed():
         fetch_category(tmdb_client.get_request("/discover/movie", {"with_genres": "16"})),
         fetch_category(tmdb_client.get_request("/discover/movie", {"with_genres": "80"})),
         fetch_category(tmdb_client.get_request("/discover/movie", {"with_genres": "99"})),
+        # 13. AI Movie Suggestions: All-time hit masterpieces with daily rotation
+        fetch_category(tmdb_client.get_request("/discover/movie", {
+            "sort_by": "vote_average.desc",
+            "vote_count.gte": "2500",
+            "page": str(ai_movie_page)
+        })),
+        # 14. AI Web Series Suggestions: All-time hit acclaimed shows with daily rotation
+        fetch_category(tmdb_client.get_request("/discover/tv", {
+            "sort_by": "vote_average.desc",
+            "vote_count.gte": "1000",
+            "page": str(ai_tv_page)
+        })),
     )
 
     mock_movie_list = [{**m, "media_type": "movie"} for m in MOCK_MOVIES.values()]
@@ -74,8 +96,21 @@ async def get_home_feed():
                 item["media_type"] = default_type
         return items
 
+    # Curate AI suggestions with daily deterministic shuffle for fresh layout each day
+    raw_ai_movies = extract_items(results[13], "movie")
+    rng_m = random.Random(f"{today_str}-ai-movies")
+    curated_ai_movies = list(raw_ai_movies)
+    rng_m.shuffle(curated_ai_movies)
+
+    raw_ai_tv = extract_items(results[14], "tv")
+    rng_t = random.Random(f"{today_str}-ai-tv")
+    curated_ai_tv = list(raw_ai_tv)
+    rng_t.shuffle(curated_ai_tv)
+
     feed = {
         "top_picks": extract_items(results[0], "all"),
+        "ai_movie_suggestions": curated_ai_movies,
+        "ai_series_suggestions": curated_ai_tv,
         "new_movies": extract_items(results[1], "movie"),
         "popular_tv": extract_items(results[2], "tv"),
         "action_movies": extract_items(results[3], "movie"),
@@ -95,6 +130,62 @@ async def get_home_feed():
     await redis_cache.set(cache_key, feed, expire_seconds=expire_time)
 
     return feed
+
+@router.get("/ai/movies")
+async def get_ai_movie_suggestions():
+    """Returns all-time hit movie suggestions refreshed daily."""
+    now = datetime.now(timezone.utc)
+    day_of_year = now.timetuple().tm_yday
+    today_str = now.strftime("%Y-%m-%d")
+    cache_key = f"tmdb:ai_movies:{today_str}"
+    cached = await redis_cache.get(cache_key)
+    if cached:
+        return cached
+    page = (day_of_year % 8) + 1
+    try:
+        data = await tmdb_client.get_request("/discover/movie", {
+            "sort_by": "vote_average.desc",
+            "vote_count.gte": "2500",
+            "page": str(page)
+        })
+        items = data.get("results", []) if isinstance(data, dict) else []
+        for item in items:
+            item["media_type"] = "movie"
+        rng = random.Random(f"{today_str}-ai-movies")
+        rng.shuffle(items)
+        await redis_cache.set(cache_key, items, expire_seconds=86400)
+        return items
+    except Exception:
+        movies = [{**m, "media_type": "movie"} for m in MOCK_MOVIES.values()]
+        return movies
+
+@router.get("/ai/series")
+async def get_ai_series_suggestions():
+    """Returns all-time hit web series suggestions refreshed daily."""
+    now = datetime.now(timezone.utc)
+    day_of_year = now.timetuple().tm_yday
+    today_str = now.strftime("%Y-%m-%d")
+    cache_key = f"tmdb:ai_series:{today_str}"
+    cached = await redis_cache.get(cache_key)
+    if cached:
+        return cached
+    page = (day_of_year % 8) + 1
+    try:
+        data = await tmdb_client.get_request("/discover/tv", {
+            "sort_by": "vote_average.desc",
+            "vote_count.gte": "1000",
+            "page": str(page)
+        })
+        items = data.get("results", []) if isinstance(data, dict) else []
+        for item in items:
+            item["media_type"] = "tv"
+        rng = random.Random(f"{today_str}-ai-tv")
+        rng.shuffle(items)
+        await redis_cache.set(cache_key, items, expire_seconds=86400)
+        return items
+    except Exception:
+        series = [{**t, "media_type": "tv"} for t in MOCK_TV.values()]
+        return series
 
 @router.get("/trending")
 async def get_trending(
@@ -265,7 +356,6 @@ ALLOWED_PROXY_DOMAINS = {
     "vidsrc.cc",
     "vidsrc.xyz",
     "vidlink.pro",
-    "vidbolt.xyz",
     "2embed.to",
     "2embed.cc",
     "embed.su",

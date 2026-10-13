@@ -48,7 +48,7 @@ function attachTimestampToUrl(url: string, seconds: number): string {
       const s = Math.floor(seconds).toString();
       // VidLink uses 'startAt'
       urlObj.searchParams.set('startAt', s);
-      // VidBolt & standard iframe players accept start, time, t
+      // Standard iframe players accept start, time, t
       urlObj.searchParams.set('start', s);
       urlObj.searchParams.set('time', s);
       urlObj.searchParams.set('t', s);
@@ -60,10 +60,6 @@ function attachTimestampToUrl(url: string, seconds: number): string {
       }
       if (!urlObj.searchParams.has('autoplay')) {
         urlObj.searchParams.set('autoplay', 'true');
-      }
-    } else if (url.includes('vidbolt.xyz')) {
-      if (!urlObj.searchParams.has('theme')) {
-        urlObj.searchParams.set('theme', '39AEA9');
       }
     }
     return urlObj.toString();
@@ -125,16 +121,14 @@ export default function WatchPage() {
   const buildServers = useCallback((seasonNum: number, episodeNum: number) => {
     return [
       {
-        id: 'vidbolt',
-        name: 'Server 1 (VidBolt)',
-        url: type === 'tv'
-          ? `https://vidbolt.xyz/tv/${id}/${seasonNum}/${episodeNum}?theme=39AEA9`
-          : type === 'anime'
-          ? `https://vidbolt.xyz/anime/${id}/${episodeNum}?theme=39AEA9`
-          : `https://vidbolt.xyz/movie/${id}?theme=39AEA9`,
+        id: 'vidlink',
+        name: 'Server 1 (VidLink)',
+        url: type === 'tv' || type === 'anime'
+          ? `https://vidlink.pro/tv/${id}/${seasonNum}/${episodeNum}?primaryColor=39AEA9&autoplay=true`
+          : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`,
         type: 'iframe',
         language: 'en',
-        language_name: 'vidbolt.xyz'
+        language_name: 'vidlink.pro'
       },
       {
         id: 'vidsrc-to',
@@ -171,7 +165,7 @@ export default function WatchPage() {
 
   const [servers, setServers] = useState<any[]>(() => buildServers(initialSeason, initialEpisode));
 
-  const [activeServerId, setActiveServerId] = useState<string>('vidbolt');
+  const [activeServerId, setActiveServerId] = useState<string>('vidlink');
   const [resumeTime, setResumeTime] = useState<number>(0);
   const [playerUrl, setPlayerUrl] = useState<string>("");
 
@@ -202,12 +196,12 @@ export default function WatchPage() {
         localStorage.removeItem('nightcast_preferred_server_v4');
         localStorage.removeItem('nightcast_preferred_server_v6');
         const savedServer = localStorage.getItem('nightcast_preferred_server_v7');
-        if (savedServer && ['vidbolt', 'vidsrc-to', 'vidsrc', 'screenscape'].includes(savedServer)) {
+        if (savedServer && ['vidlink', 'vidsrc-to', 'vidsrc', 'screenscape'].includes(savedServer)) {
           setActiveServerId(savedServer);
         } else if (settings?.preferred_language === 'hi') {
           setActiveServerId('screenscape');
         } else {
-          setActiveServerId('vidbolt');
+          setActiveServerId('vidlink');
         }
         const savedShield = localStorage.getItem('nightcast_ad_shield_v2');
         if (savedShield !== null) {
@@ -256,14 +250,12 @@ export default function WatchPage() {
     const list = servers && servers.length > 0 ? servers : buildServers(currentSeason, currentEpisode);
     const target = list.find((s: any) => s.id === activeServerId) || list[0];
     if (target && target.type === 'iframe') {
-      if (target.id === 'vidbolt') {
+      if (target.id === 'vidlink') {
         return {
           ...target,
-          url: type === 'tv'
-            ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}?theme=39AEA9`
-            : type === 'anime'
-            ? `https://vidbolt.xyz/anime/${id}/${currentEpisode}?theme=39AEA9`
-            : `https://vidbolt.xyz/movie/${id}?theme=39AEA9`
+          url: type === 'tv' || type === 'anime'
+            ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}?primaryColor=39AEA9&autoplay=true`
+            : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`
         };
       }
       if (target.id === 'vidsrc-to') {
@@ -299,7 +291,7 @@ export default function WatchPage() {
     if (!rawActiveServer) return null;
     if (isServerFailed) {
       let fallbackUrl = rawActiveServer.url;
-      if (rawActiveServer.id === 'vidbolt') {
+      if (rawActiveServer.id === 'vidlink') {
         fallbackUrl = type === 'tv'
           ? `https://vidsrc.to/embed/tv/${id}/${currentSeason}/${currentEpisode}`
           : `https://vidsrc.to/embed/movie/${id}`;
@@ -308,13 +300,13 @@ export default function WatchPage() {
           ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
           : `https://vidsrc.me/embed/movie?tmdb=${id}`;
       } else if (rawActiveServer.id === 'vidsrc') {
-        fallbackUrl = type === 'tv'
-          ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}?theme=39AEA9`
-          : `https://vidbolt.xyz/movie/${id}?theme=39AEA9`;
+        fallbackUrl = type === 'tv' || type === 'anime'
+          ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}?primaryColor=39AEA9&autoplay=true`
+          : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`;
       } else if (rawActiveServer.id === 'screenscape') {
-        fallbackUrl = type === 'tv'
-          ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}?theme=39AEA9`
-          : `https://vidbolt.xyz/movie/${id}?theme=39AEA9`;
+        fallbackUrl = type === 'tv' || type === 'anime'
+          ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}?primaryColor=39AEA9&autoplay=true`
+          : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`;
       }
       return {
         ...rawActiveServer,
@@ -393,8 +385,8 @@ export default function WatchPage() {
           } else if (settings?.preferred_language === 'hi' && data.servers.some((s: any) => s.id === 'screenscape')) {
             setActiveServerId('screenscape');
           } else {
-            const vidboltServer = data.servers.find((s: any) => s.id === 'vidbolt');
-            setActiveServerId(vidboltServer ? 'vidbolt' : data.servers[0].id);
+            const vidlinkServer = data.servers.find((s: any) => s.id === 'vidlink');
+            setActiveServerId(vidlinkServer ? 'vidlink' : data.servers[0].id);
           }
         }
       } catch (err) {
@@ -730,7 +722,7 @@ export default function WatchPage() {
     }
   }, [id, meta, type, currentSeason, currentEpisode, activeProfile?.id]);
 
-  // 3. PostMessage listener for embed players (VidLink MEDIA_DATA, Vidking PLAYER_EVENT, VidBolt, etc.)
+  // 3. PostMessage listener for embed players (VidLink MEDIA_DATA, Vidking PLAYER_EVENT, ScreenScape, etc.)
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       try {
@@ -904,7 +896,7 @@ export default function WatchPage() {
     };
   }, [handlePlayerProgress, meta, type, currentSeason, currentEpisode, triggerNextEpisodeOverlay, resumeTime, getEstimatedDuration]);
 
-  // 4. Fallback Watcher Heartbeat: for iframe servers that do NOT emit continuous postMessage (e.g. VidSrc, VidSrc VIP, VidBolt)
+  // 4. Fallback Watcher Heartbeat: for iframe servers that do NOT emit continuous postMessage (e.g. VidSrc, VidSrc VIP)
   useEffect(() => {
     if (!id || !meta) return;
     const estDuration = getEstimatedDuration();
@@ -1489,7 +1481,7 @@ export default function WatchPage() {
             <div className="flex items-center gap-2.5">
               <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
               <span>
-                <strong>Ad-Shield Sandbox Active:</strong> Some stream servers (VidSrc/VidBolt) block playback when sandbox is enabled. If player says &quot;Playback Disabled&quot; or &quot;Please Disable Sandbox&quot;, click here:
+                <strong>Ad-Shield Sandbox Active:</strong> Some stream servers (VidSrc/VidLink) block playback when sandbox is enabled. If player says &quot;Playback Disabled&quot; or &quot;Please Disable Sandbox&quot;, click here:
               </span>
             </div>
             <button
