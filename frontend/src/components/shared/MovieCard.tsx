@@ -65,6 +65,8 @@ interface MovieCardProps {
     genres?: Array<{ id?: number; name?: string } | string>;
     adult?: boolean;
     content_rating?: string;
+    ai_pitch?: string;
+    ai_vibe_tag?: string;
   };
   subtitle?: string;
   isFirst?: boolean;
@@ -72,23 +74,30 @@ interface MovieCardProps {
   onRemove?: () => void;
 }
 
-function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps) {
-  const [added, setAdded] = useState<boolean>(() => {
-    if (typeof window !== "undefined" && item.id) {
-      try {
-        const stored = localStorage.getItem("nightcast_watchlist");
-        if (stored) {
-          const map = JSON.parse(stored);
-          const val = map[String(item.id)];
-          if (val) return true;
-        }
-      } catch {}
+let cachedWatchlistMap: Record<string, boolean> | null = null;
+let lastWatchlistCacheTime = 0;
+
+function getCachedWatchlistStatus(id: string | number): boolean {
+  if (typeof window === "undefined" || !id) return false;
+  const now = Date.now();
+  if (!cachedWatchlistMap || now - lastWatchlistCacheTime > 2000) {
+    try {
+      const stored = localStorage.getItem("nightcast_watchlist");
+      cachedWatchlistMap = stored ? JSON.parse(stored) : {};
+    } catch {
+      cachedWatchlistMap = {};
     }
-    return false;
-  });
+    lastWatchlistCacheTime = now;
+  }
+  return !!cachedWatchlistMap?.[String(id)];
+}
+
+function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps) {
+  const [added, setAdded] = useState<boolean>(() => getCachedWatchlistStatus(item.id));
 
   useEffect(() => {
     const handleSync = (e: Event) => {
+      cachedWatchlistMap = null; // invalidate cache
       const customEvent = e as CustomEvent<{ id: string | number; added: boolean }>;
       if (customEvent.detail && String(customEvent.detail.id) === String(item.id)) {
         setAdded(customEvent.detail.added);
@@ -261,21 +270,14 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
       if (backdrop) {
         useAmbientStore.getState().setActiveBackdrop(backdrop, title);
       }
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setOpenDownward(rect.top < 120);
+      }
       setIsHovered(true);
     }, 280);
 
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
-      setOpenDownward(rect.top < 120);
-      if (rect.left < 90 || isFirst) {
-        setAlign("left");
-      } else if (windowWidth - rect.right < 90 || isLast) {
-        setAlign("right");
-      } else {
-        setAlign("center");
-      }
-    } else if (isFirst) {
+    if (isFirst) {
       setAlign("left");
     } else if (isLast) {
       setAlign("right");
@@ -374,14 +376,23 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
             </button>
           )}
 
+          {/* AI Vibe Tag Top Right */}
+          {!onRemove && item.ai_vibe_tag && (
+            <div className="absolute top-2.5 right-2.5 z-20 pointer-events-none">
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#39AEA9]/30 text-[#39AEA9] backdrop-blur-xl border border-[#39AEA9]/40 shadow-[0_0_10px_rgba(57,174,169,0.3)]">
+                ✨ {item.ai_vibe_tag}
+              </span>
+            </div>
+          )}
+
 
 
           {/* Progress Bar (if watched) */}
           {progress > 0 && (
             <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-[#0B131B]/80 z-30 overflow-hidden rounded-b-2xl">
               <div
-                className="h-full bg-[#A4C8E1] shadow-[0_0_8px_rgba(164,200,225,0.8)] transition-all duration-300"
-                style={{ width: `${Math.max(2, Math.min(100, displayPercent))}%` }}
+                className="h-full bg-[#A4C8E1] shadow-[0_0_8px_rgba(164,200,225,0.8)] origin-left transition-transform duration-300 ease-out"
+                style={{ transform: `scaleX(${Math.max(0.02, Math.min(1, displayPercent / 100))})` }}
               />
             </div>
           )}
@@ -399,7 +410,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
       {/* Netflix-Style Hover Preview Pop-Up Card */}
       {isHovered && (
         <div
-          className={`absolute ${positionClasses} z-50 bg-[#0B131B]/85 backdrop-blur-3xl backdrop-saturate-150 rounded-2xl sm:rounded-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_24px_60px_rgba(0,0,0,0.95),0_0_30px_rgba(57,174,169,0.2)] border border-white/[0.12] overflow-hidden transform-gpu animate-in fade-in zoom-in-95 duration-200 pointer-events-auto`}
+          className={`absolute ${positionClasses} z-50 bg-[#0B131B]/90 backdrop-blur-xl backdrop-saturate-150 rounded-2xl sm:rounded-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_24px_60px_rgba(0,0,0,0.95),0_0_30px_rgba(57,174,169,0.2)] border border-white/[0.12] overflow-hidden transform-gpu animate-in fade-in zoom-in-95 duration-200 pointer-events-auto`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Top Banner: High-Res Cinema Artwork / Poster */}
@@ -539,6 +550,13 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
                     )}
                   </React.Fragment>
                 ))}
+              </div>
+            )}
+
+            {/* AI Pitch Quote */}
+            {item.ai_pitch && (
+              <div className="pt-1.5 text-[11px] text-[#A4C8E1] italic font-sans border-t border-white/[0.08] line-clamp-2 leading-relaxed">
+                &ldquo;{item.ai_pitch}&rdquo;
               </div>
             )}
           </div>

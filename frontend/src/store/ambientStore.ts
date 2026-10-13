@@ -19,7 +19,7 @@ export const useAmbientStore = create<AmbientState>((set, get) => ({
   clearTimeoutId: null,
 
   setHeroBackdrop: (backdrop, title) => {
-    if (!backdrop) return;
+    if (!backdrop || get().heroBackdrop === backdrop) return;
     set({
       heroBackdrop: backdrop,
       heroTitle: title || null,
@@ -27,11 +27,11 @@ export const useAmbientStore = create<AmbientState>((set, get) => ({
   },
 
   setActiveBackdrop: (backdrop, title) => {
-    const { clearTimeoutId } = get();
+    const { clearTimeoutId, activeBackdrop } = get();
     if (clearTimeoutId) {
       clearTimeout(clearTimeoutId);
     }
-    if (!backdrop) return;
+    if (!backdrop || activeBackdrop === backdrop) return;
     set({
       activeBackdrop: backdrop,
       activeTitle: title || null,

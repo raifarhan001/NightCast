@@ -15,9 +15,10 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 43200  # 30 days
     OPENAI_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
 
     class Config:
-        env_file = (root_env, backend_env)
+        env_file = (backend_env, root_env)
         extra = "ignore"
 
 settings = Settings()

@@ -7,9 +7,23 @@ from database import get_db
 import models
 import auth
 from services.ai_service import search_semantic_media, get_ai_recommendations
+from services.gemini_service import search_by_mood_and_prompt
 from services.tmdb_service import tmdb_client
 
 router = APIRouter(prefix="/ai", tags=["ai"])
+
+@router.get("/mood-search")
+async def ai_mood_search(
+    q: str = Query(..., description="Natural language search, mood, feeling, or plot description"),
+    limit: int = Query(8, ge=1, le=20)
+):
+    """
+    Translates user emotions, moods, or complex conversational requests
+    into curated movie and TV show recommendations with custom AI reasoning.
+    """
+    if not q or not q.strip():
+        raise HTTPException(status_code=400, detail="Query cannot be empty")
+    return await search_by_mood_and_prompt(q.strip(), limit)
 
 async def _enrich_hit(hit: Dict[str, Any]) -> Dict[str, Any]:
     try:

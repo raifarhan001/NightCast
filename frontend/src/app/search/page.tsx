@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Search, X } from "lucide-react";
+import { Search, X, Sparkles } from "lucide-react";
 import MovieCard from "../../components/shared/MovieCard";
 import { apiFetch, MediaItem } from "../../lib/api";
 
@@ -35,6 +35,7 @@ function SearchPageContent() {
   const queryParam = searchParams.get("q") || "";
   const typeParam = searchParams.get("type") || "all";
   const sortParam = searchParams.get("sort") || "";
+  const aiParam = searchParams.get("ai") === "true";
 
   // Studio / Platform Filter Parameters
   const studioParam = searchParams.get("studio") || "";
@@ -51,6 +52,7 @@ function SearchPageContent() {
   const [selectedType, setSelectedType] = useState<string>(typeParam);
   const [selectedGenre, setSelectedGenre] = useState<string>(genreParam || "");
   const [sortBy, setSortBy] = useState<string>("popularity");
+  const [aiMoodInfo, setAiMoodInfo] = useState<{ vibe: string; reasoning: string } | null>(null);
 
   useEffect(() => {
     setSearchTerm(queryParam);
@@ -114,9 +116,22 @@ function SearchPageContent() {
 
     // 1. Text Search Query
     if (activeQuery) {
+      if (aiParam) {
+        try {
+          const res = await apiFetch(`/api/v1/ai/mood-search?q=${encodeURIComponent(activeQuery)}`);
+          if (res && Array.isArray(res.results)) {
+            setAiMoodInfo({ vibe: res.vibe, reasoning: res.reasoning });
+            return res.results;
+          }
+        } catch (e) {
+          console.error("AI mood search error, falling back to standard search", e);
+        }
+      }
+      setAiMoodInfo(null);
       const type = selectedType === "all" ? "multi" : selectedType;
       return apiFetch(`/api/tmdb/search?query=${encodeURIComponent(activeQuery)}&media_type=${type}`);
     }
+    setAiMoodInfo(null);
 
     // 2. Studio / Platform Filter Query
     if (isStudioFilterActive) {
@@ -165,7 +180,7 @@ function SearchPageContent() {
   };
 
   const { data: rawItems = [], isLoading: queryLoading } = useQuery<MediaItem[]>({
-    queryKey: ["search-catalog", debouncedSearchTerm, selectedType, studioParam, providerParam, networkParam, companyParam, genreParam, selectedGenre, langParam],
+    queryKey: ["search-catalog", debouncedSearchTerm, selectedType, studioParam, providerParam, networkParam, companyParam, genreParam, selectedGenre, langParam, aiParam],
     queryFn: fetchCatalogItems,
   });
 
@@ -252,31 +267,57 @@ function SearchPageContent() {
         {/* Search Bar & Filters */}
         <div className="p-5 bg-white/[0.04] backdrop-blur-2xl backdrop-saturate-150 border border-white/[0.12] rounded-3xl space-y-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_16px_40px_rgba(0,0,0,0.6)]">
           <form onSubmit={handleSearchSubmit} className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#8FA8AD]" />
+            <Search className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${aiParam ? "text-[#39AEA9]" : "text-[#8FA8AD]"}`} />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search movies, TV series, directors, cast..."
+              placeholder={aiParam ? "✨ Describe mood or plot in Urdu / English..." : "Search movies, TV series, directors, cast..."}
               aria-label="Search movies, TV series, directors, cast"
-              className="w-full h-12 pl-12 pr-12 bg-[#0B131B]/60 hover:bg-[#0B131B]/70 focus:bg-[#0B131B]/80 backdrop-blur-xl border border-white/[0.12] focus:border-white/[0.28] rounded-full text-[#F0F0F0] placeholder-[#8FA8AD] focus:outline-none text-sm font-sans font-medium transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]"
+              className={`w-full h-12 pl-12 pr-28 bg-[#0B131B]/60 hover:bg-[#0B131B]/70 focus:bg-[#0B131B]/80 backdrop-blur-xl border rounded-full text-[#F0F0F0] placeholder-[#8FA8AD] focus:outline-none text-sm font-sans font-medium transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] ${
+                aiParam ? "border-[#39AEA9]/50 shadow-[0_0_15px_rgba(57,174,169,0.2)]" : "border-white/[0.12] focus:border-white/[0.28]"
+              }`}
             />
-            {searchTerm && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchTerm("");
+                    if (studioParam) {
+                      router.push(`/search?studio=${studioParam}&name=${encodeURIComponent(studioNameParam)}&provider=${providerParam}&network=${networkParam}&company=${companyParam}&type=${selectedType}`);
+                    } else {
+                      router.push("/search");
+                    }
+                  }}
+                  className="text-[#8FA8AD] hover:text-[#F0F0F0] cursor-pointer p-1"
+                  aria-label="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
-                  setSearchTerm("");
-                  if (studioParam) {
-                    router.push(`/search?studio=${studioParam}&name=${encodeURIComponent(studioNameParam)}&provider=${providerParam}&network=${networkParam}&company=${companyParam}&type=${selectedType}`);
+                  const params = new URLSearchParams(searchParams.toString());
+                  if (aiParam) {
+                    params.delete("ai");
                   } else {
-                    router.push("/search");
+                    params.set("ai", "true");
                   }
+                  router.replace(`/search?${params.toString()}`, { scroll: false });
                 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8FA8AD] hover:text-[#F0F0F0] cursor-pointer"
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold transition cursor-pointer select-none ${
+                  aiParam
+                    ? "bg-gradient-to-r from-[#39AEA9] to-[#2D8E89] text-white shadow-[0_0_12px_rgba(57,174,169,0.5)] border border-[#39AEA9]"
+                    : "bg-white/[0.08] hover:bg-white/[0.14] text-[#8FA8AD] hover:text-[#39AEA9] border border-white/[0.1]"
+                }`}
+                title="Toggle Gemini AI Mood Search"
               >
-                <X className="w-5 h-5" />
+                <Sparkles className={`w-3 h-3 ${aiParam ? "text-white animate-pulse" : "text-[#39AEA9]"}`} />
+                <span>AI</span>
               </button>
-            )}
+            </div>
           </form>
 
           {/* Capsule Selector & Filters */}
@@ -364,6 +405,21 @@ function SearchPageContent() {
             </div>
           </div>
         </div>
+
+        {/* AI Mood Curated Banner */}
+        {aiMoodInfo && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-[#39AEA9]/15 via-[#18363F]/25 to-transparent border border-[#39AEA9]/30 backdrop-blur-2xl shadow-[0_10px_30px_rgba(57,174,169,0.12)] space-y-1.5 animate-in fade-in duration-300">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-[#39AEA9]">
+              <Sparkles className="w-4 h-4 text-[#39AEA9] shrink-0" />
+              <span>AI Curated Vibe: {aiMoodInfo.vibe}</span>
+            </div>
+            {aiMoodInfo.reasoning && (
+              <p className="text-xs text-[#A4C8E1]/90 leading-relaxed max-w-4xl">
+                {aiMoodInfo.reasoning}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Card Grid with Exact Sizing */}
         {isLoading ? (

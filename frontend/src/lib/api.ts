@@ -20,6 +20,8 @@ export interface MediaItem {
   episode?: number;
   progress_percent?: number;
   tagline?: string;
+  ai_pitch?: string;
+  ai_vibe_tag?: string;
 }
 
 export interface Profile {

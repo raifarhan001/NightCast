@@ -29,15 +29,15 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   initialize: async () => {
     try {
-      const user = await apiFetch('/api/auth/me');
+      const [user, rawProfiles] = await Promise.all([
+        apiFetch('/api/auth/me'),
+        apiFetch('/api/auth/profiles').catch(() => [])
+      ]);
       if (!user || !user.id || !user.email) {
         throw new Error('Unauthenticated');
       }
-      set({ user });
-      
-      const rawProfiles = await apiFetch('/api/auth/profiles');
       const profiles = Array.isArray(rawProfiles) ? rawProfiles : [];
-      set({ profiles });
+      set({ user, profiles });
       
       // Load active profile from localStorage or choose first
       const storedProfile = localStorage.getItem('active_profile');

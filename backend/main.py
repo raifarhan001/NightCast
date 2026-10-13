@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
     # Run DB schema check and vector pre-population in background so Uvicorn starts INSTANTLY (< 1 second)
     async def background_startup():
         try:
-            init_db()
+            await asyncio.to_thread(init_db)
         except Exception as e:
             logger.warning(f"init_db startup warning: {e}")
             

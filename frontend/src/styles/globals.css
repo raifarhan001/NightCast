@@ -61,7 +61,6 @@
 }
 
 html, body {
-  scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -103,34 +102,34 @@ html, body {
 }
 
 @layer components {
-  /* Modern Frosted Glass Utility Tokens */
+  /* Modern Frosted Glass Utility Tokens - Optimized for 60fps GPU Compositing */
   .glass-panel {
-    @apply bg-white/[0.04] backdrop-blur-2xl backdrop-saturate-150 border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_16px_40px_rgba(0,0,0,0.7)];
+    @apply bg-white/[0.04] backdrop-blur-xl backdrop-saturate-150 border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_16px_40px_rgba(0,0,0,0.7)];
   }
 
   .glass-surface {
-    @apply bg-white/[0.04] backdrop-blur-2xl backdrop-saturate-150 border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_32px_rgba(0,0,0,0.5)];
+    @apply bg-white/[0.04] backdrop-blur-xl backdrop-saturate-150 border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_32px_rgba(0,0,0,0.5)];
   }
 
   .glass-surface-subtle {
-    @apply bg-white/[0.03] backdrop-blur-lg border border-white/[0.08];
+    @apply bg-white/[0.03] backdrop-blur-md border border-white/[0.08];
   }
 
   .glass-card {
-    @apply bg-white/[0.04] hover:bg-white/[0.08] backdrop-blur-2xl backdrop-saturate-150 border border-white/[0.12] hover:border-white/[0.22] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_32px_rgba(0,0,0,0.5)] transition-all duration-300;
+    @apply bg-white/[0.04] hover:bg-white/[0.08] backdrop-blur-xl backdrop-saturate-150 border border-white/[0.12] hover:border-white/[0.22] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_32px_rgba(0,0,0,0.5)] transition-[transform,background-color,border-color] duration-200;
   }
 
   .glass-pill {
-    @apply bg-white/[0.07] hover:bg-white/[0.12] backdrop-blur-md border border-white/15 text-[#F0F0F0] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_4px_20px_rgba(0,0,0,0.2)] transition-all duration-200;
+    @apply bg-white/[0.07] hover:bg-white/[0.12] backdrop-blur-md border border-white/15 text-[#F0F0F0] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_4px_20px_rgba(0,0,0,0.2)] transition-[background-color,border-color] duration-150;
   }
 
   .glass-dropdown {
-    @apply bg-[#0B131B]/80 backdrop-blur-2xl backdrop-saturate-150 border border-white/[0.15] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_24px_60px_rgba(0,0,0,0.95)];
+    @apply bg-[#0B131B]/85 backdrop-blur-xl backdrop-saturate-150 border border-white/[0.15] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_24px_60px_rgba(0,0,0,0.95)];
   }
 
   /* Navigation Tab Pills */
   .cinema-tab {
-    @apply px-4 py-2 text-xs font-sans font-medium tracking-normal text-[#8FA8AD] hover:text-[#F0F0F0] hover:bg-white/[0.08] hover:backdrop-blur-md transition-all duration-200 select-none cursor-pointer rounded-full;
+    @apply px-4 py-2 text-xs font-sans font-medium tracking-normal text-[#8FA8AD] hover:text-[#F0F0F0] hover:bg-white/[0.08] hover:backdrop-blur-sm transition-colors duration-150 select-none cursor-pointer rounded-full;
   }
 
   .cinema-tab-active {
@@ -139,17 +138,17 @@ html, body {
 
   /* Primary Button */
   .cinema-btn-primary {
-    @apply px-6 py-3 rounded-full bg-[#F0F0F0] hover:bg-white text-[#0B131B] font-sans font-bold text-xs tracking-wide flex items-center gap-2 transform-gpu hover:shadow-[0_8px_25px_rgba(255,255,255,0.35)] hover:scale-[1.02] active:scale-[0.97] transition-all duration-200 ease-out cursor-pointer;
+    @apply px-6 py-3 rounded-full bg-[#F0F0F0] hover:bg-white text-[#0B131B] font-sans font-bold text-xs tracking-wide flex items-center gap-2 transform-gpu hover:shadow-[0_8px_25px_rgba(255,255,255,0.35)] hover:scale-[1.02] active:scale-[0.97] transition-transform duration-150 ease-out cursor-pointer;
   }
 
   /* Frosted Glass Secondary Button */
   .cinema-btn-secondary {
-    @apply px-5 py-3 rounded-full bg-white/[0.07] hover:bg-white/[0.14] backdrop-blur-2xl backdrop-saturate-150 text-[#F0F0F0] font-sans font-medium text-xs tracking-wide flex items-center gap-2 transform-gpu hover:scale-[1.02] active:scale-[0.97] transition-all duration-200 ease-out shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_32px_rgba(0,0,0,0.6)] cursor-pointer border border-white/[0.12];
+    @apply px-5 py-3 rounded-full bg-white/[0.07] hover:bg-white/[0.14] backdrop-blur-lg text-[#F0F0F0] font-sans font-medium text-xs tracking-wide flex items-center gap-2 transform-gpu hover:scale-[1.02] active:scale-[0.97] transition-[transform,background-color] duration-150 ease-out shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_32px_rgba(0,0,0,0.6)] cursor-pointer border border-white/[0.12];
   }
 
   /* Frosted 16:9 Landscape Card */
   .cinema-card-landscape {
-    @apply relative aspect-video w-full rounded-2xl overflow-hidden bg-white/[0.04] backdrop-blur-2xl backdrop-saturate-150 border border-white/[0.12] transform-gpu transition-all duration-300 ease-out group-hover:scale-[1.03] group-hover:-translate-y-1 group-hover:border-white/[0.25] group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_16px_40px_rgba(0,0,0,0.85),0_0_24px_rgba(57,174,169,0.2)];
+    @apply relative aspect-video w-full rounded-2xl overflow-hidden bg-white/[0.04] backdrop-blur-md border border-white/[0.12] transform-gpu transition-[transform,border-color,box-shadow] duration-200 ease-out group-hover:scale-[1.03] group-hover:-translate-y-1 group-hover:border-white/[0.25] group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_16px_40px_rgba(0,0,0,0.85),0_0_24px_rgba(57,174,169,0.2)];
   }
 
   /* Refined Badges */

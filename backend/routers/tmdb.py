@@ -24,8 +24,8 @@ async def get_home_feed():
         if first_movie.get("title") != "Interstellar":
             return cached
 
-    # Use a Semaphore to prevent connection exhaustion / socket timeouts on Windows
-    sem = asyncio.Semaphore(4)
+    # Use a Semaphore with higher concurrency (12) for faster parallel fetching of home feed rows
+    sem = asyncio.Semaphore(12)
 
     async def fetch_category(coro):
         async with sem:
@@ -90,12 +90,9 @@ async def get_home_feed():
         "documentary_movies": extract_items(results[12], "movie"),
     }
 
-    # Only cache for 900 seconds if real data was fetched; don't trap the user in mock fallback
-    if not is_fallback:
-        await redis_cache.set(cache_key, feed, expire_seconds=900)
-    else:
-        logger.warning("Home feed used fallback data; caching for 3 seconds only.")
-        await redis_cache.set(cache_key, feed, expire_seconds=3)
+    # Cache real feed for 1800s (30m) or fallback feed for 300s (5m) to prevent repeated hammering
+    expire_time = 1800 if not is_fallback else 300
+    await redis_cache.set(cache_key, feed, expire_seconds=expire_time)
 
     return feed
 

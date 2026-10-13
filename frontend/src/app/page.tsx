@@ -27,6 +27,35 @@ const selectHomeFeed = (data: any) => ({
   documentary_movies: ((data?.documentary_movies || []) as MediaItem[]).map((m) => ({ ...m, media_type: "movie" as const })),
 });
 
+function DeferredRow({ children }: { children: React.ReactNode }) {
+  const [isVisible, setIsVisible] = React.useState(false);
+  const rowRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") {
+      setIsVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "500px 0px" }
+    );
+    if (rowRef.current) observer.observe(rowRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={rowRef} className="min-h-[180px]">
+      {isVisible ? children : null}
+    </div>
+  );
+}
+
 function HomePageContent() {
   const { activeProfile } = useUserStore();
   const queryClient = useQueryClient();
@@ -43,12 +72,10 @@ function HomePageContent() {
     };
     refreshList();
 
-    window.addEventListener("focus", refreshList);
     window.addEventListener("storage", refreshList);
     window.addEventListener("nightcast:progress-update", refreshList);
 
     return () => {
-      window.removeEventListener("focus", refreshList);
       window.removeEventListener("storage", refreshList);
       window.removeEventListener("nightcast:progress-update", refreshList);
     };
@@ -59,7 +86,8 @@ function HomePageContent() {
     queryKey: ["home-feed-v3"],
     queryFn: () => apiFetch("/api/v1/tmdb/home_feed"),
     select: selectHomeFeed,
-    staleTime: 1000 * 60 * 3,
+    staleTime: 1000 * 60 * 10,
+    refetchOnWindowFocus: false,
   });
 
   const topPicks = homeFeed?.top_picks || [];
@@ -257,74 +285,94 @@ function HomePageContent() {
       />
 
       {/* 5. Action */}
-      <MovieRow
-        title="Action"
-        subtitle="High-octane & explosive adventures"
-        items={actionMovies}
-      />
+      <DeferredRow>
+        <MovieRow
+          title="Action"
+          subtitle="High-octane & explosive adventures"
+          items={actionMovies}
+        />
+      </DeferredRow>
 
       {/* 6. Comedy */}
-      <MovieRow
-        title="Comedy"
-        subtitle="Hilarious & feel-good hits"
-        items={comedyMovies}
-      />
+      <DeferredRow>
+        <MovieRow
+          title="Comedy"
+          subtitle="Hilarious & feel-good hits"
+          items={comedyMovies}
+        />
+      </DeferredRow>
 
       {/* 7. Drama */}
-      <MovieRow
-        title="Drama"
-        subtitle="Compelling stories & cinematic masterpieces"
-        items={dramaMovies}
-      />
+      <DeferredRow>
+        <MovieRow
+          title="Drama"
+          subtitle="Compelling stories & cinematic masterpieces"
+          items={dramaMovies}
+        />
+      </DeferredRow>
 
       {/* 8. Horror */}
-      <MovieRow
-        title="Horror"
-        subtitle="Nightmares & supernatural chills"
-        items={horrorMovies}
-      />
+      <DeferredRow>
+        <MovieRow
+          title="Horror"
+          subtitle="Nightmares & supernatural chills"
+          items={horrorMovies}
+        />
+      </DeferredRow>
 
       {/* 9. Sci Fi */}
-      <MovieRow
-        title="Sci-Fi"
-        subtitle="Futuristic visions & space epics"
-        items={sciFiMovies}
-      />
+      <DeferredRow>
+        <MovieRow
+          title="Sci-Fi"
+          subtitle="Futuristic visions & space epics"
+          items={sciFiMovies}
+        />
+      </DeferredRow>
 
       {/* 10. Thriller */}
-      <MovieRow
-        title="Thriller"
-        subtitle="Edge-of-your-seat suspense"
-        items={thrillerMovies}
-      />
+      <DeferredRow>
+        <MovieRow
+          title="Thriller"
+          subtitle="Edge-of-your-seat suspense"
+          items={thrillerMovies}
+        />
+      </DeferredRow>
 
       {/* 11. Romance */}
-      <MovieRow
-        title="Romance"
-        subtitle="Heartwarming passion & love stories"
-        items={romanceMovies}
-      />
+      <DeferredRow>
+        <MovieRow
+          title="Romance"
+          subtitle="Heartwarming passion & love stories"
+          items={romanceMovies}
+        />
+      </DeferredRow>
 
       {/* 12. Animation */}
-      <MovieRow
-        title="Animation"
-        subtitle="Anime & animated wonders"
-        items={animationMovies}
-      />
+      <DeferredRow>
+        <MovieRow
+          title="Animation"
+          subtitle="Anime & animated wonders"
+          items={animationMovies}
+        />
+      </DeferredRow>
 
       {/* 13. Crime */}
-      <MovieRow
-        title="Crime"
-        subtitle="Underworld sagas & detective mysteries"
-        items={crimeMovies}
-      />
+      <DeferredRow>
+        <MovieRow
+          title="Crime"
+          subtitle="Underworld sagas & detective mysteries"
+          items={crimeMovies}
+        />
+      </DeferredRow>
 
-        {/* 14. Documentary */}
+      {/* 14. Documentary */}
+      <DeferredRow>
         <MovieRow
           title="Documentary"
           subtitle="Real stories & untold truths"
           items={documentaryMovies}
         />
+      </DeferredRow>
       </div>
     </div>
   );

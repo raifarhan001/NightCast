@@ -125,22 +125,31 @@ export default function EpisodeCard({
               : "opacity-0 group-hover:opacity-100 bg-black/40"
           }`}
         >
-          <div className="w-7 h-7 rounded-full bg-white/25 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white shadow-lg">
-            <Play className="w-3.5 h-3.5 fill-white ml-0.5" />
+          <div className={`w-7 h-7 rounded-full flex items-center justify-center shadow-lg ${
+            isActive ? "bg-[#39AEA9] text-[#0B131B]" : "bg-white/25 backdrop-blur-sm border border-white/20 text-white"
+          }`}>
+            <Play className={`w-3.5 h-3.5 ml-0.5 ${isActive ? "fill-[#0B131B]" : "fill-white"}`} />
           </div>
         </div>
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2 mb-0.5">
-          <h4
-            className={`text-xs font-bold truncate transition-colors ${
-              isActive
-                ? "text-[#0091ff]"
-                : "text-white group-hover:text-purple-400"
-            }`}
-          >
-            {displayTitle}
-          </h4>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <h4
+              className={`text-xs font-bold truncate transition-colors ${
+                isActive
+                  ? "text-[#39AEA9]"
+                  : "text-white group-hover:text-[#39AEA9]"
+              }`}
+            >
+              {displayTitle}
+            </h4>
+            {isActive && (
+              <span className="px-1.5 py-0.2 rounded text-[9px] font-sans font-bold bg-[#39AEA9] text-[#0B131B] uppercase tracking-wider shrink-0">
+                Playing
+              </span>
+            )}
+          </div>
           {formattedRating && (
             <div className="flex items-center gap-1 text-amber-400 font-bold text-[11px] shrink-0">
               <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
@@ -148,21 +157,21 @@ export default function EpisodeCard({
             </div>
           )}
         </div>
-        <div className="flex items-center gap-3 text-[11px] text-[#8ea2b8] mb-1">
+        <div className="flex items-center gap-3 text-[11px] text-slate-300 mb-1">
           {formattedDate && (
             <span className="flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-[#8ea2b8]" />
+              <Calendar className="w-3 h-3 text-[#39AEA9]" />
               {formattedDate}
             </span>
           )}
           {formattedRuntime && (
             <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3 text-[#8ea2b8]" />
+              <Clock className="w-3 h-3 text-[#39AEA9]" />
               {formattedRuntime}
             </span>
           )}
         </div>
-        <p className="text-[11px] text-slate-400 leading-snug line-clamp-1">
+        <p className="text-[11px] text-slate-300 leading-snug line-clamp-1">
           {overviewText}
         </p>
       </div>
@@ -200,28 +209,36 @@ export default function EpisodeCard({
           <div
             className={`w-11 h-11 rounded-full flex items-center justify-center shadow-2xl transition-transform duration-200 group-hover:scale-110 ${
               isActive
-                ? "bg-white/25 backdrop-blur-md border border-white/30 text-white shadow-[0_0_16px_rgba(0,145,255,0.4)]"
+                ? "bg-[#39AEA9] text-[#0B131B] shadow-[0_0_16px_rgba(57,174,169,0.5)]"
                 : "bg-white/25 backdrop-blur-md border border-white/30 text-white"
             }`}
           >
-            <Play className="w-5 h-5 fill-white text-white ml-0.5" />
+            <Play className={`w-5 h-5 ml-0.5 ${isActive ? "fill-[#0B131B] text-[#0B131B]" : "fill-white text-white"}`} />
           </div>
         </div>
       </div>
 
       {/* 2. Episode Details (Right Column) */}
       <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5 sm:py-1">
-        {/* Top Header Row: Episode Title + Gold Star Rating */}
+        {/* Top Header Row: Episode Title + Now Playing Badge + Gold Star Rating */}
         <div className="flex items-start sm:items-center justify-between gap-3 mb-1.5">
-          <h4
-            className={`text-base sm:text-lg font-bold font-display tracking-tight truncate transition-colors duration-150 ${
-              isActive
-                ? "text-[#0091ff] sm:text-white"
-                : "text-white group-hover:text-purple-400"
-            }`}
-          >
-            {displayTitle}
-          </h4>
+          <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
+            <h4
+              className={`text-base sm:text-lg font-bold font-display tracking-tight truncate transition-colors duration-150 ${
+                isActive
+                  ? "text-white"
+                  : "text-white group-hover:text-[#39AEA9]"
+              }`}
+            >
+              {displayTitle}
+            </h4>
+            {isActive && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-sans font-bold bg-[#39AEA9] text-[#0B131B] uppercase tracking-wider shrink-0 shadow-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0B131B] animate-ping" />
+                Now Playing
+              </span>
+            )}
+          </div>
 
           {/* Rating Badge */}
           {formattedRating && (
@@ -233,23 +250,23 @@ export default function EpisodeCard({
         </div>
 
         {/* Metadata Row: Air Date + Runtime */}
-        <div className="flex flex-wrap items-center gap-3.5 sm:gap-4 text-xs font-sans text-[#8ea2b8] mb-2">
+        <div className="flex flex-wrap items-center gap-3.5 sm:gap-4 text-xs font-sans text-slate-300 mb-2">
           {formattedDate && (
             <div className="flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-[#8ea2b8]" />
+              <Calendar className="w-3.5 h-3.5 text-[#39AEA9]" />
               <span>{formattedDate}</span>
             </div>
           )}
           {formattedRuntime && (
             <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-[#8ea2b8]" />
+              <Clock className="w-3.5 h-3.5 text-[#39AEA9]" />
               <span>{formattedRuntime}</span>
             </div>
           )}
         </div>
 
         {/* Synopsis / Overview (2-3 lines clamped) */}
-        <p className="text-xs sm:text-sm text-[#94a3b8] leading-relaxed font-sans line-clamp-2 sm:line-clamp-3">
+        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-sans line-clamp-2 sm:line-clamp-3">
           {overviewText}
         </p>
       </div>
@@ -259,13 +276,13 @@ export default function EpisodeCard({
   const containerClasses = compact
     ? `w-full text-left rounded-xl p-2.5 transition-all duration-200 flex items-center gap-3 group cursor-pointer active:scale-[0.99] ${
         isActive
-          ? "bg-[#0B1523]/95 border-2 border-[#0091ff] shadow-[0_0_18px_rgba(0,145,255,0.25)]"
-          : "bg-[#080d1a]/80 hover:bg-[#0f172a]/90 backdrop-blur-xl border border-white/[0.06] hover:border-white/[0.18]"
+          ? "bg-[#0B1523] border-2 border-[#39AEA9] shadow-[0_0_18px_rgba(57,174,169,0.3)] backdrop-blur-2xl"
+          : "bg-[#080d1a]/90 hover:bg-[#0f172a] backdrop-blur-xl border border-white/[0.08] hover:border-white/[0.2]"
       }`
     : `w-full text-left rounded-2xl p-3.5 sm:p-4 transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 group cursor-pointer active:scale-[0.995] ${
         isActive
-          ? "bg-[#060b13]/95 border-2 border-[#0091ff] shadow-[0_0_24px_rgba(0,145,255,0.22)]"
-          : "bg-[#060913]/90 hover:bg-[#0a0f1d]/90 backdrop-blur-xl border border-white/[0.06] hover:border-white/[0.18] shadow-[inset_0_1px_1px_rgba(255,255,255,0.04),0_8px_24px_rgba(0,0,0,0.5)]"
+          ? "bg-[#0c1522] border-2 border-[#39AEA9] shadow-[0_0_24px_rgba(57,174,169,0.3)] backdrop-blur-2xl"
+          : "bg-[#060913]/90 hover:bg-[#0a0f1d] backdrop-blur-xl border border-white/[0.08] hover:border-white/[0.2] shadow-[inset_0_1px_1px_rgba(255,255,255,0.04),0_8px_24px_rgba(0,0,0,0.5)]"
       }`;
 
   if (href) {

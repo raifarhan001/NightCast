@@ -21,37 +21,36 @@ function AmbientGlow({ className = "" }: AmbientGlowProps) {
   const currentTitle = activeTitle || heroTitle;
 
   const backdropUrl = currentBackdrop
-    ? ImageService.getBackdrop(currentBackdrop, "w1280", currentTitle || "Cinema")
+    ? ImageService.getBackdrop(currentBackdrop, "w780", currentTitle || "Cinema")
     : null;
 
   return (
     <div
       className={`fixed inset-0 pointer-events-none overflow-hidden z-0 select-none ${className}`}
     >
-      {/* 1. Dynamic Full-Page Cinema Backdrop with Rich Blur Effect */}
-      <AnimatePresence mode="wait">
+      {/* 1. Dynamic Full-Page Cinema Backdrop with GPU-Friendly Ambient Atmosphere */}
+      <AnimatePresence>
         {backdropUrl && (
           <motion.div
             key={backdropUrl}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.9, ease: "easeInOut" }}
-            className="absolute inset-0 transform-gpu overflow-hidden z-0"
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="absolute inset-0 transform-gpu will-change-transform overflow-hidden z-0"
           >
             <Image
               src={backdropUrl}
               alt={currentTitle || "Ambient Backdrop"}
               fill
-              unoptimized
-              sizes="100vw"
-              className="object-cover object-top scale-110 filter blur-[60px] sm:blur-[80px] md:blur-[100px] saturate-[1.8] brightness-[0.72]"
+              sizes="(max-width: 768px) 100vw, 1280px"
+              className="object-cover object-top scale-105 filter blur-2xl sm:blur-3xl saturate-[1.25] brightness-[0.55]"
               priority
             />
 
-            {/* Light Scrim for Text/Card Contrast While Keeping Colors Vibrant */}
-            <div className="absolute inset-0 bg-[#0B131B]/35" />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#0B131B]/20 via-transparent to-[#0B131B]/60" />
+            {/* Deep Cinema Scrim for Text/Card Contrast While Keeping Ambient Atmosphere */}
+            <div className="absolute inset-0 bg-[#0B131B] opacity-70" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0B131B]/80 via-[#0B131B]/50 to-[#0B131B]" />
           </motion.div>
         )}
       </AnimatePresence>

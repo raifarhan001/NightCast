@@ -18,11 +18,21 @@ import {
   Layers,
   ChevronDown,
   Compass,
+  Sparkles,
 } from "lucide-react";
 import ProfileSelectorModal from "../profile/ProfileSelectorModal";
 import { apiFetch, MediaItem } from "../../lib/api";
 import { ImageService } from "../../lib/ImageService";
 import { useUserStore } from "../../store/userStore";
+
+const MOOD_PRESETS = [
+  { label: "🧠 Mind-Bending", query: "mind-bending sci-fi with crazy plot twists" },
+  { label: "🌌 Cosmic Wonder", query: "deep space exploration like Interstellar" },
+  { label: "🍿 Feel-Good", query: "hilarious feel-good comedy for relaxing" },
+  { label: "⚡ High Stakes", query: "intense fast-paced action survival thriller" },
+  { label: "😭 Heartfelt Drama", query: "deeply emotional heartwarming drama tearjerker" },
+  { label: "🔪 Dark Neo-Noir", query: "gritty atmospheric crime mystery thriller" },
+];
 
 const CATEGORIES = [
   { id: "28", name: "Action & Adventure", href: "/search?genre=28" },
@@ -56,6 +66,8 @@ function HeaderContent() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
+  const [isAiMode, setIsAiMode] = useState(false);
+  const [aiMoodData, setAiMoodData] = useState<{ vibe: string; reasoning: string; results: any[] } | null>(null);
 
   const { user, activeProfile } = useUserStore();
   const searchContainerRef = useRef<HTMLDivElement>(null);
@@ -65,11 +77,61 @@ function HeaderContent() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Reset dropdowns on route change
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const lastScrollYRef = useRef(0);
+
+  // Auto-hide header on scroll down, smoothly reveal on scroll up or top
+  useEffect(() => {
+    const isWatch = pathname.startsWith('/watch');
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      setIsScrolled(currentScrollY > 15);
+
+      if (isWatch) {
+        // On watch page: hide header on any downward scroll past 25px
+        if (currentScrollY > 25) {
+          if (currentScrollY > lastScrollYRef.current + 5) {
+            setIsHeaderVisible(false);
+            setIsCategoriesOpen(false);
+            setIsSuggestionsOpen(false);
+            setIsFilterOpen(false);
+          } else if (currentScrollY < lastScrollYRef.current - 8) {
+            setIsHeaderVisible(true);
+          }
+        } else {
+          setIsHeaderVisible(true);
+        }
+      } else {
+        // On standard browse pages
+        if (currentScrollY > 50) {
+          if (currentScrollY > lastScrollYRef.current + 8) {
+            setIsHeaderVisible(false);
+            setIsCategoriesOpen(false);
+            setIsSuggestionsOpen(false);
+            setIsFilterOpen(false);
+          } else if (currentScrollY < lastScrollYRef.current - 8) {
+            setIsHeaderVisible(true);
+          }
+        } else {
+          setIsHeaderVisible(true);
+        }
+      }
+
+      lastScrollYRef.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [pathname]);
+
+  // Reset dropdowns and restore header visibility on route change
   useEffect(() => {
     setIsCategoriesOpen(false);
     setIsSuggestionsOpen(false);
     setIsFilterOpen(false);
+    setIsHeaderVisible(true);
   }, [pathname]);
 
   // Global Ctrl + K / Cmd + K listener
@@ -85,12 +147,12 @@ function HeaderContent() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Debounce search query for auto-suggestions
+  // Debounce search query for auto-suggestions / AI Mood search
   useEffect(() => {
     const trimmed = searchQuery.trim();
     if (trimmed.length <= 2) {
       setSuggestions([]);
-      setIsSuggestionsOpen(false);
+      setAiMoodData(null);
       setIsLoadingSuggestions(false);
       setSelectedIndex(-1);
       return;
@@ -102,11 +164,23 @@ function HeaderContent() {
 
     const timer = setTimeout(async () => {
       try {
-        const results = await apiFetch(`/api/tmdb/search?query=${encodeURIComponent(trimmed)}&media_type=multi`);
-        if (Array.isArray(results)) {
-          setSuggestions(results.slice(0, 6));
+        if (isAiMode) {
+          const res = await apiFetch(`/api/v1/ai/mood-search?q=${encodeURIComponent(trimmed)}`);
+          if (res && Array.isArray(res.results)) {
+            setAiMoodData({ vibe: res.vibe, reasoning: res.reasoning, results: res.results });
+            setSuggestions(res.results);
+          } else {
+            setAiMoodData(null);
+            setSuggestions([]);
+          }
         } else {
-          setSuggestions([]);
+          setAiMoodData(null);
+          const results = await apiFetch(`/api/tmdb/search?query=${encodeURIComponent(trimmed)}&media_type=multi`);
+          if (Array.isArray(results)) {
+            setSuggestions(results.slice(0, 6));
+          } else {
+            setSuggestions([]);
+          }
         }
       } catch (err) {
         console.error("Suggestions fetch error", err);
@@ -114,10 +188,10 @@ function HeaderContent() {
       } finally {
         setIsLoadingSuggestions(false);
       }
-    }, 300);
+    }, isAiMode ? 450 : 300);
 
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, isAiMode]);
 
   // Click outside listener for search & categories dropdowns
   useEffect(() => {
@@ -187,7 +261,7 @@ function HeaderContent() {
     }
     if (searchQuery.trim()) {
       setIsSuggestionsOpen(false);
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}${isAiMode ? '&ai=true' : ''}`);
     }
   };
 
@@ -254,7 +328,17 @@ function HeaderContent() {
 
   return (
     <>
-      <header className="fixed top-3 sm:top-5 inset-x-0 z-50 select-none pointer-events-none px-4 sm:px-6 md:px-8 lg:px-10">
+      <header
+        className={`fixed top-0 inset-x-0 z-50 select-none transition-all duration-300 ease-in-out px-4 sm:px-6 md:px-8 lg:px-10 py-3 sm:py-4 pointer-events-none ${
+          isHeaderVisible
+            ? "translate-y-0 opacity-100"
+            : "-translate-y-full opacity-0"
+        } ${
+          isScrolled
+            ? "bg-[#0B131B]/80 backdrop-blur-2xl border-b border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.8)]"
+            : "bg-transparent"
+        }`}
+      >
         <div className="max-w-[1800px] mx-auto flex items-center justify-between gap-3 sm:gap-6">
           {/* Left: Navigation Buttons Capsule (Pure Floating Capsule) */}
           <nav
@@ -332,20 +416,41 @@ function HeaderContent() {
               <form
                 onSubmit={handleSearchSubmit}
                 role="search"
-                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 sm:py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.1] focus-within:bg-white/[0.14] backdrop-blur-2xl backdrop-saturate-150 border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.4)] transition-all duration-200 w-full"
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-full backdrop-blur-2xl backdrop-saturate-150 transition-all duration-300 w-full ${
+                  isAiMode
+                    ? "bg-[#0B1A24]/90 border border-[#39AEA9]/50 shadow-[0_0_20px_rgba(57,174,169,0.3),inset_0_1px_1px_rgba(255,255,255,0.15)] ring-1 ring-[#39AEA9]/30"
+                    : "bg-white/[0.06] hover:bg-white/[0.1] focus-within:bg-white/[0.14] border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.4)]"
+                }`}
               >
-                <Search className="w-3.5 h-3.5 text-[#8FA8AD] shrink-0" />
+                {isAiMode ? (
+                  <Sparkles className="w-3.5 h-3.5 text-[#39AEA9] animate-pulse shrink-0" />
+                ) : (
+                  <Search className="w-3.5 h-3.5 text-[#8FA8AD] shrink-0" />
+                )}
                 <input
                   ref={searchInputRef}
                   type="search"
                   aria-label="Search movies, TV shows, and titles"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => {
+                    if (isAiMode || searchQuery.trim().length > 2) {
+                      setIsSuggestionsOpen(true);
+                    }
+                  }}
                   onKeyDown={handleInputKeyDown}
-                  placeholder="Search for Movie or TV"
-                  className="bg-transparent text-xs text-[#F0F0F0] placeholder-[#8FA8AD]/60 focus:outline-none w-full md:w-44 lg:w-48 md:focus:w-56 font-sans transition-all duration-200"
+                  placeholder={
+                    isAiMode
+                      ? "✨ Mood ya plot describe karo (Urdu/English)..."
+                      : "Search for Movie or TV"
+                  }
+                  className={`bg-transparent text-xs text-[#F0F0F0] placeholder-[#8FA8AD]/70 focus:outline-none font-sans transition-all duration-200 ${
+                    isAiMode
+                      ? "w-full md:w-56 lg:w-64 md:focus:w-72 placeholder-[#39AEA9]/60"
+                      : "w-full md:w-44 lg:w-48 md:focus:w-56"
+                  }`}
                 />
-                {!searchQuery && (
+                {!searchQuery && !isAiMode && (
                   <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[9px] font-mono text-[#8FA8AD] bg-white/[0.08] border border-white/10 rounded pointer-events-none select-none">
                     <span className="text-[8px]">Ctrl</span>
                     <span>K</span>
@@ -357,6 +462,7 @@ function HeaderContent() {
                     onClick={() => {
                       setSearchQuery("");
                       setSelectedIndex(-1);
+                      if (!isAiMode) setIsSuggestionsOpen(false);
                     }}
                     aria-label="Clear search query"
                     className="text-[#8FA8AD] hover:text-[#F0F0F0] text-xs p-0.5 rounded-full transition focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
@@ -364,6 +470,28 @@ function HeaderContent() {
                     <X className="w-3 h-3" />
                   </button>
                 )}
+
+                {/* AI Mood Mode Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextMode = !isAiMode;
+                    setIsAiMode(nextMode);
+                    setIsSuggestionsOpen(true);
+                    setTimeout(() => searchInputRef.current?.focus(), 50);
+                  }}
+                  aria-label="Toggle Gemini AI Mood Search"
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold transition-all duration-200 cursor-pointer shrink-0 select-none ${
+                    isAiMode
+                      ? "bg-gradient-to-r from-[#39AEA9] to-[#2D8E89] text-white shadow-[0_0_12px_rgba(57,174,169,0.5)] border border-[#39AEA9]"
+                      : "bg-white/[0.05] hover:bg-white/[0.12] text-[#8FA8AD] hover:text-[#39AEA9] border border-white/[0.08]"
+                  }`}
+                  title="Toggle Gemini AI Mood Search"
+                >
+                  <Sparkles className={`w-2.5 h-2.5 ${isAiMode ? "text-white" : "text-[#39AEA9]"}`} />
+                  <span>AI</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setIsFilterOpen((prev) => !prev)}
@@ -404,76 +532,147 @@ function HeaderContent() {
                   id="search-suggestions-menu"
                   role="listbox"
                   aria-label="Search suggestions"
-                  className="absolute top-full right-0 mt-2 w-[calc(100vw-32px)] sm:w-96 max-w-sm bg-[#0B131B]/95 backdrop-blur-3xl backdrop-saturate-150 border border-white/[0.12] rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_25px_60px_rgba(0,0,0,0.95)] overflow-hidden z-50 py-1 divide-y divide-white/[0.08]"
+                  className="absolute top-full right-0 mt-2 w-[calc(100vw-32px)] sm:w-96 max-w-sm bg-[#0B131B]/95 backdrop-blur-3xl backdrop-saturate-150 border border-white/[0.12] rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_25px_60px_rgba(0,0,0,0.95)] overflow-hidden z-50 divide-y divide-white/[0.08]"
                 >
+                  {/* AI Mood Banner when vibe is present */}
+                  {isAiMode && aiMoodData && (
+                    <div className="p-3 bg-gradient-to-r from-[#39AEA9]/15 via-[#18363F]/20 to-transparent border-b border-[#39AEA9]/20">
+                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#39AEA9]">
+                        <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate">Vibe: {aiMoodData.vibe}</span>
+                      </div>
+                      {aiMoodData.reasoning && (
+                        <p className="text-[10px] text-[#A4C8E1]/80 mt-1 line-clamp-2 leading-relaxed">
+                          {aiMoodData.reasoning}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {isLoadingSuggestions ? (
-                    <div className="p-4 flex items-center justify-center gap-2 text-xs text-[#8FA8AD]">
-                      <div className="w-3.5 h-3.5 border-2 border-[#8FA8AD]/40 border-t-[#39AEA9] animate-spin rounded-full" />
-                      <span>Searching...</span>
+                    <div className="p-5 flex flex-col items-center justify-center gap-2.5 text-xs text-[#8FA8AD]">
+                      <div className="w-5 h-5 border-2 border-[#39AEA9]/30 border-t-[#39AEA9] animate-spin rounded-full" />
+                      <span className="text-[11px] font-medium text-[#A4C8E1] animate-pulse">
+                        {isAiMode
+                          ? "✨ Gemini is matching films to your vibe..."
+                          : "Searching..."}
+                      </span>
                     </div>
                   ) : suggestions.length > 0 ? (
-                    suggestions.map((item, idx) => {
-                      const title = item.title || item.name || "Untitled";
-                      const date = item.release_date || item.first_air_date;
-                      const year = date ? new Date(date).getFullYear().toString() : "";
-                      const isTv = item.media_type === "tv" || !item.title;
-                      const posterUrl = ImageService.getPoster(item.poster_path, "w500", title);
-                      const isSelected = selectedIndex === idx;
+                    <div className="max-h-[60vh] overflow-y-auto divide-y divide-white/[0.06] overscroll-contain">
+                      {suggestions.map((item, idx) => {
+                        const title = item.title || item.name || "Untitled";
+                        const date = item.release_date || item.first_air_date;
+                        const year = date ? new Date(date).getFullYear().toString() : "";
+                        const isTv = item.media_type === "tv" || !item.title;
+                        const posterUrl = ImageService.getPoster(item.poster_path, "w500", title);
+                        const isSelected = selectedIndex === idx;
 
-                      return (
-                        <button
-                          key={`${item.id}-${idx}`}
-                          type="button"
-                          role="option"
-                          aria-selected={isSelected}
-                          onClick={() => handleSelectSuggestion(item)}
-                          onMouseEnter={() => setSelectedIndex(idx)}
-                          className={`w-full px-3.5 py-2.5 flex items-center gap-3 transition-colors text-left group cursor-pointer ${
-                            isSelected
-                              ? "bg-white/[0.12] border-l-2 border-[#39AEA9] pl-3"
-                              : "hover:bg-white/[0.06]"
-                          }`}
-                        >
-                          <div className="relative w-8 h-11 rounded-lg overflow-hidden bg-black/40 shrink-0 border border-white/[0.12]">
-                            <Image
-                              src={posterUrl}
-                              alt={`${title} poster thumbnail`}
-                              fill
-                              sizes="32px"
-                              className="object-cover rounded-lg group-hover:scale-105 transition-transform duration-200"
-                            />
-                          </div>
-                          <div className="min-w-0 flex-1 space-y-0.5">
-                            <h4 className={`text-xs font-medium truncate transition-colors ${
-                              isSelected ? "text-[#A4C8E1]" : "text-[#F0F0F0] group-hover:text-[#A4C8E1]"
-                            }`}>
-                              {title}
-                            </h4>
-                            <div className="flex items-center gap-2 text-[10px] text-[#8FA8AD]">
-                              {isTv ? (
-                                <span className="px-1.5 py-0.5 bg-[#39AEA9]/20 text-[9px] font-bold text-[#39AEA9] rounded-md border border-[#39AEA9]/30">
-                                  TV Series
-                                </span>
-                              ) : (
-                                <span className="px-1.5 py-0.5 bg-white/[0.08] text-[9px] font-bold text-[#A4C8E1] rounded-md border border-white/[0.12]">
-                                  Movie
-                                </span>
-                              )}
-                              {year && <span>{year}</span>}
-                              {item.vote_average && item.vote_average > 0 && (
-                                <div className="flex items-center gap-1 text-amber-400 font-semibold ml-auto">
-                                  <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                                  <span>{Number(item.vote_average).toFixed(1)}</span>
-                                </div>
+                        return (
+                          <button
+                            key={`${item.id}-${idx}`}
+                            type="button"
+                            role="option"
+                            aria-selected={isSelected}
+                            onClick={() => handleSelectSuggestion(item)}
+                            onMouseEnter={() => setSelectedIndex(idx)}
+                            className={`w-full px-3.5 py-2.5 flex items-start gap-3 transition-colors text-left group cursor-pointer ${
+                              isSelected
+                                ? "bg-white/[0.12] border-l-2 border-[#39AEA9] pl-3"
+                                : "hover:bg-white/[0.06]"
+                            }`}
+                          >
+                            <div className="relative w-9 h-13 rounded-lg overflow-hidden bg-black/40 shrink-0 border border-white/[0.12] mt-0.5">
+                              <Image
+                                src={posterUrl}
+                                alt={`${title} poster thumbnail`}
+                                fill
+                                sizes="36px"
+                                className="object-cover rounded-lg group-hover:scale-105 transition-transform duration-200"
+                              />
+                            </div>
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <div className="flex items-center gap-1.5 justify-between">
+                                <h4 className={`text-xs font-semibold truncate transition-colors ${
+                                  isSelected ? "text-[#A4C8E1]" : "text-[#F0F0F0] group-hover:text-[#A4C8E1]"
+                                }`}>
+                                  {title}
+                                </h4>
+                                {item.vote_average && item.vote_average > 0 && (
+                                  <div className="flex items-center gap-0.5 text-amber-400 font-semibold text-[10px] shrink-0">
+                                    <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                                    <span>{Number(item.vote_average).toFixed(1)}</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-[10px] text-[#8FA8AD]">
+                                {isTv ? (
+                                  <span className="px-1.5 py-0.2 bg-[#39AEA9]/20 text-[9px] font-bold text-[#39AEA9] rounded border border-[#39AEA9]/30">
+                                    TV Series
+                                  </span>
+                                ) : (
+                                  <span className="px-1.5 py-0.2 bg-white/[0.08] text-[9px] font-bold text-[#A4C8E1] rounded border border-white/[0.12]">
+                                    Movie
+                                  </span>
+                                )}
+                                {year && <span>{year}</span>}
+                                {item.ai_vibe_tag && (
+                                  <span className="px-1.5 py-0.2 bg-[#39AEA9]/15 text-[9px] font-medium text-[#39AEA9] rounded border border-[#39AEA9]/25 truncate max-w-[120px]">
+                                    ✨ {item.ai_vibe_tag}
+                                  </span>
+                                )}
+                              </div>
+                              {item.ai_pitch && (
+                                <p className="text-[10px] text-[#8FA8AD] italic line-clamp-1 leading-snug">
+                                  &ldquo;{item.ai_pitch}&rdquo;
+                                </p>
                               )}
                             </div>
-                          </div>
-                        </button>
-                      );
-                    })
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : isAiMode && (!searchQuery.trim() || searchQuery.trim().length <= 2) ? (
+                    <div className="p-3.5 space-y-2.5">
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#A4C8E1]">
+                        <Sparkles className="w-3 h-3 text-[#39AEA9]" />
+                        <span>AI Mood & Vibe Presets</span>
+                      </div>
+                      <p className="text-[10px] text-[#8FA8AD] leading-relaxed">
+                        Pick a vibe below or describe what you want to watch in Urdu / English:
+                      </p>
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {MOOD_PRESETS.map((preset) => (
+                          <button
+                            key={preset.label}
+                            type="button"
+                            onClick={() => {
+                              setSearchQuery(preset.query);
+                              searchInputRef.current?.focus();
+                            }}
+                            className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/[0.05] hover:bg-[#39AEA9]/20 hover:border-[#39AEA9]/40 border border-white/[0.08] text-[#F0F0F0] hover:text-[#39AEA9] transition cursor-pointer"
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ) : (
                     <div className="p-4 text-center text-xs text-[#8FA8AD]">
-                      No matching titles found
+                      {isAiMode ? "No films found matching this mood. Try another vibe!" : "No matching titles found"}
+                    </div>
+                  )}
+
+                  {isAiMode && suggestions.length > 0 && (
+                    <div className="p-2.5 bg-black/40 border-t border-white/[0.06] text-center">
+                      <button
+                        type="button"
+                        onClick={handleSearchSubmit}
+                        className="text-[11px] text-[#39AEA9] hover:underline font-semibold flex items-center justify-center gap-1 w-full"
+                      >
+                        <span>See all AI curated titles in search</span>
+                        <span>&rarr;</span>
+                      </button>
                     </div>
                   )}
                 </div>

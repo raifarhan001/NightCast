@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { apiFetch, getStoredToken } from '../../../../lib/api';
 import { saveWatchProgress, getSavedTimestamp, getCleanMediaId, getContinueWatchingList, getStorageKey, LocalProgressItem } from '../../../../lib/progress';
 import { ImageService } from '../../../../lib/ImageService';
@@ -31,7 +32,10 @@ import { soundFx } from '../../../../lib/soundEffects';
 import AmbientGlow from '../../../../components/shared/AmbientGlow';
 import { useAmbientStore } from '../../../../store/ambientStore';
 import { useUserStore } from '../../../../store/userStore';
-import NightCastPlayer from '../../../../components/player/NightCastPlayer';
+const NightCastPlayer = dynamic(
+  () => import('../../../../components/player/NightCastPlayer'),
+  { ssr: false, loading: () => <PlayerSkeleton /> }
+);
 import MovieRow from '../../../../components/shared/MovieRow';
 import EpisodeCard from '../../../../components/shared/EpisodeCard';
 import { PlayerSkeleton } from '../../../../components/shared/Skeletons';
@@ -1444,7 +1448,7 @@ export default function WatchPage() {
 
         <div className="relative w-full">
           {/* Ambilight Aurora Halo Behind Player */}
-          <div className="absolute -inset-4 sm:-inset-8 bg-gradient-to-r from-[#39AEA9]/20 via-[#5B8FB9]/15 to-[#39AEA9]/20 rounded-[40px] blur-3xl -z-10 opacity-70 pointer-events-none transition-opacity duration-1000 animate-pulse" />
+          <div className="absolute -inset-4 sm:-inset-8 bg-gradient-to-r from-[#39AEA9]/20 via-[#5B8FB9]/15 to-[#39AEA9]/20 rounded-[40px] blur-3xl -z-10 opacity-70 pointer-events-none transition-opacity duration-1000" />
 
           {/* Screen Box */}
           {isTheaterMode ? (
@@ -1998,25 +2002,25 @@ export default function WatchPage() {
 
         {/* Real Cast Member Showcase */}
         {meta?.cast && meta.cast.length > 0 && (
-          <section className="space-y-4 pt-6 border-t border-white/[0.08]">
+          <section className="p-5 sm:p-6 bg-[#0B131B]/80 backdrop-blur-2xl border border-white/[0.1] rounded-2xl shadow-[0_12px_36px_rgba(0,0,0,0.6)] space-y-4">
             <div className="flex items-center gap-3">
               <div className="h-5 w-1.5 rounded-full bg-gradient-to-b from-[#A4C8E1] to-[#39AEA9]" />
               <div>
-                <h3 className="font-display text-lg font-bold text-[#F8FAFC]">Cast Showcase</h3>
-                <p className="text-xs text-[#8FA8AD] font-sans">Actors &amp; Roles</p>
+                <h3 className="font-display text-lg font-bold text-white tracking-wide">Cast Showcase</h3>
+                <p className="text-xs text-[#39AEA9] font-sans font-medium">Actors &amp; Roles</p>
               </div>
             </div>
-            <div className="flex gap-5 overflow-x-auto no-scrollbar pb-2">
+            <div className="flex gap-5 overflow-x-auto no-scrollbar pb-2 pt-1">
               {meta.cast.map((c: any, idx: number) => {
                 const avatar = ImageService.getProfile(c.profile_path, c.name);
                 return (
-                  <div key={idx} className="flex flex-col items-center shrink-0 w-24 gap-2 text-center">
-                    <div className="relative w-14 h-14 rounded-2xl overflow-hidden border border-white/[0.1] bg-[#0B131B]">
-                      <Image src={avatar} alt={c.name} fill sizes="56px" className="object-cover" />
+                  <div key={idx} className="flex flex-col items-center shrink-0 w-24 gap-2 text-center group cursor-default">
+                    <div className="relative w-16 h-16 rounded-2xl overflow-hidden border-2 border-white/[0.15] group-hover:border-[#39AEA9] bg-[#070c12] shadow-md transition-all duration-200 group-hover:scale-105">
+                      <Image src={avatar} alt={c.name} fill sizes="64px" className="object-cover" />
                     </div>
-                    <div className="space-y-0.5">
-                      <p className="text-xs font-medium text-[#F8FAFC] truncate max-w-[85px]">{c.name}</p>
-                      <p className="text-[11px] font-sans text-[#8FA8AD] truncate max-w-[85px]">{c.character}</p>
+                    <div className="space-y-0.5 w-full">
+                      <p className="text-xs font-semibold text-white truncate max-w-[90px] mx-auto group-hover:text-[#A4C8E1] transition-colors">{c.name}</p>
+                      <p className="text-[11px] font-sans text-slate-300 truncate max-w-[90px] mx-auto">{c.character}</p>
                     </div>
                   </div>
                 );

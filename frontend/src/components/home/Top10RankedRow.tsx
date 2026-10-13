@@ -33,18 +33,28 @@ export default function Top10RankedRow({
   const rowRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
+  const scrollRafId = useRef<number | null>(null);
+  const storageTimeoutId = useRef<any>(null);
 
   const top10Items = items.slice(0, 10);
 
   const checkScrollPosition = () => {
-    if (rowRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = rowRef.current;
-      setShowLeftArrow(scrollLeft > 10);
-      setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
-      try {
-        sessionStorage.setItem("nc_row_scroll_top10", String(scrollLeft));
-      } catch {}
-    }
+    if (scrollRafId.current) return;
+    scrollRafId.current = requestAnimationFrame(() => {
+      scrollRafId.current = null;
+      if (rowRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = rowRef.current;
+        setShowLeftArrow(scrollLeft > 10);
+        setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 10);
+
+        if (storageTimeoutId.current) clearTimeout(storageTimeoutId.current);
+        storageTimeoutId.current = setTimeout(() => {
+          try {
+            sessionStorage.setItem("nc_row_scroll_top10", String(scrollLeft));
+          } catch {}
+        }, 200);
+      }
+    });
   };
 
   useEffect(() => {
@@ -57,6 +67,10 @@ export default function Top10RankedRow({
         }
       } catch {}
     }
+    return () => {
+      if (scrollRafId.current) cancelAnimationFrame(scrollRafId.current);
+      if (storageTimeoutId.current) clearTimeout(storageTimeoutId.current);
+    };
   }, [items]);
 
   const handleScroll = (direction: "left" | "right") => {
@@ -122,7 +136,7 @@ export default function Top10RankedRow({
   );
 }
 
-function RankedCardItem({ item, rank }: { item: RankedItem; rank: number }) {
+const RankedCardItem = React.memo(function RankedCardItem({ item, rank }: { item: RankedItem; rank: number }) {
   const [imgError, setImgError] = useState(false);
   const displayTitle = item.title || item.name || "Untitled";
   const type = item.media_type || (item.first_air_date ? "tv" : "movie");
@@ -143,6 +157,9 @@ function RankedCardItem({ item, rank }: { item: RankedItem; rank: number }) {
         if (backdrop) {
           useAmbientStore.getState().setActiveBackdrop(backdrop, displayTitle);
         }
+      }}
+      onMouseLeave={() => {
+        useAmbientStore.getState().clearActiveBackdrop(350);
       }}
       aria-label={`Rank ${rank}: Watch ${displayTitle}`}
       className="group/item relative flex items-center shrink-0 snap-start select-none cursor-pointer transform-gpu will-change-transform transition-all duration-200 ease-out hover:-translate-y-1 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B]"
@@ -202,5 +219,5 @@ function RankedCardItem({ item, rank }: { item: RankedItem; rank: number }) {
       </div>
     </Link>
   );
-}
+});
 

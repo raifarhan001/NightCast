@@ -261,7 +261,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
   const formattedDate = formatReleaseDate(releaseDate);
   const releaseYear = releaseDate.split("-")[0] || "2024";
   const type = activeItem.media_type || (activeItem.first_air_date ? "tv" : "movie");
-  const backdropUrl = ImageService.getBackdrop(activeItem.backdrop_path, "original", title);
+  const backdropUrl = ImageService.getBackdrop(activeItem.backdrop_path, "w1280", title);
 
   // Derive genres
   const genreNames = (activeItem.genre_ids || [])
@@ -402,9 +402,9 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
                   {isActive && (
                     <motion.div
                       layoutId="active-indicator"
-                      className="h-full bg-[#A4C8E1] rounded-full shadow-[0_0_8px_rgba(164,200,225,0.9)]"
-                      initial={{ width: 0 }}
-                      animate={{ width: "100%" }}
+                      className="h-full bg-[#A4C8E1] rounded-full shadow-[0_0_8px_rgba(164,200,225,0.9)] origin-left"
+                      initial={{ scaleX: 0 }}
+                      animate={{ scaleX: 1 }}
                       transition={{ duration: 0.3 }}
                     />
                   )}
