@@ -46,20 +46,16 @@ function attachTimestampToUrl(url: string, seconds: number): string {
     const urlObj = new URL(url);
     if (seconds > 3) {
       const s = Math.floor(seconds).toString();
-      // VidLink uses 'startAt'
+      // VidBolt & standard iframe players accept start, time, t
       urlObj.searchParams.set('startAt', s);
-      // Standard iframe players accept start, time, t
       urlObj.searchParams.set('start', s);
       urlObj.searchParams.set('time', s);
       urlObj.searchParams.set('t', s);
       urlObj.searchParams.set('progress', s);
     }
-    if (url.includes('vidlink.pro')) {
-      if (!urlObj.searchParams.has('primaryColor')) {
-        urlObj.searchParams.set('primaryColor', '39AEA9');
-      }
-      if (!urlObj.searchParams.has('autoplay')) {
-        urlObj.searchParams.set('autoplay', 'true');
+    if (url.includes('vidbolt.xyz')) {
+      if (!urlObj.searchParams.has('theme')) {
+        urlObj.searchParams.set('theme', '39AEA9');
       }
     }
     return urlObj.toString();
@@ -121,14 +117,16 @@ export default function WatchPage() {
   const buildServers = useCallback((seasonNum: number, episodeNum: number) => {
     return [
       {
-        id: 'vidlink',
-        name: 'Server 1 (VidLink)',
-        url: type === 'tv' || type === 'anime'
-          ? `https://vidlink.pro/tv/${id}/${seasonNum}/${episodeNum}?primaryColor=39AEA9&autoplay=true`
-          : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`,
+        id: 'vidbolt',
+        name: 'Server 1 (VidBolt)',
+        url: type === 'tv'
+          ? `https://vidbolt.xyz/tv/${id}/${seasonNum}/${episodeNum}?theme=39AEA9`
+          : type === 'anime'
+          ? `https://vidbolt.xyz/anime/${id}/${episodeNum}?theme=39AEA9`
+          : `https://vidbolt.xyz/movie/${id}?theme=39AEA9`,
         type: 'iframe',
         language: 'en',
-        language_name: 'vidlink.pro'
+        language_name: 'vidbolt.xyz'
       },
       {
         id: 'vidsrc-to',
@@ -165,7 +163,7 @@ export default function WatchPage() {
 
   const [servers, setServers] = useState<any[]>(() => buildServers(initialSeason, initialEpisode));
 
-  const [activeServerId, setActiveServerId] = useState<string>('vidlink');
+  const [activeServerId, setActiveServerId] = useState<string>('vidbolt');
   const [resumeTime, setResumeTime] = useState<number>(0);
   const [playerUrl, setPlayerUrl] = useState<string>("");
 
@@ -184,7 +182,33 @@ export default function WatchPage() {
 
   // Luxury Cinema Experience States
   const [isTheaterMode, setIsTheaterMode] = useState(false);
-  const [isAdShieldActive, setIsAdShieldActive] = useState<boolean>(false);
+  const [isAdShieldActive, setIsAdShieldActive] = useState<boolean>(true);
+
+  // Rogue popup blocker: intercept unauthorized window.open calls from parent context
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const originalOpen = window.open;
+    window.open = function(url?: string | URL, target?: string, features?: string) {
+      if (isAdShieldActive) {
+        const urlStr = String(url || '');
+        if (
+          urlStr &&
+          !urlStr.startsWith(window.location.origin) &&
+          !urlStr.startsWith('/') &&
+          !urlStr.includes('imdb.com') &&
+          !urlStr.includes('youtube.com') &&
+          !urlStr.includes('themoviedb.org')
+        ) {
+          console.warn('Ad-Shield: Blocked rogue popup window to', urlStr);
+          return null;
+        }
+      }
+      return originalOpen.call(window, url, target, features);
+    };
+    return () => {
+      window.open = originalOpen;
+    };
+  }, [isAdShieldActive]);
 
   // Restore client preferences and saved progress safely after mount
   useEffect(() => {
@@ -195,17 +219,21 @@ export default function WatchPage() {
         localStorage.removeItem('nightcast_preferred_server_v2');
         localStorage.removeItem('nightcast_preferred_server_v4');
         localStorage.removeItem('nightcast_preferred_server_v6');
-        const savedServer = localStorage.getItem('nightcast_preferred_server_v7');
-        if (savedServer && ['vidlink', 'vidsrc-to', 'vidsrc', 'screenscape'].includes(savedServer)) {
+        localStorage.removeItem('nightcast_preferred_server_v7');
+        const savedServer = localStorage.getItem('nightcast_preferred_server_v8');
+        if (savedServer && ['vidbolt', 'vidsrc-to', 'vidsrc', 'screenscape'].includes(savedServer)) {
           setActiveServerId(savedServer);
         } else if (settings?.preferred_language === 'hi') {
           setActiveServerId('screenscape');
         } else {
-          setActiveServerId('vidlink');
+          setActiveServerId('vidbolt');
         }
-        const savedShield = localStorage.getItem('nightcast_ad_shield_v2');
+        localStorage.removeItem('nightcast_ad_shield_v2');
+        const savedShield = localStorage.getItem('nightcast_ad_shield_v3');
         if (savedShield !== null) {
           setIsAdShieldActive(savedShield === 'true');
+        } else {
+          setIsAdShieldActive(true);
         }
       } catch {}
 
@@ -250,12 +278,14 @@ export default function WatchPage() {
     const list = servers && servers.length > 0 ? servers : buildServers(currentSeason, currentEpisode);
     const target = list.find((s: any) => s.id === activeServerId) || list[0];
     if (target && target.type === 'iframe') {
-      if (target.id === 'vidlink') {
+      if (target.id === 'vidbolt') {
         return {
           ...target,
-          url: type === 'tv' || type === 'anime'
-            ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}?primaryColor=39AEA9&autoplay=true`
-            : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`
+          url: type === 'tv'
+            ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}?theme=39AEA9`
+            : type === 'anime'
+            ? `https://vidbolt.xyz/anime/${id}/${currentEpisode}?theme=39AEA9`
+            : `https://vidbolt.xyz/movie/${id}?theme=39AEA9`
         };
       }
       if (target.id === 'vidsrc-to') {
@@ -291,7 +321,7 @@ export default function WatchPage() {
     if (!rawActiveServer) return null;
     if (isServerFailed) {
       let fallbackUrl = rawActiveServer.url;
-      if (rawActiveServer.id === 'vidlink') {
+      if (rawActiveServer.id === 'vidbolt') {
         fallbackUrl = type === 'tv'
           ? `https://vidsrc.to/embed/tv/${id}/${currentSeason}/${currentEpisode}`
           : `https://vidsrc.to/embed/movie/${id}`;
@@ -300,13 +330,17 @@ export default function WatchPage() {
           ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
           : `https://vidsrc.me/embed/movie?tmdb=${id}`;
       } else if (rawActiveServer.id === 'vidsrc') {
-        fallbackUrl = type === 'tv' || type === 'anime'
-          ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}?primaryColor=39AEA9&autoplay=true`
-          : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`;
+        fallbackUrl = type === 'tv'
+          ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}?theme=39AEA9`
+          : type === 'anime'
+          ? `https://vidbolt.xyz/anime/${id}/${currentEpisode}?theme=39AEA9`
+          : `https://vidbolt.xyz/movie/${id}?theme=39AEA9`;
       } else if (rawActiveServer.id === 'screenscape') {
-        fallbackUrl = type === 'tv' || type === 'anime'
-          ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}?primaryColor=39AEA9&autoplay=true`
-          : `https://vidlink.pro/movie/${id}?primaryColor=39AEA9&autoplay=true`;
+        fallbackUrl = type === 'tv'
+          ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}?theme=39AEA9`
+          : type === 'anime'
+          ? `https://vidbolt.xyz/anime/${id}/${currentEpisode}?theme=39AEA9`
+          : `https://vidbolt.xyz/movie/${id}?theme=39AEA9`;
       }
       return {
         ...rawActiveServer,
@@ -378,15 +412,15 @@ export default function WatchPage() {
         if (data?.servers && data.servers.length > 0) {
           setServers(data.servers);
           const preferred = typeof window !== 'undefined'
-            ? localStorage.getItem('nightcast_preferred_server_v7')
+            ? localStorage.getItem('nightcast_preferred_server_v8')
             : null;
           if (preferred && data.servers.some((s: any) => s.id === preferred)) {
             setActiveServerId(preferred);
           } else if (settings?.preferred_language === 'hi' && data.servers.some((s: any) => s.id === 'screenscape')) {
             setActiveServerId('screenscape');
           } else {
-            const vidlinkServer = data.servers.find((s: any) => s.id === 'vidlink');
-            setActiveServerId(vidlinkServer ? 'vidlink' : data.servers[0].id);
+            const vidboltServer = data.servers.find((s: any) => s.id === 'vidbolt');
+            setActiveServerId(vidboltServer ? 'vidbolt' : data.servers[0].id);
           }
         }
       } catch (err) {
@@ -722,7 +756,7 @@ export default function WatchPage() {
     }
   }, [id, meta, type, currentSeason, currentEpisode, activeProfile?.id]);
 
-  // 3. PostMessage listener for embed players (VidLink MEDIA_DATA, Vidking PLAYER_EVENT, ScreenScape, etc.)
+  // 3. PostMessage listener for embed players (VidBolt, Vidking PLAYER_EVENT, ScreenScape, etc.)
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       try {
@@ -910,7 +944,7 @@ export default function WatchPage() {
       // Only pause if the user actually switched to another tab or minimized the browser window
       if (document.hidden) return;
 
-      // If we received REAL continuous player postMessage events (e.g. VidLink) in the last 8 seconds, let real events drive progress
+      // If we received REAL continuous player postMessage events in the last 8 seconds, let real events drive progress
       if (Date.now() - lastRealPlayerEventTimeRef.current < 8000) return;
 
       if (!isIframeLoaded) return;
@@ -1041,7 +1075,7 @@ export default function WatchPage() {
     if (nextServer && !failedServerIds.includes(nextServer.id)) {
       setActiveServerId(nextServer.id);
       if (typeof window !== 'undefined') {
-        localStorage.setItem('nightcast_preferred_server_v7', nextServer.id);
+        localStorage.setItem('nightcast_preferred_server_v8', nextServer.id);
       }
       soundFx.playTap();
       setToastMessage(`Switched stream engine to ${nextServer.name}`);
@@ -1208,11 +1242,6 @@ export default function WatchPage() {
             title="NightCast Media Player"
             referrerPolicy="origin"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            sandbox={
-              isAdShieldActive
-                ? "allow-scripts allow-same-origin allow-forms allow-presentation"
-                : undefined
-            }
           />
         )
       ) : (
@@ -1335,9 +1364,9 @@ export default function WatchPage() {
                   setIsAdShieldActive(prev => {
                     const next = !prev;
                     if (typeof window !== 'undefined') {
-                      localStorage.setItem('nightcast_ad_shield_v2', String(next));
+                      localStorage.setItem('nightcast_ad_shield_v3', String(next));
                     }
-                    setToastMessage(next ? "Ad-Shield ON: Sandbox enabled (Turn OFF if stream shows 'Playback Disabled')" : "Ad-Shield OFF: Full playback permissions restored");
+                    setToastMessage(next ? "Ad-Shield ON: Window popup blocker active" : "Ad-Shield OFF: Popup blocker disabled");
                     return next;
                   });
                 }}
@@ -1346,7 +1375,7 @@ export default function WatchPage() {
                     ? 'bg-[#39AEA9]/20 hover:bg-[#39AEA9]/30 text-[#39AEA9] border-[#39AEA9]/40'
                     : 'bg-white/[0.08] hover:bg-white/[0.15] text-[#8FA8AD] hover:text-white border-white/[0.1]'
                 }`}
-                title={isAdShieldActive ? "Ad-Shield is active (Turn off if stream blocks sandbox)" : "Ad-Shield is turned off"}
+                title={isAdShieldActive ? "Ad-Shield: Popup blocker active" : "Ad-Shield: Popup blocker turned off"}
                 aria-label={isAdShieldActive ? "Ad-Shield is active" : "Ad-Shield is inactive"}
               >
                 {isAdShieldActive ? (
@@ -1475,30 +1504,6 @@ export default function WatchPage() {
           </div>
         )}
 
-        {/* Ad-Shield Sandbox Warning Banner when Active */}
-        {mounted && isAdShieldActive && (
-          <div className="p-3.5 px-5 bg-amber-500/10 border border-amber-500/35 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-sans text-amber-200 shadow-xl animate-in fade-in slide-in-from-top-2">
-            <div className="flex items-center gap-2.5">
-              <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>
-                <strong>Ad-Shield Sandbox Active:</strong> Some stream servers (VidSrc/VidLink) block playback when sandbox is enabled. If player says &quot;Playback Disabled&quot; or &quot;Please Disable Sandbox&quot;, click here:
-              </span>
-            </div>
-            <button
-              onClick={() => {
-                soundFx.playTap();
-                setIsAdShieldActive(false);
-                if (typeof window !== 'undefined') {
-                  localStorage.setItem('nightcast_ad_shield_v2', 'false');
-                }
-                setToastMessage("Ad-Shield disabled. Full playback permissions restored.");
-              }}
-              className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-[#0B131B] font-bold text-xs shadow-md transition-all cursor-pointer shrink-0"
-            >
-              Disable Sandbox &amp; Play
-            </button>
-          </div>
-        )}
 
         {/* Server Selector Bar */}
         <div className="p-5 bg-white/[0.04] backdrop-blur-2xl backdrop-saturate-150 border border-white/[0.12] rounded-2xl flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12),0_16px_40px_rgba(0,0,0,0.6)]">
@@ -1528,7 +1533,7 @@ export default function WatchPage() {
                         soundFx.playTap();
                         setActiveServerId(srv.id);
                         if (typeof window !== 'undefined') {
-                          localStorage.setItem('nightcast_preferred_server_v7', srv.id);
+                          localStorage.setItem('nightcast_preferred_server_v8', srv.id);
                         }
                       }
                     }}
@@ -1572,9 +1577,9 @@ export default function WatchPage() {
                   setIsAdShieldActive(prev => {
                     const next = !prev;
                     if (typeof window !== 'undefined') {
-                      localStorage.setItem('nightcast_ad_shield_v2', String(next));
+                      localStorage.setItem('nightcast_ad_shield_v3', String(next));
                     }
-                    setToastMessage(next ? "Ad-Shield ON: Sandbox enabled (Turn OFF if stream shows 'Playback Disabled')" : "Ad-Shield OFF: Full stream permissions restored");
+                    setToastMessage(next ? "Ad-Shield ON: Window popup blocker active" : "Ad-Shield OFF: Popup blocker disabled");
                     return next;
                   });
                 }}
@@ -1583,7 +1588,7 @@ export default function WatchPage() {
                     ? 'bg-[#39AEA9]/15 hover:bg-[#39AEA9]/25 text-[#39AEA9] border-[#39AEA9]/40 shadow-[0_0_12px_rgba(57,174,169,0.25)]'
                     : 'bg-white/[0.08] hover:bg-white/[0.14] text-[#8FA8AD] hover:text-white border-white/[0.1]'
                 }`}
-                title={isAdShieldActive ? "Ad-Shield is active (Turn off if stream blocks sandbox)" : "Ad-Shield is turned off (Allow all permissions)"}
+                title={isAdShieldActive ? "Ad-Shield: Rogue popup blocker active" : "Ad-Shield: Popup blocker turned off"}
                 aria-label={isAdShieldActive ? "Ad-Shield is active" : "Ad-Shield is inactive"}
               >
                 {isAdShieldActive ? (

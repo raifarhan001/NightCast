@@ -31,7 +31,7 @@
   - Direct genre filter dropdown menu covering Action & Adventure, Comedy, Drama, Sci-Fi & Speculative, Thriller & Suspense, Horror, Animation, Documentary, and Romance.
 
 - **⚡ 4 High-Performance Streaming Servers**:
-  - **Server 1 (VidLink)**: High-speed 1080p full-HD player with real-time watch progress sync (`MEDIA_DATA`).
+  - **Server 1 (VidBolt)**: High-speed 1080p full-HD player with instant cloud playback (`vidbolt.xyz`).
   - **Server 2 (VidSrc VIP)**: Ultra-reliable VIP multi-source stream.
   - **Server 3 (VidSrc Mirror)**: Direct high-compatibility embed mirror player.
   - **Server 4 (ScreenScape Dubbed)**: Dedicated Bollywood, Hindi-dubbed Hollywood, and regional dubbed stream.
@@ -137,7 +137,7 @@ Nightcast provides 4 dedicated streaming servers:
 
 | Server Name | Identifier | Resolution | Audio | Description |
 |---|---|---|---|---|
-| **Server 1** | `vidlink` | 1080p Full HD | Original (English) | High-speed player with real-time watch progress sync |
+| **Server 1** | `vidbolt` | 1080p Full HD | Original (English) | High-speed player with instant cloud playback |
 | **Server 2** | `vidsrc-to` | 1080p Full HD | Original (English) | High-reliability VIP stream player |
 | **Server 3** | `vidsrc` | 1080p Full HD | Original (English) | Direct high-compatibility embed mirror player |
 | **Server 4** | `screenscape` | 1080p Full HD | Hindi Dubbed | Dedicated Hindi dubbed stream with auto-sync |

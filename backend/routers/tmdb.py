@@ -355,6 +355,7 @@ ALLOWED_PROXY_DOMAINS = {
     "vidsrc.to",
     "vidsrc.cc",
     "vidsrc.xyz",
+    "vidbolt.xyz",
     "vidlink.pro",
     "2embed.to",
     "2embed.cc",
