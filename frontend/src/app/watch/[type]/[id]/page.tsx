@@ -223,8 +223,6 @@ export default function WatchPage() {
         const savedServer = localStorage.getItem('nightcast_preferred_server_v8');
         if (savedServer && ['vidbolt', 'vidsrc-to', 'vidsrc', 'screenscape'].includes(savedServer)) {
           setActiveServerId(savedServer);
-        } else if (settings?.preferred_language === 'hi') {
-          setActiveServerId('screenscape');
         } else {
           setActiveServerId('vidbolt');
         }
@@ -416,8 +414,6 @@ export default function WatchPage() {
             : null;
           if (preferred && data.servers.some((s: any) => s.id === preferred)) {
             setActiveServerId(preferred);
-          } else if (settings?.preferred_language === 'hi' && data.servers.some((s: any) => s.id === 'screenscape')) {
-            setActiveServerId('screenscape');
           } else {
             const vidboltServer = data.servers.find((s: any) => s.id === 'vidbolt');
             setActiveServerId(vidboltServer ? 'vidbolt' : data.servers[0].id);
@@ -1242,6 +1238,11 @@ export default function WatchPage() {
             title="NightCast Media Player"
             referrerPolicy="origin"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            sandbox={
+              isAdShieldActive && activeServerId !== 'vidsrc' && activeServerId !== 'vidsrc-to'
+                ? "allow-scripts allow-same-origin allow-forms allow-presentation"
+                : undefined
+            }
           />
         )
       ) : (
