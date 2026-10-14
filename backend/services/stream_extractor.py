@@ -94,7 +94,7 @@ class StreamExtractor:
         language_pref: Optional[str] = None
     ) -> Dict[str, Any]:
         """Main entry point. Resolves direct HLS streams, parses audio track metadata, and provides iframe fallbacks."""
-        cache_key = f"streams:v18:{media_type}:{tmdb_id}:{season}:{episode}:{language_pref or 'all'}"
+        cache_key = f"streams:v19:{media_type}:{tmdb_id}:{season}:{episode}:{language_pref or 'all'}"
         cached = await redis_cache.get(cache_key)
         if cached:
             logger.info(f"Cache hit for {cache_key}")
@@ -102,48 +102,59 @@ class StreamExtractor:
 
         if media_type == "movie":
             s_screenscape = f"https://nxsha.screenscape.me/embed?tmdb={tmdb_id}&type=movie&lan=hindi"
-            s1_vidsrc = f"https://vidsrc.me/embed/movie?tmdb={tmdb_id}"
-            s2_vidsrc_to = f"https://vidsrc.to/embed/movie/{tmdb_id}"
-            s4_vidbolt = f"https://vidbolt.xyz/movie/{tmdb_id}?theme=39AEA9"
+            s_vidsrc_net = f"https://vidsrc.net/embed/movie/?tmdb={tmdb_id}"
+            s_vidsrc_su = f"https://vidsrc.su/embed/movie/{tmdb_id}"
+            s_vidlink = f"https://vidlink.pro/movie/{tmdb_id}?primaryColor=00a8e1&secondaryColor=192231"
+            s_vidbolt = f"https://vidbolt.xyz/movie/{tmdb_id}?theme=39AEA9"
         elif media_type == "anime":
             s_screenscape = f"https://nxsha.screenscape.me/embed?tmdb={tmdb_id}&type=tv&s={season}&e={episode}&lan=hindi"
-            s1_vidsrc = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
-            s2_vidsrc_to = f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}"
-            s4_vidbolt = f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}?theme=39AEA9"
+            s_vidsrc_net = f"https://vidsrc.net/embed/tv/?tmdb={tmdb_id}&season={season}&episode={episode}"
+            s_vidsrc_su = f"https://vidsrc.su/embed/tv/{tmdb_id}/{season}/{episode}"
+            s_vidlink = f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=00a8e1&secondaryColor=192231"
+            s_vidbolt = f"https://vidbolt.xyz/anime/{tmdb_id}/{episode}?theme=39AEA9"
         else:
             s_screenscape = f"https://nxsha.screenscape.me/embed?tmdb={tmdb_id}&type=tv&s={season}&e={episode}&lan=hindi"
-            s1_vidsrc = f"https://vidsrc.me/embed/tv?tmdb={tmdb_id}&season={season}&episode={episode}"
-            s2_vidsrc_to = f"https://vidsrc.to/embed/tv/{tmdb_id}/{season}/{episode}"
-            s4_vidbolt = f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}?theme=39AEA9"
+            s_vidsrc_net = f"https://vidsrc.net/embed/tv/?tmdb={tmdb_id}&season={season}&episode={episode}"
+            s_vidsrc_su = f"https://vidsrc.su/embed/tv/{tmdb_id}/{season}/{episode}"
+            s_vidlink = f"https://vidlink.pro/tv/{tmdb_id}/{season}/{episode}?primaryColor=00a8e1&secondaryColor=192231"
+            s_vidbolt = f"https://vidbolt.xyz/tv/{tmdb_id}/{season}/{episode}?theme=39AEA9"
 
         all_servers = [
             {
                 "id": "vidbolt",
                 "name": "Server 1 (VidBolt)",
-                "url": s4_vidbolt,
+                "url": s_vidbolt,
                 "type": "iframe",
                 "language": "en",
                 "language_name": "vidbolt.xyz"
             },
             {
-                "id": "vidsrc-to",
-                "name": "Server 2 (VidSrc VIP)",
-                "url": s2_vidsrc_to,
+                "id": "vidlink",
+                "name": "Server 2 (VidLink Pro)",
+                "url": s_vidlink,
                 "type": "iframe",
                 "language": "en",
-                "language_name": "vidsrc.to"
+                "language_name": "vidlink.pro"
+            },
+            {
+                "id": "vidsrc-su",
+                "name": "Server 3 (VidSrc VIP)",
+                "url": s_vidsrc_su,
+                "type": "iframe",
+                "language": "en",
+                "language_name": "vidsrc.su"
             },
             {
                 "id": "vidsrc",
-                "name": "Server 3 (VidSrc Mirror)",
-                "url": s1_vidsrc,
+                "name": "Server 4 (VidSrc Mirror)",
+                "url": s_vidsrc_net,
                 "type": "iframe",
                 "language": "en",
-                "language_name": "vidsrc.me"
+                "language_name": "vidsrc.net"
             },
             {
                 "id": "screenscape",
-                "name": "Server 4 (Dubbed)",
+                "name": "Server 5 (Dubbed)",
                 "url": s_screenscape,
                 "type": "iframe",
                 "language": "hi",

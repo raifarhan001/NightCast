@@ -129,28 +129,38 @@ export default function WatchPage() {
         language_name: 'vidbolt.xyz'
       },
       {
-        id: 'vidsrc-to',
-        name: 'Server 2 (VidSrc VIP)',
-        url: type === 'tv'
-          ? `https://vidsrc.to/embed/tv/${id}/${seasonNum}/${episodeNum}`
-          : `https://vidsrc.to/embed/movie/${id}`,
+        id: 'vidlink',
+        name: 'Server 2 (VidLink Pro)',
+        url: type === 'tv' || type === 'anime'
+          ? `https://vidlink.pro/tv/${id}/${seasonNum}/${episodeNum}?primaryColor=00a8e1&secondaryColor=192231`
+          : `https://vidlink.pro/movie/${id}?primaryColor=00a8e1&secondaryColor=192231`,
         type: 'iframe',
         language: 'en',
-        language_name: 'vidsrc.to'
+        language_name: 'vidlink.pro'
+      },
+      {
+        id: 'vidsrc-su',
+        name: 'Server 3 (VidSrc VIP)',
+        url: type === 'tv' || type === 'anime'
+          ? `https://vidsrc.su/embed/tv/${id}/${seasonNum}/${episodeNum}`
+          : `https://vidsrc.su/embed/movie/${id}`,
+        type: 'iframe',
+        language: 'en',
+        language_name: 'vidsrc.su'
       },
       {
         id: 'vidsrc',
-        name: 'Server 3 (VidSrc Mirror)',
+        name: 'Server 4 (VidSrc Mirror)',
         url: type === 'tv'
-          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${seasonNum}&episode=${episodeNum}`
-          : `https://vidsrc.me/embed/movie?tmdb=${id}`,
+          ? `https://vidsrc.net/embed/tv/?tmdb=${id}&season=${seasonNum}&episode=${episodeNum}`
+          : `https://vidsrc.net/embed/movie/?tmdb=${id}`,
         type: 'iframe',
         language: 'en',
-        language_name: 'vidsrc.me'
+        language_name: 'vidsrc.net'
       },
       {
         id: 'screenscape',
-        name: 'Server 4 (Dubbed)',
+        name: 'Server 5 (Dubbed)',
         url: type === 'tv' || type === 'anime'
           ? `https://nxsha.screenscape.me/embed?tmdb=${id}&type=tv&s=${seasonNum}&e=${episodeNum}&lan=hindi`
           : `https://nxsha.screenscape.me/embed?tmdb=${id}&type=movie&lan=hindi`,
@@ -221,8 +231,8 @@ export default function WatchPage() {
         localStorage.removeItem('nightcast_preferred_server_v6');
         localStorage.removeItem('nightcast_preferred_server_v7');
         const savedServer = localStorage.getItem('nightcast_preferred_server_v8');
-        if (savedServer && ['vidbolt', 'vidsrc-to', 'vidsrc', 'screenscape'].includes(savedServer)) {
-          setActiveServerId(savedServer);
+        if (savedServer && ['vidbolt', 'vidlink', 'vidsrc-su', 'vidsrc-to', 'vidsrc', 'screenscape'].includes(savedServer)) {
+          setActiveServerId(savedServer === 'vidsrc-to' ? 'vidlink' : savedServer);
         } else {
           setActiveServerId('vidbolt');
         }
@@ -286,20 +296,28 @@ export default function WatchPage() {
             : `https://vidbolt.xyz/movie/${id}?theme=39AEA9`
         };
       }
-      if (target.id === 'vidsrc-to') {
+      if (target.id === 'vidlink') {
         return {
           ...target,
-          url: type === 'tv'
-            ? `https://vidsrc.to/embed/tv/${id}/${currentSeason}/${currentEpisode}`
-            : `https://vidsrc.to/embed/movie/${id}`
+          url: type === 'tv' || type === 'anime'
+            ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}?primaryColor=00a8e1&secondaryColor=192231`
+            : `https://vidlink.pro/movie/${id}?primaryColor=00a8e1&secondaryColor=192231`
+        };
+      }
+      if (target.id === 'vidsrc-su' || target.id === 'vidsrc-to') {
+        return {
+          ...target,
+          url: type === 'tv' || type === 'anime'
+            ? `https://vidsrc.su/embed/tv/${id}/${currentSeason}/${currentEpisode}`
+            : `https://vidsrc.su/embed/movie/${id}`
         };
       }
       if (target.id === 'vidsrc') {
         return {
           ...target,
           url: type === 'tv'
-            ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
-            : `https://vidsrc.me/embed/movie?tmdb=${id}`
+            ? `https://vidsrc.net/embed/tv/?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
+            : `https://vidsrc.net/embed/movie/?tmdb=${id}`
         };
       }
       if (target.id === 'screenscape') {
@@ -320,13 +338,17 @@ export default function WatchPage() {
     if (isServerFailed) {
       let fallbackUrl = rawActiveServer.url;
       if (rawActiveServer.id === 'vidbolt') {
+        fallbackUrl = type === 'tv' || type === 'anime'
+          ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}?primaryColor=00a8e1&secondaryColor=192231`
+          : `https://vidlink.pro/movie/${id}?primaryColor=00a8e1&secondaryColor=192231`;
+      } else if (rawActiveServer.id === 'vidlink') {
+        fallbackUrl = type === 'tv' || type === 'anime'
+          ? `https://vidsrc.su/embed/tv/${id}/${currentSeason}/${currentEpisode}`
+          : `https://vidsrc.su/embed/movie/${id}`;
+      } else if (rawActiveServer.id === 'vidsrc-su' || rawActiveServer.id === 'vidsrc-to') {
         fallbackUrl = type === 'tv'
-          ? `https://vidsrc.to/embed/tv/${id}/${currentSeason}/${currentEpisode}`
-          : `https://vidsrc.to/embed/movie/${id}`;
-      } else if (rawActiveServer.id === 'vidsrc-to') {
-        fallbackUrl = type === 'tv'
-          ? `https://vidsrc.me/embed/tv?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
-          : `https://vidsrc.me/embed/movie?tmdb=${id}`;
+          ? `https://vidsrc.net/embed/tv/?tmdb=${id}&season=${currentSeason}&episode=${currentEpisode}`
+          : `https://vidsrc.net/embed/movie/?tmdb=${id}`;
       } else if (rawActiveServer.id === 'vidsrc') {
         fallbackUrl = type === 'tv'
           ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}?theme=39AEA9`
@@ -334,11 +356,9 @@ export default function WatchPage() {
           ? `https://vidbolt.xyz/anime/${id}/${currentEpisode}?theme=39AEA9`
           : `https://vidbolt.xyz/movie/${id}?theme=39AEA9`;
       } else if (rawActiveServer.id === 'screenscape') {
-        fallbackUrl = type === 'tv'
-          ? `https://vidbolt.xyz/tv/${id}/${currentSeason}/${currentEpisode}?theme=39AEA9`
-          : type === 'anime'
-          ? `https://vidbolt.xyz/anime/${id}/${currentEpisode}?theme=39AEA9`
-          : `https://vidbolt.xyz/movie/${id}?theme=39AEA9`;
+        fallbackUrl = type === 'tv' || type === 'anime'
+          ? `https://vidlink.pro/tv/${id}/${currentSeason}/${currentEpisode}?primaryColor=00a8e1&secondaryColor=192231`
+          : `https://vidlink.pro/movie/${id}?primaryColor=00a8e1&secondaryColor=192231`;
       }
       return {
         ...rawActiveServer,
@@ -412,8 +432,9 @@ export default function WatchPage() {
           const preferred = typeof window !== 'undefined'
             ? localStorage.getItem('nightcast_preferred_server_v8')
             : null;
-          if (preferred && data.servers.some((s: any) => s.id === preferred)) {
-            setActiveServerId(preferred);
+          const mappedPreferred = preferred === 'vidsrc-to' ? 'vidlink' : preferred;
+          if (mappedPreferred && data.servers.some((s: any) => s.id === mappedPreferred)) {
+            setActiveServerId(mappedPreferred);
           } else {
             const vidboltServer = data.servers.find((s: any) => s.id === 'vidbolt');
             setActiveServerId(vidboltServer ? 'vidbolt' : data.servers[0].id);
@@ -1238,11 +1259,6 @@ export default function WatchPage() {
             title="NightCast Media Player"
             referrerPolicy="origin"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            sandbox={
-              isAdShieldActive && activeServerId !== 'vidsrc' && activeServerId !== 'vidsrc-to'
-                ? "allow-scripts allow-same-origin allow-forms allow-presentation"
-                : undefined
-            }
           />
         )
       ) : (
