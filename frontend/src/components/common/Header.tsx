@@ -329,20 +329,20 @@ function HeaderContent() {
   return (
     <>
       <header
-        className={`fixed top-0 inset-x-0 z-50 select-none transition-all duration-300 ease-in-out px-4 sm:px-6 md:px-8 lg:px-10 py-3 sm:py-4 pointer-events-none ${
+        className={`fixed top-0 inset-x-0 z-50 select-none transform-gpu transition-[transform,opacity,background-color,border-color,box-shadow] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] px-4 sm:px-6 md:px-8 lg:px-10 py-3 sm:py-4 pointer-events-none ${
           isHeaderVisible
             ? "translate-y-0 opacity-100"
             : "-translate-y-full opacity-0"
         } ${
           isScrolled
-            ? "bg-[#0B131B]/80 backdrop-blur-2xl border-b border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.8)]"
+            ? "bg-[#0B131B]/92 backdrop-blur-md border-b border-white/[0.08] shadow-[0_12px_36px_rgba(0,0,0,0.8)]"
             : "bg-transparent"
         }`}
       >
         <div className="max-w-[1800px] mx-auto flex items-center justify-between gap-3 sm:gap-6">
           {/* Left: Navigation Buttons Capsule (Pure Floating Capsule) */}
           <nav
-            className="pointer-events-auto hidden md:flex items-center gap-1 p-1 rounded-full bg-white/[0.06] hover:bg-white/[0.08] backdrop-blur-2xl backdrop-saturate-150 border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.4)] transition-all duration-200"
+            className="pointer-events-auto hidden md:flex items-center gap-1 p-1 rounded-full bg-white/[0.06] hover:bg-white/[0.08] backdrop-blur-md border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.4)] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
             aria-label="Main Navigation"
           >
             {navItems.map((item) => {
@@ -354,7 +354,7 @@ function HeaderContent() {
                   href={item.href}
                   onClick={item.onClick}
                   aria-current={active ? "page" : undefined}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all duration-200 cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide transform-gpu transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.96] cursor-pointer ${
                     active
                       ? "bg-[#39AEA9]/20 text-[#39AEA9] border border-[#39AEA9]/50 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_0_14px_rgba(57,174,169,0.35)]"
                       : "text-[#8FA8AD] hover:text-[#F0F0F0] hover:bg-white/[0.08] border border-transparent"
@@ -373,7 +373,7 @@ function HeaderContent() {
                 onClick={() => setIsCategoriesOpen((prev) => !prev)}
                 aria-expanded={isCategoriesOpen}
                 aria-label="Categories menu"
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-all duration-200 cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide transform-gpu transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.96] cursor-pointer ${
                   isCategoriesOpen
                     ? "bg-[#39AEA9]/20 text-[#39AEA9] border border-[#39AEA9]/50 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_0_14px_rgba(57,174,169,0.35)]"
                     : "text-[#8FA8AD] hover:text-[#F0F0F0] hover:bg-white/[0.08] border border-transparent"
@@ -381,12 +381,12 @@ function HeaderContent() {
               >
                 <Layers className={`w-3.5 h-3.5 ${isCategoriesOpen ? "text-[#39AEA9]" : ""}`} />
                 <span>Categories</span>
-                <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isCategoriesOpen ? "rotate-180 text-[#39AEA9]" : ""}`} />
+                <ChevronDown className={`w-3 h-3 transition-transform duration-250 ease-[cubic-bezier(0.16,1,0.3,1)] ${isCategoriesOpen ? "rotate-180 text-[#39AEA9]" : ""}`} />
               </button>
 
               {/* Categories Dropdown Popover */}
               {isCategoriesOpen && (
-                <div className="absolute top-full left-0 mt-2.5 w-64 bg-[#0B131B]/95 backdrop-blur-2xl backdrop-saturate-150 border border-white/[0.12] rounded-2xl p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.95)] z-50 animate-in fade-in zoom-95 duration-150">
+                <div className="absolute top-full left-0 mt-2.5 w-64 bg-[#0B131B]/96 backdrop-blur-md border border-white/[0.12] rounded-2xl p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.95)] z-50 animate-in fade-in zoom-in-95 duration-200">
                   <div className="flex items-center gap-2 px-2.5 py-1.5 mb-1.5 text-[11px] font-semibold text-[#A4C8E1] uppercase tracking-wider border-b border-white/[0.06]">
                     <Compass className="w-3.5 h-3.5 text-[#39AEA9]" />
                     <span>Explore Genres</span>
@@ -397,7 +397,7 @@ function HeaderContent() {
                         key={cat.id}
                         href={cat.href}
                         onClick={() => setIsCategoriesOpen(false)}
-                        className="px-3 py-2 rounded-xl text-xs font-medium text-[#F0F0F0]/90 hover:text-white bg-white/[0.02] hover:bg-white/[0.08] border border-transparent hover:border-[#39AEA9]/30 transition-all flex items-center justify-between"
+                        className="px-3 py-2 rounded-xl text-xs font-medium text-[#F0F0F0]/90 hover:text-white bg-white/[0.02] hover:bg-white/[0.08] border border-transparent hover:border-[#39AEA9]/30 transition-all duration-150 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-between"
                       >
                         <span>{cat.name}</span>
                         <span className="text-[11px] text-[#39AEA9]">&rarr;</span>
@@ -416,7 +416,7 @@ function HeaderContent() {
               <form
                 onSubmit={handleSearchSubmit}
                 role="search"
-                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-full backdrop-blur-2xl backdrop-saturate-150 transition-all duration-300 w-full ${
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1.5 rounded-full backdrop-blur-2xl backdrop-saturate-150 transform-gpu transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] w-full ${
                   isAiMode
                     ? "bg-[#0B1A24]/90 border border-[#39AEA9]/50 shadow-[0_0_20px_rgba(57,174,169,0.3),inset_0_1px_1px_rgba(255,255,255,0.15)] ring-1 ring-[#39AEA9]/30"
                     : "bg-white/[0.06] hover:bg-white/[0.1] focus-within:bg-white/[0.14] border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.4)]"
@@ -444,7 +444,7 @@ function HeaderContent() {
                       ? "✨ Mood ya plot describe karo (Urdu/English)..."
                       : "Search for Movie or TV"
                   }
-                  className={`bg-transparent text-xs text-[#F0F0F0] placeholder-[#8FA8AD]/70 focus:outline-none font-sans transition-all duration-200 ${
+                  className={`bg-transparent text-xs text-[#F0F0F0] placeholder-[#8FA8AD]/70 focus:outline-none font-sans transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                     isAiMode
                       ? "w-full md:w-56 lg:w-64 md:focus:w-72 placeholder-[#39AEA9]/60"
                       : "w-full md:w-44 lg:w-48 md:focus:w-56"

@@ -54,18 +54,20 @@ function formatReleaseDate(rawDate?: string): string {
 }
 
 function HeroCarousel({ items = [] }: HeroCarouselProps) {
-  const [currentIndex, setCurrentIndex] = useState(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = sessionStorage.getItem("nc_hero_carousel_index");
-        if (saved) {
-          const parsed = parseInt(saved, 10);
-          if (!isNaN(parsed) && parsed >= 0) return parsed;
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("nc_hero_carousel_index");
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed >= 0 && parsed < items.length) {
+          setCurrentIndex(parsed);
         }
-      } catch {}
-    }
-    return 0;
-  });
+      }
+    } catch {}
+  }, [items.length]);
+
   const [isPaused, setIsPaused] = useState(false);
   const [favorites, setFavorites] = useState<Record<string | number, boolean>>({});
   const [watchlist, setWatchlist] = useState<Record<string | number, boolean>>({});
@@ -280,18 +282,14 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
       onMouseLeave={() => setIsPaused(false)}
     >
       {/* Cinematic Fullscreen Backdrop */}
-      <AnimatePresence mode="wait">
+      <AnimatePresence initial={false}>
         <motion.div
           key={activeItem.id}
-          initial={{ opacity: 0, scale: 1.03 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute inset-0 select-none transform-gpu will-change-transform z-0"
-          style={{
-            WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 100%)",
-            maskImage: "linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 100%)",
-          }}
+          transition={{ duration: 0.5, ease: "linear" }}
+          className="absolute inset-0 select-none z-0"
         >
           <Image
             src={backdropUrl}
@@ -306,6 +304,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
           {/* Scrim Overlays - Matching Reference Gradient Vignettes */}
           <div className="absolute top-0 inset-x-0 h-32 sm:h-40 bg-gradient-to-b from-[#0B131B]/90 via-[#0B131B]/40 to-transparent z-10 pointer-events-none" />
           <div className="absolute inset-y-0 left-0 w-full sm:w-4/5 md:w-3/5 bg-gradient-to-r from-[#0B131B] via-[#0B131B]/85 to-transparent z-15 pointer-events-none" />
+          <div className="absolute bottom-0 inset-x-0 h-36 bg-gradient-to-t from-[#0B131B] via-[#0B131B]/60 to-transparent z-15 pointer-events-none" />
         </motion.div>
       </AnimatePresence>
 
@@ -314,11 +313,11 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
         <AnimatePresence mode="wait">
           <motion.div
             key={`info-${activeItem.id}`}
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="space-y-2 sm:space-y-3"
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="space-y-2 sm:space-y-3 transform-gpu will-change-transform"
           >
             {/* Metadata Row: Date & Genres */}
             <div className="flex items-center gap-3 sm:gap-4 text-[11px] sm:text-xs font-semibold tracking-wider text-[#A4C8E1] uppercase">
@@ -420,7 +419,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
           <button
             type="button"
             onClick={() => toggleFavorite(activeItem.id)}
-            className={`w-9 sm:w-10 h-9 sm:h-10 rounded-full flex items-center justify-center backdrop-blur-2xl backdrop-saturate-150 border transition-all duration-200 active:scale-95 cursor-pointer ${
+            className={`w-9 sm:w-10 h-9 sm:h-10 rounded-full flex items-center justify-center backdrop-blur-2xl backdrop-saturate-150 border transform-gpu transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.92] cursor-pointer ${
               favorites[activeItem.id]
                 ? "bg-rose-500/25 border-rose-500/50 text-rose-400 scale-105 shadow-[0_0_15px_rgba(244,63,94,0.4)]"
                 : "bg-white/[0.06] hover:bg-white/[0.14] border-white/[0.14] text-[#F0F0F0]/80 hover:text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.5)]"
@@ -439,7 +438,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
           <button
             type="button"
             onClick={() => toggleWatchlist(activeItem)}
-            className={`w-9 sm:w-10 h-9 sm:h-10 rounded-full flex items-center justify-center backdrop-blur-2xl backdrop-saturate-150 border transition-all duration-200 active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
+            className={`w-9 sm:w-10 h-9 sm:h-10 rounded-full flex items-center justify-center backdrop-blur-2xl backdrop-saturate-150 border transform-gpu transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.92] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
               watchlist[activeItem.id]
                 ? "bg-[#39AEA9]/25 border-[#39AEA9]/60 text-[#39AEA9] scale-105 shadow-[0_0_15px_rgba(57,174,169,0.4)]"
                 : "bg-white/[0.06] hover:bg-white/[0.14] border-white/[0.14] text-[#F0F0F0]/80 hover:text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.5)]"
@@ -458,7 +457,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
           <button
             type="button"
             onClick={() => triggerToast("Added to Playlist", "success")}
-            className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-white/[0.06] hover:bg-white/[0.14] border border-white/[0.14] backdrop-blur-2xl backdrop-saturate-150 flex items-center justify-center text-[#F0F0F0]/80 hover:text-white transition-all duration-200 active:scale-95 cursor-pointer shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
+            className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-white/[0.06] hover:bg-white/[0.14] border border-white/[0.14] backdrop-blur-2xl backdrop-saturate-150 flex items-center justify-center text-[#F0F0F0]/80 hover:text-white transform-gpu transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.92] cursor-pointer shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
             title="Add to Playlist"
             aria-label="Add to Playlist"
           >
@@ -473,11 +472,11 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
           role="dialog"
           aria-modal="true"
           aria-label="Official Trailer"
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-2xl flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-2xl flex items-center justify-center p-4 animate-in fade-in duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
           onClick={() => setIsTrailerOpen(false)}
         >
           <div
-            className="relative w-full max-w-4xl aspect-video bg-[#0B131B]/95 backdrop-blur-3xl rounded-2xl overflow-hidden border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_25px_60px_rgba(0,0,0,0.95)]"
+            className="relative w-full max-w-4xl aspect-video bg-[#0B131B]/95 backdrop-blur-3xl rounded-2xl overflow-hidden border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_25px_60px_rgba(0,0,0,0.95)] transform-gpu animate-in fade-in zoom-in-95 duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
             onClick={(e) => e.stopPropagation()}
           >
             <button

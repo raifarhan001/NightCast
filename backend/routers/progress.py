@@ -51,14 +51,12 @@ def update_progress(
         if payload.backdrop_path:
             existing.backdrop_path = payload.backdrop_path
 
-        # Purge any redundant duplicate rows for this movie
-        if s_num is None and ep_num is None:
-            db.query(models.ContinueWatching).filter(
-                models.ContinueWatching.profile_id == active_profile.id,
-                (models.ContinueWatching.media_id == clean_id) | (models.ContinueWatching.media_id == str(payload.id)),
-                (models.ContinueWatching.season.is_(None)) | (models.ContinueWatching.season == 0),
-                models.ContinueWatching.id != existing.id
-            ).delete(synchronize_session=False)
+        # Purge any redundant/older rows for this title
+        db.query(models.ContinueWatching).filter(
+            models.ContinueWatching.profile_id == active_profile.id,
+            (models.ContinueWatching.media_id == clean_id) | (models.ContinueWatching.media_id == str(payload.id)),
+            models.ContinueWatching.id != existing.id
+        ).delete(synchronize_session=False)
     else:
         new_cw = models.ContinueWatching(
             profile_id=active_profile.id,
@@ -74,6 +72,13 @@ def update_progress(
             duration_seconds=payload.duration
         )
         db.add(new_cw)
+        db.flush()
+        # Purge any older rows for this same title
+        db.query(models.ContinueWatching).filter(
+            models.ContinueWatching.profile_id == active_profile.id,
+            (models.ContinueWatching.media_id == clean_id) | (models.ContinueWatching.media_id == str(payload.id)),
+            models.ContinueWatching.id != new_cw.id
+        ).delete(synchronize_session=False)
     db.commit()
 
     # Log into watch history when content was engaged with (>= 1.5% or >= 25s) or ended/skipped

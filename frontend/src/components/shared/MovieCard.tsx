@@ -3,6 +3,7 @@
 import React, { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { Play, Plus, Check, ThumbsUp, ChevronDown, X } from "lucide-react";
 import { ImageService } from "../../lib/ImageService";
 import { soundFx } from "../../lib/soundEffects";
@@ -93,9 +94,10 @@ function getCachedWatchlistStatus(id: string | number): boolean {
 }
 
 function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps) {
-  const [added, setAdded] = useState<boolean>(() => getCachedWatchlistStatus(item.id));
+  const [added, setAdded] = useState<boolean>(false);
 
   useEffect(() => {
+    setAdded(getCachedWatchlistStatus(item.id));
     const handleSync = (e: Event) => {
       cachedWatchlistMap = null; // invalidate cache
       const customEvent = e as CustomEvent<{ id: string | number; added: boolean }>;
@@ -114,7 +116,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
   const containerRef = useRef<HTMLDivElement>(null);
   const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const type = item.media_type || (item.first_air_date ? "tv" : "movie");
+  const type = item.media_type || (item.season ? "tv" : (item.first_air_date ? "tv" : "movie"));
   const title = item.title || item.name || "Untitled";
 
   const [imgError, setImgError] = useState(false);
@@ -333,16 +335,16 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
       <Link
         href={watchUrl}
         aria-label={`Watch ${title}`}
-        className="group block cursor-pointer transform-gpu rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B]"
+        className="group block cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B]"
       >
-        <div className="cinema-card-landscape w-full bg-white/[0.04] backdrop-blur-2xl border border-white/[0.12] rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.6)] group-hover:border-white/[0.28] group-hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.22),0_16px_40px_rgba(0,0,0,0.85),0_0_24px_rgba(57,174,169,0.2)] transition-all duration-300 ease-out relative">
+        <div className="cinema-card-landscape w-full rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.6)] relative">
           {imageUrl ? (
             <Image
               src={imageUrl}
               alt={`${title} poster`}
               fill
               sizes="(max-width: 768px) 250px, 270px"
-              className="object-cover rounded-2xl transform-gpu will-change-transform transition-transform duration-300 ease-out group-hover:scale-105 opacity-100 brightness-[0.96]"
+              className="object-cover rounded-2xl opacity-100 brightness-[0.96]"
               loading="lazy"
               placeholder="blur"
               blurDataURL={ImageService.getBlurHash()}
@@ -355,7 +357,7 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
           )}
 
           {/* Dynamic Streaming Platform Tag Top Left */}
-          <div className="absolute top-2.5 left-2.5 z-20 pointer-events-none transform-gpu will-change-transform transition-transform duration-200">
+          <div className="absolute top-2.5 left-2.5 z-20 pointer-events-none transition-transform duration-200">
             <PlatformBadge item={item} />
           </div>
 
@@ -407,161 +409,186 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
         </div>
       </Link>
 
-      {/* Netflix-Style Hover Preview Pop-Up Card */}
-      {isHovered && (
-        <div
-          className={`absolute ${positionClasses} z-50 bg-[#0B131B]/90 backdrop-blur-xl backdrop-saturate-150 rounded-2xl sm:rounded-3xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_24px_60px_rgba(0,0,0,0.95),0_0_30px_rgba(57,174,169,0.2)] border border-white/[0.12] overflow-hidden transform-gpu animate-in fade-in zoom-in-95 duration-200 pointer-events-auto`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Top Banner: High-Res Cinema Artwork / Poster */}
-          <div className="relative aspect-video w-full bg-[#0B131B] overflow-hidden group/thumb">
-            <Link href={watchUrl} aria-label={`Play ${title}`} className="block w-full h-full relative cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]">
-              {imageUrl ? (
-                <Image
-                  src={imageUrl}
-                  alt={`${title} preview cover`}
-                  fill
-                  sizes="340px"
-                  className="object-cover transition-transform duration-500 group-hover/thumb:scale-105 brightness-[0.98]"
-                  placeholder="blur"
-                  blurDataURL={ImageService.getBlurHash()}
-                  onError={() => setImgError(true)}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-xs text-[#8FA8AD] font-mono">
-                  {title}
+      {/* Netflix-Style Hover Preview Pop-Up Card with Fluid Spring Motion */}
+      <AnimatePresence>
+        {isHovered && (
+          <div
+            className={`absolute ${positionClasses} z-50 pointer-events-auto`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: openDownward ? -4 : 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{
+                opacity: 0,
+                scale: 0.96,
+                transition: { duration: 0.16, ease: [0.16, 1, 0.3, 1] },
+              }}
+              transition={{
+                duration: 0.22,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              style={{
+                transformOrigin:
+                  align === "left"
+                    ? (openDownward ? "top left" : "bottom left")
+                    : align === "right"
+                    ? (openDownward ? "top right" : "bottom right")
+                    : (openDownward ? "top center" : "bottom center"),
+              }}
+              className="w-full bg-[#0B131B]/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.95)] border border-white/[0.12] overflow-hidden"
+            >
+              {/* Top Banner: High-Res Cinema Artwork / Poster */}
+              <div className="relative aspect-video w-full bg-[#0B131B] overflow-hidden group/thumb">
+                <Link href={watchUrl} aria-label={`Play ${title}`} className="block w-full h-full relative cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]">
+                  {imageUrl ? (
+                    <Image
+                      src={imageUrl}
+                      alt={`${title} preview cover`}
+                      fill
+                      sizes="340px"
+                      className="object-cover transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/thumb:scale-105 brightness-[0.98]"
+                      placeholder="blur"
+                      blurDataURL={ImageService.getBlurHash()}
+                      onError={() => setImgError(true)}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xs text-[#8FA8AD] font-mono">
+                      {title}
+                    </div>
+                  )}
+                </Link>
+
+                {/* Platform Tag Top Left */}
+                <div className="absolute top-2.5 left-2.5 z-20 pointer-events-none">
+                  <PlatformBadge item={item} />
                 </div>
-              )}
-            </Link>
 
-            {/* Platform Tag Top Left */}
-            <div className="absolute top-2.5 left-2.5 z-20 pointer-events-none">
-              <PlatformBadge item={item} />
-            </div>
+                {/* Dismiss from Continue Watching if applicable */}
+                {onRemove && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      soundFx.playTap();
+                      onRemove();
+                    }}
+                    className="absolute top-2.5 right-2.5 z-30 w-7 h-7 rounded-full bg-[#0B131B]/70 hover:bg-rose-600/90 text-[#F0F0F0]/80 hover:text-white border border-white/[0.15] backdrop-blur-xl flex items-center justify-center transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_4px_12px_rgba(0,0,0,0.5)] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
+                    title="Remove from Continue Watching"
+                    aria-label="Remove from Continue Watching"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
 
-            {/* Dismiss from Continue Watching if applicable */}
-            {onRemove && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  soundFx.playTap();
-                  onRemove();
-                }}
-                className="absolute top-2.5 right-2.5 z-30 w-7 h-7 rounded-full bg-[#0B131B]/70 hover:bg-rose-600/90 text-[#F0F0F0]/80 hover:text-white border border-white/[0.15] backdrop-blur-xl flex items-center justify-center transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_4px_12px_rgba(0,0,0,0.5)] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
-                title="Remove from Continue Watching"
-                aria-label="Remove from Continue Watching"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-
-            {/* Progress bar on popup image */}
-            {progress > 0 && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#0B131B]/80 z-20">
-                <div
-                  className="h-full bg-[#39AEA9] shadow-[0_0_8px_rgba(57,174,169,0.8)]"
-                  style={{ width: `${Math.max(2, Math.min(100, displayPercent))}%` }}
-                />
+                {/* Progress bar on popup image */}
+                {progress > 0 && (
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#0B131B]/80 z-20">
+                    <div
+                      className="h-full bg-[#39AEA9] shadow-[0_0_8px_rgba(57,174,169,0.8)]"
+                      style={{ width: `${Math.max(2, Math.min(100, displayPercent))}%` }}
+                    />
+                  </div>
+                )}
               </div>
-            )}
+
+              {/* Details Section (Frosted Glass Layout with Rounded Bottom) */}
+              <div className="p-3 sm:p-3.5 space-y-2.5 bg-white/[0.04] backdrop-blur-2xl rounded-b-2xl sm:rounded-b-3xl border-t border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
+                {/* Row 1: Action Controls */}
+                <div className="flex items-center gap-2">
+                  {/* Primary Platinum Play Button */}
+                  <Link
+                    href={watchUrl}
+                    onClick={() => soundFx.playTap()}
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#F0F0F0] hover:bg-white text-[#0B131B] flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.6),0_0_16px_rgba(240,240,240,0.35)] transform-gpu active:scale-[0.92] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
+                    title="Play Now"
+                    aria-label={`Play ${title} now`}
+                  >
+                    <Play className="w-4 h-4 fill-[#0B131B] text-[#0B131B] ml-0.5" />
+                  </Link>
+
+                  {/* Add to Watchlist Button */}
+                  <button
+                    type="button"
+                    onClick={handleWatchlistClick}
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/[0.12] hover:border-white/[0.28] text-[#F0F0F0] hover:text-white flex items-center justify-center transform-gpu active:scale-[0.92] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer shrink-0 backdrop-blur-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_4px_16px_rgba(0,0,0,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
+                    title={added ? "In Watchlist" : "Add to Watchlist"}
+                    aria-label={added ? "Remove from Watchlist" : "Add to Watchlist"}
+                  >
+                    {added ? <Check className="w-4 h-4 text-[#39AEA9]" /> : <Plus className="w-4 h-4 text-[#F0F0F0]" />}
+                  </button>
+
+                  {/* Like / ThumbsUp Button */}
+                  <button
+                    type="button"
+                    onClick={handleLikeClick}
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/[0.12] hover:border-white/[0.28] text-[#F0F0F0] hover:text-white flex items-center justify-center transform-gpu active:scale-[0.92] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer shrink-0 backdrop-blur-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_4px_16px_rgba(0,0,0,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
+                    title="Like"
+                    aria-label="Like title"
+                  >
+                    <ThumbsUp className={`w-4 h-4 ${liked ? "text-[#39AEA9] fill-current" : "text-[#F0F0F0]"}`} />
+                  </button>
+
+                  {/* Chevron Down Button (Right Aligned - More Info) */}
+                  <Link
+                    href={detailUrl}
+                    onClick={() => soundFx.playTap()}
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/[0.12] hover:border-white/[0.28] text-[#F0F0F0] hover:text-white flex items-center justify-center ml-auto transform-gpu active:scale-[0.92] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer shrink-0 backdrop-blur-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_4px_16px_rgba(0,0,0,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
+                    title="More info"
+                    aria-label={`More info about ${title}`}
+                  >
+                    <ChevronDown className="w-4 h-4 text-[#F0F0F0]" />
+                  </Link>
+                </div>
+
+                {/* Row 2: Match %, Age Rating, Duration, Quality Badge */}
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-xs font-sans">
+                  {matchScore !== null && (
+                    <span className="text-[#39AEA9] font-bold text-xs drop-shadow-[0_0_8px_rgba(57,174,169,0.5)]">
+                      {matchScore}% match
+                    </span>
+                  )}
+                  {ageRating && (
+                    <span className="border border-white/[0.12] bg-white/[0.08] px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#F0F0F0] backdrop-blur-md">
+                      {ageRating}
+                    </span>
+                  )}
+                  {durationText && (
+                    <span className="text-[#8FA8AD] font-medium text-[11px]">
+                      {durationText}
+                    </span>
+                  )}
+                  <span className="border border-white/[0.12] bg-white/[0.08] text-[#A4C8E1] px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider backdrop-blur-md">
+                    4K UHD
+                  </span>
+                </div>
+
+                {/* Row 3: Genres (Dot-separated) */}
+                {genresList.length > 0 && (
+                  <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-[#F0F0F0]/85 font-sans font-medium pt-0.5 pb-1">
+                    {genresList.map((g, idx) => (
+                      <React.Fragment key={g}>
+                        <span>{g}</span>
+                        {idx < genresList.length - 1 && (
+                          <span className="text-[#8FA8AD]">•</span>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                )}
+
+                {/* AI Pitch Quote */}
+                {item.ai_pitch && (
+                  <div className="pt-1.5 text-[11px] text-[#A4C8E1] italic font-sans border-t border-white/[0.08] line-clamp-2 leading-relaxed">
+                    &ldquo;{item.ai_pitch}&rdquo;
+                  </div>
+                )}
+              </div>
+            </motion.div>
           </div>
-
-          {/* Details Section (Frosted Glass Layout with Rounded Bottom) */}
-          <div className="p-3 sm:p-3.5 space-y-2.5 bg-white/[0.04] backdrop-blur-2xl rounded-b-2xl sm:rounded-b-3xl border-t border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
-            {/* Row 1: Action Controls */}
-            <div className="flex items-center gap-2">
-              {/* Primary Platinum Play Button */}
-              <Link
-                href={watchUrl}
-                onClick={() => soundFx.playTap()}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#F0F0F0] hover:bg-white text-[#0B131B] flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.6),0_0_16px_rgba(240,240,240,0.35)] transform active:scale-95 transition-all cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
-                title="Play Now"
-                aria-label={`Play ${title} now`}
-              >
-                <Play className="w-4 h-4 fill-[#0B131B] text-[#0B131B] ml-0.5" />
-              </Link>
-
-              {/* Add to Watchlist Button */}
-              <button
-                type="button"
-                onClick={handleWatchlistClick}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/[0.12] hover:border-white/[0.28] text-[#F0F0F0] hover:text-white flex items-center justify-center transform active:scale-95 transition-all cursor-pointer shrink-0 backdrop-blur-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_4px_16px_rgba(0,0,0,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
-                title={added ? "In Watchlist" : "Add to Watchlist"}
-                aria-label={added ? "Remove from Watchlist" : "Add to Watchlist"}
-              >
-                {added ? <Check className="w-4 h-4 text-[#39AEA9]" /> : <Plus className="w-4 h-4 text-[#F0F0F0]" />}
-              </button>
-
-              {/* Like / ThumbsUp Button */}
-              <button
-                type="button"
-                onClick={handleLikeClick}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/[0.12] hover:border-white/[0.28] text-[#F0F0F0] hover:text-white flex items-center justify-center transform active:scale-95 transition-all cursor-pointer shrink-0 backdrop-blur-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_4px_16px_rgba(0,0,0,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
-                title="Like"
-                aria-label="Like title"
-              >
-                <ThumbsUp className={`w-4 h-4 ${liked ? "text-[#39AEA9] fill-current" : "text-[#F0F0F0]"}`} />
-              </button>
-
-              {/* Chevron Down Button (Right Aligned - More Info) */}
-              <Link
-                href={detailUrl}
-                onClick={() => soundFx.playTap()}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/[0.12] hover:border-white/[0.28] text-[#F0F0F0] hover:text-white flex items-center justify-center ml-auto transform active:scale-95 transition-all cursor-pointer shrink-0 backdrop-blur-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_4px_16px_rgba(0,0,0,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
-                title="More info"
-                aria-label={`More info about ${title}`}
-              >
-                <ChevronDown className="w-4 h-4 text-[#F0F0F0]" />
-              </Link>
-            </div>
-
-            {/* Row 2: Match %, Age Rating, Duration, Quality Badge */}
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-xs font-sans">
-              {matchScore !== null && (
-                <span className="text-[#39AEA9] font-bold text-xs drop-shadow-[0_0_8px_rgba(57,174,169,0.5)]">
-                  {matchScore}% match
-                </span>
-              )}
-              {ageRating && (
-                <span className="border border-white/[0.12] bg-white/[0.08] px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#F0F0F0] backdrop-blur-md">
-                  {ageRating}
-                </span>
-              )}
-              {durationText && (
-                <span className="text-[#8FA8AD] font-medium text-[11px]">
-                  {durationText}
-                </span>
-              )}
-              <span className="border border-white/[0.12] bg-white/[0.08] text-[#A4C8E1] px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider backdrop-blur-md">
-                4K UHD
-              </span>
-            </div>
-
-            {/* Row 3: Genres (Dot-separated) */}
-            {genresList.length > 0 && (
-              <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-[#F0F0F0]/85 font-sans font-medium pt-0.5 pb-1">
-                {genresList.map((g, idx) => (
-                  <React.Fragment key={g}>
-                    <span>{g}</span>
-                    {idx < genresList.length - 1 && (
-                      <span className="text-[#8FA8AD]">•</span>
-                    )}
-                  </React.Fragment>
-                ))}
-              </div>
-            )}
-
-            {/* AI Pitch Quote */}
-            {item.ai_pitch && (
-              <div className="pt-1.5 text-[11px] text-[#A4C8E1] italic font-sans border-t border-white/[0.08] line-clamp-2 leading-relaxed">
-                &ldquo;{item.ai_pitch}&rdquo;
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -625,6 +625,7 @@ export default function NightCastPlayer({
           allowFullScreen
           scrolling="no"
           title="NightCast Media Player"
+          referrerPolicy="origin"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         />
         {audioTracks.length > 0 && (

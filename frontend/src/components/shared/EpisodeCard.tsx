@@ -112,7 +112,7 @@ export default function EpisodeCard({
           fill
           sizes="112px"
           onError={() => setImgError(true)}
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
+          className="object-cover transform-gpu will-change-transform transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
         <div className="absolute bottom-1 left-1 z-10 px-1.5 py-0.2 rounded bg-black/85 border border-white/10 text-white font-mono font-bold text-[10px] tracking-wider">
@@ -187,7 +187,7 @@ export default function EpisodeCard({
           fill
           sizes="(max-width: 640px) 100vw, 240px"
           onError={() => setImgError(true)}
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          className="object-cover transform-gpu will-change-transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105"
         />
 
         {/* Bottom subtle shadow vignette */}
@@ -274,15 +274,15 @@ export default function EpisodeCard({
   );
 
   const containerClasses = compact
-    ? `w-full text-left rounded-xl p-2.5 transition-all duration-200 flex items-center gap-3 group cursor-pointer active:scale-[0.99] ${
+    ? `w-full text-left rounded-xl p-2.5 transition-[transform,background-color,border-color] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center gap-3 group cursor-pointer active:scale-[0.98] ${
         isActive
-          ? "bg-[#0B1523] border-2 border-[#39AEA9] shadow-[0_0_18px_rgba(57,174,169,0.3)] backdrop-blur-2xl"
-          : "bg-[#080d1a]/90 hover:bg-[#0f172a] backdrop-blur-xl border border-white/[0.08] hover:border-white/[0.2]"
+          ? "bg-[#0B1523] border-2 border-[#39AEA9] shadow-[0_0_18px_rgba(57,174,169,0.3)]"
+          : "bg-[#080d1a] hover:bg-[#0f172a] border border-white/[0.08] hover:border-white/[0.2]"
       }`
-    : `w-full text-left rounded-2xl p-3.5 sm:p-4 transition-all duration-200 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 group cursor-pointer active:scale-[0.995] ${
+    : `w-full text-left rounded-2xl p-3.5 sm:p-4 transition-[transform,background-color,border-color] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 group cursor-pointer active:scale-[0.99] ${
         isActive
-          ? "bg-[#0c1522] border-2 border-[#39AEA9] shadow-[0_0_24px_rgba(57,174,169,0.3)] backdrop-blur-2xl"
-          : "bg-[#060913]/90 hover:bg-[#0a0f1d] backdrop-blur-xl border border-white/[0.08] hover:border-white/[0.2] shadow-[inset_0_1px_1px_rgba(255,255,255,0.04),0_8px_24px_rgba(0,0,0,0.5)]"
+          ? "bg-[#0c1522] border-2 border-[#39AEA9] shadow-[0_0_24px_rgba(57,174,169,0.3)]"
+          : "bg-[#060913] hover:bg-[#0a0f1d] border border-white/[0.08] hover:border-white/[0.2] shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
       }`;
 
   if (href) {

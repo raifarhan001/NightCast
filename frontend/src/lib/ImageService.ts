@@ -1,3 +1,16 @@
+function escapeXml(unsafe: string): string {
+  return unsafe.replace(/[<>&'"]/g, (c) => {
+    switch (c) {
+      case '<': return '&lt;';
+      case '>': return '&gt;';
+      case '&': return '&amp;';
+      case '\'': return '&apos;';
+      case '"': return '&quot;';
+      default: return c;
+    }
+  });
+}
+
 export const ImageService = {
   getPoster(path: string | null | undefined, size: 'w500' | 'w780' | 'original' = 'w500', title?: string): string {
     if (!path) {
@@ -8,7 +21,7 @@ export const ImageService = {
     return `https://image.tmdb.org/t/p/${size}${cleanPath}`;
   },
 
-  getBackdrop(path: string | null | undefined, size: 'original' | 'w780' | 'w1280' = 'w1280', title?: string): string {
+  getBackdrop(path: string | null | undefined, size: 'w300' | 'original' | 'w780' | 'w1280' = 'w1280', title?: string): string {
     if (!path) {
       return this.FallbackImage('backdrop', title);
     }
@@ -50,7 +63,7 @@ export const ImageService = {
         </defs>
         <rect width="100%" height="100%" fill="url(#g)"/>
         <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Outfit, Inter, sans-serif" font-size="${type === 'poster' ? 22 : 42}" font-weight="bold" fill="rgba(255,255,255,0.08)" letter-spacing="2">
-          ${displayTitle.toUpperCase()}
+          ${escapeXml(displayTitle.toUpperCase())}
         </text>
         <text x="50%" y="${type === 'poster' ? '58%' : '56%'}" dominant-baseline="middle" text-anchor="middle" font-family="Inter, sans-serif" font-size="${type === 'poster' ? 10 : 13}" font-weight="bold" fill="#00c896" opacity="0.25" letter-spacing="4">
           ${type.toUpperCase()} PREVIEW

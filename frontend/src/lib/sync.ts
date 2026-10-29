@@ -43,7 +43,7 @@ export async function syncUserDataWithCloud(profileId?: string): Promise<void> {
       .map((item: any) => ({
         id: String(item.id || item.media_id || ''),
         media_id: String(item.media_id || item.id || ''),
-        media_type: String(item.media_type || 'movie'),
+        media_type: String(item.media_type || (item.season ? 'tv' : 'movie')),
         title: String(item.title || item.name || 'Untitled'),
         poster_path: item.poster_path ? String(item.poster_path) : null,
         backdrop_path: item.backdrop_path ? String(item.backdrop_path) : null,
@@ -56,7 +56,7 @@ export async function syncUserDataWithCloud(profileId?: string): Promise<void> {
       }))
       .filter((item: any) => {
         const cleanId = getCleanMediaId(item.media_id || item.id);
-        if (isDismissedFromContinueWatching(cleanId, item.updated_at)) return false;
+        if (isDismissedFromContinueWatching(cleanId, item.updated_at, profileId)) return false;
         const prog = item.progress_percent;
         const secs = item.timestamp_seconds;
         return (prog >= 0.5 || secs >= 3.0) && prog < 90.0;
@@ -73,7 +73,7 @@ export async function syncUserDataWithCloud(profileId?: string): Promise<void> {
           .map((item: any) => ({
             id: String(item.id || item.media_id || ''),
             media_id: String(item.media_id || item.id || ''),
-            media_type: String(item.media_type || 'movie'),
+            media_type: String(item.media_type || (item.season ? 'tv' : 'movie')),
             title: String(item.title || item.name || 'Untitled'),
             poster_path: item.poster_path ? String(item.poster_path) : null,
           }));
@@ -85,7 +85,7 @@ export async function syncUserDataWithCloud(profileId?: string): Promise<void> {
       headers['X-Profile-ID'] = profileId;
     }
 
-    const dismissedIds = Object.keys(getDismissedMediaIds());
+    const dismissedIds = Object.keys(getDismissedMediaIds(profileId));
 
     // 3. Post to /api/user/sync
     const response = await apiFetch('/api/user/sync', {
@@ -105,7 +105,7 @@ export async function syncUserDataWithCloud(profileId?: string): Promise<void> {
       for (const item of response.continue_watching) {
         const cleanId = getCleanMediaId(item.media_id || item.id);
         const itemProg = Number(item.progress_percent || 0);
-        if (!cleanId || itemProg >= 90.0 || isDismissedFromContinueWatching(cleanId, item.updated_at)) continue;
+        if (!cleanId || itemProg >= 90.0 || isDismissedFromContinueWatching(cleanId, item.updated_at, profileId)) continue;
         const isTv = item.media_type === 'tv' || (item.season !== undefined && item.season !== null);
         const key = isTv && item.season && item.episode
           ? `${cleanId}_s${item.season}e${item.episode}`

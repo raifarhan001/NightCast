@@ -1,52 +1,98 @@
+import os
 import json
 import logging
 import time
+import threading
 from collections import OrderedDict
-from typing import Optional, Any
+from typing import Optional, Any, Tuple
 import redis.asyncio as aioredis
 from config import settings
 
 logger = logging.getLogger("nightcast_redis")
 
+CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".cache_store.json")
+
 class BoundedTTLCache:
-    """Bounded in-memory LRU cache with TTL expiration to prevent memory leaks."""
+    """Bounded in-memory LRU cache with disk persistence and Stale-While-Revalidate support."""
     def __init__(self, maxsize: int = 1000):
         self.maxsize = maxsize
         self._cache: OrderedDict[str, tuple[Any, float]] = OrderedDict()
+        self._load_from_disk()
+
+    def _load_from_disk(self):
+        try:
+            if os.path.exists(CACHE_FILE):
+                with open(CACHE_FILE, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    now = time.time()
+                    for k, item in data.items():
+                        val = item.get("val")
+                        exp = item.get("exp", 0)
+                        # Keep entries that are less than 7 days old for instant stale serving
+                        if exp > (now - 604800):
+                            self._cache[k] = (val, exp)
+                logger.info(f"Loaded {len(self._cache)} cached entries from disk store.")
+        except Exception as e:
+            logger.warning(f"Failed loading disk cache store: {e}")
+
+    def _dump_to_disk(self):
+        try:
+            data = {}
+            for k, (val, exp) in list(self._cache.items())[-500:]:
+                data[k] = {"val": val, "exp": exp}
+            tmp_file = CACHE_FILE + ".tmp"
+            with open(tmp_file, "w", encoding="utf-8") as f:
+                json.dump(data, f)
+            if os.path.exists(tmp_file):
+                os.replace(tmp_file, CACHE_FILE)
+        except Exception:
+            pass
 
     def get(self, key: str) -> Optional[Any]:
         if key not in self._cache:
             return None
         val, expire_at = self._cache[key]
         if time.time() > expire_at:
-            del self._cache[key]
             return None
-        # Move to end (most recently used)
         self._cache.move_to_end(key)
         return val
+
+    def get_with_stale(self, key: str) -> Tuple[Optional[Any], bool]:
+        """Returns (value, is_stale). If expired, returns value with is_stale=True."""
+        if key not in self._cache:
+            return None, True
+        val, expire_at = self._cache[key]
+        is_stale = time.time() > expire_at
+        self._cache.move_to_end(key)
+        return val, is_stale
 
     def set(self, key: str, value: Any, expire_seconds: int = 3600):
         now = time.time()
         if key in self._cache:
             del self._cache[key]
         elif len(self._cache) >= self.maxsize:
-            # Purge expired items first
             keys_to_delete = [k for k, (_, exp) in self._cache.items() if now > exp]
             for k in keys_to_delete:
                 del self._cache[k]
-            # Evict LRU if still at or exceeding maxsize
             while len(self._cache) >= self.maxsize:
                 self._cache.popitem(last=False)
         self._cache[key] = (value, now + expire_seconds)
+        threading.Thread(target=self._dump_to_disk, daemon=True).start()
 
     def delete(self, key: str) -> bool:
         if key in self._cache:
             del self._cache[key]
+            threading.Thread(target=self._dump_to_disk, daemon=True).start()
             return True
         return False
 
     def clear(self):
         self._cache.clear()
+        if os.path.exists(CACHE_FILE):
+            try:
+                os.remove(CACHE_FILE)
+            except Exception:
+                pass
 
 
 class RedisCache:
@@ -70,10 +116,10 @@ class RedisCache:
             await self.client.ping()
             self.enabled = True
             logger.info("Connected to Redis asynchronously.")
-        except Exception as e:
+        except Exception:
             self.enabled = False
             self.client = None
-            logger.info("Redis not available on localhost, using bounded in-memory LRU cache with TTL.")
+            logger.info("Redis not available on localhost, using persistent local disk LRU cache.")
 
     async def get(self, key: str) -> Optional[Any]:
         await self._ensure_connected()
@@ -85,8 +131,18 @@ class RedisCache:
             except Exception as e:
                 logger.error(f"Redis get error: {e}")
         
-        # Fallback to bounded local cache
         return self.local_fallback.get(key)
+
+    async def get_with_stale(self, key: str) -> Tuple[Optional[Any], bool]:
+        await self._ensure_connected()
+        if self.enabled and self.client:
+            try:
+                data = await self.client.get(key)
+                if data:
+                    return json.loads(data), False
+            except Exception:
+                pass
+        return self.local_fallback.get_with_stale(key)
 
     async def set(self, key: str, value: Any, expire_seconds: int = 3600) -> bool:
         await self._ensure_connected()
@@ -98,7 +154,6 @@ class RedisCache:
             except Exception as e:
                 logger.error(f"Redis set error: {e}")
         
-        # Fallback to bounded local cache
         self.local_fallback.set(key, value, expire_seconds=expire_seconds)
         return True
 

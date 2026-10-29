@@ -43,6 +43,13 @@ async def lifespan(app: FastAPI):
                 db.close()
         except Exception as e:
             logger.warning(f"Background embeddings task warning: {e}")
+
+        # Pre-warm home feed in background so user's first request responds instantly (< 10ms)
+        try:
+            from routers.tmdb import get_home_feed
+            await get_home_feed()
+        except Exception as e:
+            logger.warning(f"Background pre-warm error: {e}")
             
     asyncio.create_task(background_startup())
     
@@ -97,7 +104,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         )
     return JSONResponse(
         status_code=500,
-        content={"status": "error", "results": [], "detail": str(exc), "message": str(exc)}
+        content={"status": "error", "results": [], "detail": "Internal server error. Please try again later.", "message": "An unexpected error occurred."}
     )
 
 # Custom Rate Limiting Middleware
@@ -196,14 +203,14 @@ app.include_router(ai.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(streams.router, prefix="/api/v1")
 
-# Also mount under /api for backwards and unversioned proxy compatibility
-app.include_router(auth.router, prefix="/api")
-app.include_router(tmdb.router, prefix="/api")
-app.include_router(user.router, prefix="/api")
-app.include_router(progress.router, prefix="/api")
-app.include_router(streams.router, prefix="/api")
-app.include_router(ai.router, prefix="/api")
-app.include_router(admin.router, prefix="/api")
+
+
+
+
+
+
+
+
 
 @app.get("/api/health")
 def api_health_simple():

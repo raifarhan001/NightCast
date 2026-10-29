@@ -1,4 +1,5 @@
 import logging
+import uuid
 import numpy as np
 import httpx
 from sqlalchemy.orm import Session
@@ -227,16 +228,24 @@ async def populate_mock_embeddings(db: Session):
     except Exception as e:
         logger.error(f"Failed to pre-populate database: {e}")
 
-async def get_ai_recommendations(db: Session, profile_id: str, limit: int = 12) -> List[Dict[str, Any]]:
+async def get_ai_recommendations(db: Session, profile_id: Any, limit: int = 12) -> List[Dict[str, Any]]:
     """
     Builds profile-oriented semantic matches.
     It compiles a user profile embedding based on their history and favorites,
     then queries pgvector for matching movies/TV.
     """
+    # Normalize profile_id to UUID object or string to prevent StatementError with UUID column
+    target_profile_id = profile_id
+    if isinstance(profile_id, str):
+        try:
+            target_profile_id = uuid.UUID(profile_id)
+        except (ValueError, TypeError):
+            target_profile_id = profile_id
+
     # 1. Fetch profile favorites
-    favorites = db.query(models.Favorite).filter(models.Favorite.profile_id == profile_id).all()
+    favorites = db.query(models.Favorite).filter(models.Favorite.profile_id == target_profile_id).all()
     # 2. Fetch profile watch history
-    history = db.query(models.WatchHistory).filter(models.WatchHistory.profile_id == profile_id).limit(10).all()
+    history = db.query(models.WatchHistory).filter(models.WatchHistory.profile_id == target_profile_id).limit(10).all()
     
     if not favorites and not history:
         # No preferences loaded yet - return default semantic matches for "popular space mind bending"

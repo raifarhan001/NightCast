@@ -1,5 +1,6 @@
 import asyncio
 import ipaddress
+import logging
 import socket
 import random
 from datetime import datetime, timezone
@@ -13,28 +14,43 @@ from services.tmdb_service import tmdb_client, MOCK_TV, MOCK_MOVIES
 from services.stream_extractor import stream_extractor
 from services.redis_service import redis_cache
 
+logger = logging.getLogger("nightcast_tmdb_router")
+
 router = APIRouter(prefix="/tmdb", tags=["tmdb"])
 
-@router.get("/home_feed")
-async def get_home_feed():
-    """Returns an aggregated and cached composite feed of all core categories for instant home page loading."""
-    now = datetime.now(timezone.utc)
-    day_of_year = now.timetuple().tm_yday
-    today_str = now.strftime("%Y-%m-%d")
+def get_fallback_home_feed(today_str: str) -> dict:
+    """Returns instant local curated catalog when TMDB is cold or unreachable."""
+    mock_movie_list = [{**m, "media_type": "movie"} for m in MOCK_MOVIES.values()]
+    mock_tv_list = [{**t, "media_type": "tv"} for t in MOCK_TV.values()]
+    rng_m = random.Random(f"{today_str}-ai-movies")
+    curated_ai_movies = list(mock_movie_list)
+    rng_m.shuffle(curated_ai_movies)
+    rng_t = random.Random(f"{today_str}-ai-tv")
+    curated_ai_tv = list(mock_tv_list)
+    rng_t.shuffle(curated_ai_tv)
 
-    cache_key = f"tmdb:home_feed:v5:{today_str}"
-    cached = await redis_cache.get(cache_key)
-    if cached and isinstance(cached, dict) and cached.get("new_movies") and cached.get("ai_movie_suggestions"):
-        first_movie = cached["new_movies"][0] if cached["new_movies"] else {}
-        # Only return cached if it contains real TMDB data, not stale mock fallback
-        if first_movie.get("title") != "Interstellar":
-            return cached
+    return {
+        "top_picks": mock_movie_list[:6],
+        "ai_movie_suggestions": curated_ai_movies,
+        "ai_series_suggestions": curated_ai_tv,
+        "new_movies": mock_movie_list,
+        "popular_tv": mock_tv_list,
+        "action_movies": [m for m in mock_movie_list if any(g.get("name") == "Action" for g in m.get("genres", []))] or mock_movie_list,
+        "comedy_movies": mock_movie_list,
+        "drama_movies": mock_movie_list,
+        "horror_movies": mock_movie_list,
+        "scifi_movies": [m for m in mock_movie_list if any(g.get("name") == "Sci-Fi" for g in m.get("genres", []))] or mock_movie_list,
+        "thriller_movies": mock_movie_list,
+        "romance_movies": mock_movie_list,
+        "animation_movies": mock_movie_list,
+        "crime_movies": mock_movie_list,
+        "documentary_movies": mock_movie_list,
+    }
 
-    # Daily dynamic page rotation for all-time hits (cycles every day so suggestions are always fresh)
+async def build_and_cache_home_feed(cache_key: str, today_str: str, day_of_year: int) -> dict:
+    """Fetches full composite TMDB feed and updates the persistent cache."""
     ai_movie_page = (day_of_year % 8) + 1
     ai_tv_page = (day_of_year % 8) + 1
-
-    # Use a Semaphore with higher concurrency (15) for faster parallel fetching of home feed rows
     sem = asyncio.Semaphore(15)
 
     async def fetch_category(coro):
@@ -59,13 +75,11 @@ async def get_home_feed():
         fetch_category(tmdb_client.get_request("/discover/movie", {"with_genres": "16"})),
         fetch_category(tmdb_client.get_request("/discover/movie", {"with_genres": "80"})),
         fetch_category(tmdb_client.get_request("/discover/movie", {"with_genres": "99"})),
-        # 13. AI Movie Suggestions: All-time hit masterpieces with daily rotation
         fetch_category(tmdb_client.get_request("/discover/movie", {
             "sort_by": "vote_average.desc",
             "vote_count.gte": "2500",
             "page": str(ai_movie_page)
         })),
-        # 14. AI Web Series Suggestions: All-time hit acclaimed shows with daily rotation
         fetch_category(tmdb_client.get_request("/discover/tv", {
             "sort_by": "vote_average.desc",
             "vote_count.gte": "1000",
@@ -75,7 +89,6 @@ async def get_home_feed():
 
     mock_movie_list = [{**m, "media_type": "movie"} for m in MOCK_MOVIES.values()]
     mock_tv_list = [{**t, "media_type": "tv"} for t in MOCK_TV.values()]
-
     is_fallback = False
 
     def extract_items(data, default_type="movie"):
@@ -96,7 +109,6 @@ async def get_home_feed():
                 item["media_type"] = default_type
         return items
 
-    # Curate AI suggestions with daily deterministic shuffle for fresh layout each day
     raw_ai_movies = extract_items(results[13], "movie")
     rng_m = random.Random(f"{today_str}-ai-movies")
     curated_ai_movies = list(raw_ai_movies)
@@ -125,11 +137,36 @@ async def get_home_feed():
         "documentary_movies": extract_items(results[12], "movie"),
     }
 
-    # Cache real feed for 1800s (30m) or fallback feed for 300s (5m) to prevent repeated hammering
     expire_time = 1800 if not is_fallback else 300
     await redis_cache.set(cache_key, feed, expire_seconds=expire_time)
-
     return feed
+
+@router.get("/home_feed")
+async def get_home_feed():
+    """Returns an aggregated and cached composite feed of all core categories with Stale-While-Revalidate for sub-second responses."""
+    now = datetime.now(timezone.utc)
+    day_of_year = now.timetuple().tm_yday
+    today_str = now.strftime("%Y-%m-%d")
+
+    cache_key = f"tmdb:home_feed:v5:{today_str}"
+    cached, is_stale = await redis_cache.get_with_stale(cache_key)
+
+    # 1. Fast path: If cached feed exists, return immediately in milliseconds
+    if cached and isinstance(cached, dict) and cached.get("new_movies") and cached.get("ai_movie_suggestions"):
+        first_movie = cached["new_movies"][0] if cached["new_movies"] else {}
+        if first_movie.get("title") != "Interstellar":
+            # If stale (> 30 min), refresh in background silently without blocking user
+            if is_stale:
+                asyncio.create_task(build_and_cache_home_feed(cache_key, today_str, day_of_year))
+            return cached
+
+    # 2. Cold path: Try fast gather (up to 3.0s). If TMDB is slow, return instant curated feed & update in background
+    try:
+        return await asyncio.wait_for(build_and_cache_home_feed(cache_key, today_str, day_of_year), timeout=3.0)
+    except Exception as e:
+        logger.warning(f"Initial TMDB gather slow/error ({repr(e)}). Returning instant fallback and refreshing in background.")
+        asyncio.create_task(build_and_cache_home_feed(cache_key, today_str, day_of_year))
+        return get_fallback_home_feed(today_str)
 
 @router.get("/ai/movies")
 async def get_ai_movie_suggestions():

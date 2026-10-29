@@ -605,6 +605,27 @@ export default function WatchPage() {
             posterPath: meta.poster_path,
             backdropPath: meta.backdrop_path,
           })
+        }).then(() => {
+          // Immediately register the next episode in cloud continue watching
+          if (s && ep) {
+            return apiFetch('/api/v1/progress/update', {
+              method: 'POST',
+              headers: { 'X-Profile-ID': activeProfile.id },
+              body: JSON.stringify({
+                mediaType: 'tv',
+                id: cleanMediaId,
+                currentTime: 0,
+                duration: estDuration,
+                progress: 0.5,
+                season: s,
+                episode: ep,
+                event: 'progress',
+                title: meta.title || meta.name || 'Untitled',
+                posterPath: meta.poster_path,
+                backdropPath: meta.backdrop_path,
+              })
+            });
+          }
         }).catch(console.error);
       }
     }
@@ -1250,7 +1271,7 @@ export default function WatchPage() {
         ) : (
           <iframe
             id={activeServerId === 'screenscape' ? 'screenscape-player' : undefined}
-            key={`${activeServerId}-${id}-${type === 'tv' ? `s${currentSeason}e${currentEpisode}` : 'movie'}-${playerUrl}`}
+            key={`${activeServerId}-${id}-${type === 'tv' ? `s${currentSeason}e${currentEpisode}` : 'movie'}`}
             src={playerUrl}
             onLoad={() => setIsIframeLoaded(true)}
             className="absolute top-0 left-0 w-full h-full border-0 rounded-2xl sm:rounded-3xl"
@@ -1342,7 +1363,7 @@ export default function WatchPage() {
 
       {/* 1. Fullscreen Theater Mode Overlay via React Portal directly into body */}
       {mounted && isTheaterMode && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[99999] w-screen h-screen bg-[#0B131B]/98 backdrop-blur-3xl flex flex-col justify-between items-center p-3 sm:p-5 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[99999] w-screen h-screen bg-[#0B131B]/98 backdrop-blur-md flex flex-col justify-between items-center p-3 sm:p-5 animate-in fade-in duration-200">
           {/* Top HUD Bar */}
           <div className="w-full max-w-7xl flex items-center justify-between pb-2 px-2 sm:px-4 text-white z-20">
             <div className="flex items-center gap-3 min-w-0">

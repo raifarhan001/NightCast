@@ -18,13 +18,13 @@ function ProfilePageContent() {
   const { user, activeProfile, profiles, settings, fetchProfiles, setActiveProfile, updateSettings, logout, setUser } = useUserStore();
   const searchParams = useSearchParams();
 
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'register'>(() => searchParams.get('mode') === 'register' ? 'register' : 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
-  // Auto-open login form if ?signin=1 is in URL
-  const [showAuthCard, setShowAuthCard] = useState(() => searchParams.get('signin') === '1');
+  // Auto-open login form if ?signin=1 or ?mode=register is in URL
+  const [showAuthCard, setShowAuthCard] = useState(() => searchParams.get('signin') === '1' || searchParams.get('mode') === 'register');
   const [newProfileName, setNewProfileName] = useState('');
   const [profileCreateError, setProfileCreateError] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);

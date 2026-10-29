@@ -87,7 +87,9 @@ export default function Top10RankedRow({
   if (!top10Items || top10Items.length === 0) return null;
 
   return (
-    <section className="space-y-4 px-4 sm:px-6 md:px-12 select-none relative group/row">
+    <section
+      className="space-y-4 px-4 sm:px-6 md:px-12 select-none relative group/row"
+    >
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight font-display text-[#F0F0F0] flex items-center gap-2.5">
@@ -101,7 +103,7 @@ export default function Top10RankedRow({
             type="button"
             onClick={() => handleScroll("left")}
             disabled={!showLeftArrow}
-            className={`w-10 h-10 rounded-full border border-white/[0.12] bg-white/[0.08] hover:bg-white/[0.18] backdrop-blur-2xl backdrop-saturate-150 text-[#F0F0F0] hover:text-white flex items-center justify-center transform-gpu transition-all duration-200 cursor-pointer shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.7)] hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
+            className={`w-10 h-10 rounded-full border border-white/[0.12] bg-white/[0.08] hover:bg-white/[0.18] backdrop-blur-2xl backdrop-saturate-150 text-[#F0F0F0] hover:text-white flex items-center justify-center transform-gpu transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.7)] hover:scale-105 active:scale-[0.95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
               !showLeftArrow ? "opacity-30 cursor-not-allowed" : ""
             }`}
             aria-label="Scroll left"
@@ -112,7 +114,7 @@ export default function Top10RankedRow({
             type="button"
             onClick={() => handleScroll("right")}
             disabled={!showRightArrow}
-            className={`w-10 h-10 rounded-full border border-white/[0.12] bg-white/[0.08] hover:bg-white/[0.18] backdrop-blur-2xl backdrop-saturate-150 text-[#F0F0F0] hover:text-white flex items-center justify-center transform-gpu transition-all duration-200 cursor-pointer shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.7)] hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
+            className={`w-10 h-10 rounded-full border border-white/[0.12] bg-white/[0.08] hover:bg-white/[0.18] backdrop-blur-2xl backdrop-saturate-150 text-[#F0F0F0] hover:text-white flex items-center justify-center transform-gpu transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.7)] hover:scale-105 active:scale-[0.95] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
               !showRightArrow ? "opacity-30 cursor-not-allowed" : ""
             }`}
             aria-label="Scroll right"
@@ -138,6 +140,7 @@ export default function Top10RankedRow({
 
 const RankedCardItem = React.memo(function RankedCardItem({ item, rank }: { item: RankedItem; rank: number }) {
   const [imgError, setImgError] = useState(false);
+  const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
   const displayTitle = item.title || item.name || "Untitled";
   const type = item.media_type || (item.first_air_date ? "tv" : "movie");
   const posterUrl = imgError
@@ -147,25 +150,35 @@ const RankedCardItem = React.memo(function RankedCardItem({ item, rank }: { item
   const isTwoDigits = rank >= 10;
   const svgViewBox = isTwoDigits ? "0 0 160 180" : "0 0 95 180";
 
+  const handleMouseEnter = () => {
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = setTimeout(() => {
+      const backdrop = item.backdrop_path || item.poster_path;
+      if (backdrop) {
+        useAmbientStore.getState().setActiveBackdrop(backdrop, displayTitle);
+      }
+    }, 250);
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current);
+      hoverTimerRef.current = null;
+    }
+    useAmbientStore.getState().clearActiveBackdrop(350);
+  };
+
   return (
     <Link
       href={`/watch/${type}/${item.id}`}
       onClick={() => soundFx.playTap()}
-      onMouseEnter={() => {
-        soundFx.playHover();
-        const backdrop = item.backdrop_path || item.poster_path;
-        if (backdrop) {
-          useAmbientStore.getState().setActiveBackdrop(backdrop, displayTitle);
-        }
-      }}
-      onMouseLeave={() => {
-        useAmbientStore.getState().clearActiveBackdrop(350);
-      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       aria-label={`Rank ${rank}: Watch ${displayTitle}`}
-      className="group/item relative flex items-center shrink-0 snap-start select-none cursor-pointer transform-gpu will-change-transform transition-all duration-200 ease-out hover:-translate-y-1 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B]"
+      className="group/item relative flex items-center shrink-0 snap-start select-none cursor-pointer transition-[transform] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B]"
     >
       {/* Monumental Modern Rank Number */}
-      <div className="relative z-0 select-none pointer-events-none shrink-0 transform-gpu will-change-transform transition-transform duration-300 group-hover/item:scale-105">
+      <div className="relative z-0 select-none pointer-events-none shrink-0 transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/item:scale-105">
         <svg
           className="h-[175px] sm:h-[215px] md:h-[245px] w-auto shrink-0 drop-shadow-[0_8px_16px_rgba(0,0,0,0.9)]"
           viewBox={svgViewBox}
@@ -180,7 +193,7 @@ const RankedCardItem = React.memo(function RankedCardItem({ item, rank }: { item
             stroke="#8FA8AD"
             strokeWidth="3.5"
             strokeLinejoin="round"
-            className="font-extrabold group-hover/item:stroke-[#39AEA9] group-hover/item:fill-[#39AEA9]/20 transition-colors duration-300"
+            className="font-extrabold group-hover/item:stroke-[#39AEA9] group-hover/item:fill-[#39AEA9]/20 transition-colors duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
             style={{
               fontSize: isTwoDigits ? "140px" : "165px",
               fontFamily: "Syne, sans-serif",
@@ -192,13 +205,13 @@ const RankedCardItem = React.memo(function RankedCardItem({ item, rank }: { item
       </div>
 
       {/* Vertical Poster Card with Rounded-2xl */}
-      <div className="relative z-10 -ml-7 sm:-ml-9 md:-ml-12 w-28 sm:w-36 md:w-40 aspect-[2/3] rounded-2xl overflow-hidden bg-white/[0.04] backdrop-blur-2xl border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_32px_rgba(0,0,0,0.75)] transform-gpu transition-all duration-300 ease-out group-hover/item:scale-[1.03] group-hover/item:border-white/[0.28] group-hover/item:shadow-[inset_0_1px_1px_rgba(255,255,255,0.22),0_16px_40px_rgba(0,0,0,0.9),0_0_24px_rgba(57,174,169,0.25)]">
+      <div className="relative z-10 -ml-7 sm:-ml-9 md:-ml-12 w-28 sm:w-36 md:w-40 aspect-[2/3] rounded-2xl overflow-hidden bg-[#0F1A24] border border-white/[0.12] shadow-[0_8px_24px_rgba(0,0,0,0.75)] transition-[transform,border-color] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/item:scale-[1.03] group-hover/item:border-white/[0.28] group-hover/item:shadow-[0_16px_40px_rgba(0,0,0,0.9),0_0_24px_rgba(57,174,169,0.25)] group-hover/item:will-change-transform">
         <Image
           src={posterUrl}
           alt={`${displayTitle} - Rank #${rank} poster`}
           fill
           sizes="(max-width: 768px) 144px, 160px"
-          className="object-cover rounded-2xl transform-gpu transition-transform duration-500 ease-out group-hover/item:scale-105 opacity-100 brightness-[0.96]"
+          className="object-cover rounded-2xl opacity-100 brightness-[0.96]"
           loading="lazy"
           placeholder="blur"
           blurDataURL={ImageService.getBlurHash()}
@@ -211,8 +224,8 @@ const RankedCardItem = React.memo(function RankedCardItem({ item, rank }: { item
         </div>
 
         {/* Play Icon on Hover with White Pill Glass Effect */}
-        <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-[#0B131B]/95 via-[#0B131B]/40 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-          <div className="w-10 h-10 rounded-full bg-[#F0F0F0] text-[#0B131B] flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.6),0_4px_16px_rgba(240,240,240,0.35)] transform-gpu group-hover/item:scale-110 active:scale-95 transition-transform duration-200">
+        <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-[#0B131B]/95 via-[#0B131B]/40 to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-[#F0F0F0] text-[#0B131B] flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.6),0_4px_16px_rgba(240,240,240,0.35)] transform-gpu group-hover/item:scale-110 active:scale-[0.93] transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]">
             <Play className="w-4 h-4 fill-[#0B131B] text-[#0B131B] ml-0.5" />
           </div>
         </div>

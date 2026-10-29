@@ -21,12 +21,13 @@ function AmbientGlow({ className = "" }: AmbientGlowProps) {
   const currentTitle = activeTitle || heroTitle;
 
   const backdropUrl = currentBackdrop
-    ? ImageService.getBackdrop(currentBackdrop, "w780", currentTitle || "Cinema")
+    ? ImageService.getBackdrop(currentBackdrop, "w300", currentTitle || "Cinema")
     : null;
 
   return (
     <div
       className={`fixed inset-0 pointer-events-none overflow-hidden z-0 select-none ${className}`}
+      style={{ contain: "strict" }}
     >
       {/* 1. Dynamic Full-Page Cinema Backdrop with GPU-Friendly Ambient Atmosphere */}
       <AnimatePresence>
@@ -36,15 +37,15 @@ function AmbientGlow({ className = "" }: AmbientGlowProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="absolute inset-0 transform-gpu will-change-transform overflow-hidden z-0"
+            transition={{ duration: 0.5, ease: "linear" }}
+            className="absolute inset-0 overflow-hidden z-0"
           >
             <Image
               src={backdropUrl}
               alt={currentTitle || "Ambient Backdrop"}
               fill
-              sizes="(max-width: 768px) 100vw, 1280px"
-              className="object-cover object-top scale-105 filter blur-2xl sm:blur-3xl saturate-[1.25] brightness-[0.55]"
+              sizes="300px"
+              className="object-cover object-top scale-110 filter blur-xl saturate-[1.2] brightness-[0.55]"
               priority
             />
 

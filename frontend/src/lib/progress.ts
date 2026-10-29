@@ -16,21 +16,52 @@ const GLOBAL_LEGACY_KEY = 'nightcast_continue_watching';
 const VIDLINK_LEGACY_KEY = 'vidLinkProgress';
 const DISMISSED_CW_KEY = 'nightcast_dismissed_cw';
 
-export function getDismissedMediaIds(): Record<string, number> {
+function getEffectiveProfileId(profileId?: string | null): string {
+  if (profileId) return String(profileId);
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem('active_profile');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.id) return String(parsed.id);
+      }
+    } catch {}
+  }
+  return 'guest';
+}
+
+function getDismissedKey(profileId?: string | null): string {
+  const eff = getEffectiveProfileId(profileId);
+  return `nightcast_dismissed_cw_${eff}`;
+}
+
+export function getDismissedMediaIds(profileId?: string | null): Record<string, number> {
   if (typeof window === 'undefined') return {};
   try {
-    const raw = localStorage.getItem(DISMISSED_CW_KEY);
-    return raw ? JSON.parse(raw) : {};
+    const key = getDismissedKey(profileId);
+    const raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw);
+
+    // Fallback migration from legacy global key
+    const legacyRaw = localStorage.getItem(DISMISSED_CW_KEY);
+    if (legacyRaw) {
+      const legacyMap = JSON.parse(legacyRaw);
+      if (legacyMap && typeof legacyMap === 'object') {
+        localStorage.setItem(key, legacyRaw);
+        return legacyMap;
+      }
+    }
+    return {};
   } catch {
     return {};
   }
 }
 
-export function isDismissedFromContinueWatching(id: string | number, updatedAt?: string): boolean {
+export function isDismissedFromContinueWatching(id: string | number, updatedAt?: string, profileId?: string | null): boolean {
   if (typeof window === 'undefined') return false;
   const cleanId = getCleanMediaId(id);
   if (!cleanId) return false;
-  const dismissed = getDismissedMediaIds();
+  const dismissed = getDismissedMediaIds(profileId);
   const dismissedTime = dismissed[cleanId];
   if (!dismissedTime) return false;
 
@@ -38,34 +69,36 @@ export function isDismissedFromContinueWatching(id: string | number, updatedAt?:
   if (updatedAt) {
     const itemTime = new Date(updatedAt).getTime();
     if (itemTime > dismissedTime + 2000) {
-      clearDismissedMediaId(cleanId);
+      clearDismissedMediaId(cleanId, profileId);
       return false;
     }
   }
   return true;
 }
 
-export function clearDismissedMediaId(id: string | number): void {
+export function clearDismissedMediaId(id: string | number, profileId?: string | null): void {
   if (typeof window === 'undefined') return;
   const cleanId = getCleanMediaId(id);
   if (!cleanId) return;
   try {
-    const dismissed = getDismissedMediaIds();
+    const key = getDismissedKey(profileId);
+    const dismissed = getDismissedMediaIds(profileId);
     if (dismissed[cleanId]) {
       delete dismissed[cleanId];
-      localStorage.setItem(DISMISSED_CW_KEY, JSON.stringify(dismissed));
+      localStorage.setItem(key, JSON.stringify(dismissed));
     }
   } catch {}
 }
 
-export function markDismissedFromContinueWatching(id: string | number): void {
+export function markDismissedFromContinueWatching(id: string | number, profileId?: string | null): void {
   if (typeof window === 'undefined') return;
   const cleanId = getCleanMediaId(id);
   if (!cleanId) return;
   try {
-    const dismissed = getDismissedMediaIds();
+    const key = getDismissedKey(profileId);
+    const dismissed = getDismissedMediaIds(profileId);
     dismissed[cleanId] = Date.now();
-    localStorage.setItem(DISMISSED_CW_KEY, JSON.stringify(dismissed));
+    localStorage.setItem(key, JSON.stringify(dismissed));
   } catch {}
 }
 
@@ -156,7 +189,7 @@ export function saveWatchProgress(
     if (!cleanId) return;
 
     // Un-dismiss if actively watching now
-    clearDismissedMediaId(cleanId);
+    clearDismissedMediaId(cleanId, profileId);
 
     const storageKey = getStorageKey(profileId);
     const map = readStorageMap(storageKey);
@@ -254,7 +287,7 @@ export function getContinueWatchingList(profileId?: string | null): LocalProgres
       if (!cleanId) continue;
 
       // Filter out explicitly dismissed items
-      if (isDismissedFromContinueWatching(cleanId, item.updated_at)) {
+      if (isDismissedFromContinueWatching(cleanId, item.updated_at, profileId)) {
         continue;
       }
 
@@ -395,7 +428,7 @@ export function removeWatchProgress(
     if (!cleanId) return;
 
     // 1. Permanently register dismissal tombstone so it won't resurrect on refresh
-    markDismissedFromContinueWatching(cleanId);
+    markDismissedFromContinueWatching(cleanId, profileId);
 
     // 2. Helper to clean an item from any storage dictionary
     const purgeKey = (sKey: string) => {

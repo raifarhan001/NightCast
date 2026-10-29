@@ -6,15 +6,6 @@ router = APIRouter(prefix="/streams", tags=["Streams"])
 provider = LocalMediaProvider()
 
 
-@router.get("/{media_type}/{content_id}")
-async def get_stream_manifest(media_type: str, content_id: str):
-    """Retrieve normalized PlaybackResponse with manifest URL and explicit multi-language audio tracks."""
-    playback_data = await provider.resolve_playback(content_id, media_type)
-    if not playback_data:
-        raise HTTPException(status_code=404, detail="Playback source not found")
-    return playback_data
-
-
 @router.get("/resolve/{tmdb_id}")
 async def resolve_stream(
     tmdb_id: str,
@@ -46,3 +37,12 @@ async def resolve_stream(
                 "error": str(e)
             }
         }
+
+
+@router.get("/{media_type}/{content_id}")
+async def get_stream_manifest(media_type: str, content_id: str):
+    """Retrieve normalized PlaybackResponse with manifest URL and explicit multi-language audio tracks."""
+    playback_data = await provider.resolve_playback(content_id, media_type)
+    if not playback_data:
+        raise HTTPException(status_code=404, detail="Playback source not found")
+    return playback_data

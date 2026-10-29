@@ -43,7 +43,7 @@ function SidebarTooltip({ label, active }: { label: string; active?: boolean }) 
   return (
     <div
       role="tooltip"
-      className="hidden [@media(hover:hover)]:flex absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl bg-[#0B131B]/85 backdrop-blur-2xl border border-white/[0.18] text-[#F0F0F0] text-xs font-semibold tracking-wide shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_10px_30px_rgba(0,0,0,0.9),0_0_15px_rgba(57,174,169,0.25)] whitespace-nowrap pointer-events-none select-none z-[999] opacity-0 translate-x-1.5 scale-95 group-hover:opacity-100 group-hover:translate-x-0 group-hover:scale-100 group-active:opacity-0 group-active:pointer-events-none transition-all duration-150 delay-75 ease-[cubic-bezier(0.4,0,0.2,1)] items-center"
+      className="hidden [@media(hover:hover)]:flex absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-xl bg-[#0B131B]/85 backdrop-blur-2xl border border-white/[0.18] text-[#F0F0F0] text-xs font-semibold tracking-wide shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_10px_30px_rgba(0,0,0,0.9),0_0_15px_rgba(57,174,169,0.25)] whitespace-nowrap pointer-events-none select-none z-[999] opacity-0 translate-x-1.5 scale-95 group-hover:opacity-100 group-hover:translate-x-0 group-hover:scale-100 group-active:opacity-0 group-active:pointer-events-none transform-gpu transition-all duration-200 delay-75 ease-[cubic-bezier(0.16,1,0.3,1)] items-center"
     >
       {/* Visual Caret Arrow pointing back to the icon */}
       <span className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-[#0B131B] border-l border-b border-white/[0.18] rotate-45 pointer-events-none" />
@@ -162,7 +162,7 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
     <>
       {/* Desktop Vertical Left Dock (Hidden on mobile screens < 640px) */}
       <aside
-        className="hidden sm:flex fixed top-0 left-0 bottom-0 w-[72px] md:w-[80px] z-50 flex-col items-center py-6 sm:py-8 bg-[#0B131B]/50 backdrop-blur-2xl backdrop-saturate-150 border-r border-white/[0.12] shadow-[inset_-1px_0_1px_0_rgba(255,255,255,0.08),inset_1px_0_1px_0_rgba(255,255,255,0.03),0_8px_32px_0_rgba(0,0,0,0.7)] select-none transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+        className="hidden sm:flex fixed top-0 left-0 bottom-0 w-[72px] md:w-[80px] z-50 flex-col items-center py-6 sm:py-8 bg-[#0B131B]/85 backdrop-blur-md border-r border-white/[0.12] shadow-[inset_-1px_0_1px_0_rgba(255,255,255,0.08),inset_1px_0_1px_0_rgba(255,255,255,0.03),0_8px_32px_0_rgba(0,0,0,0.7)] select-none transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
         aria-label="Main Navigation"
       >
         {/* Navigation Icon Stack: Consistent 20-24px vertical spacing */}
@@ -177,7 +177,7 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
                 {/* Glowing Accent Bar on Sidebar's Left Edge for Active State */}
                 {active && (
                   <span
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3.5px] h-6 rounded-r-full bg-gradient-to-b from-[#A4C8E1] to-[#39AEA9] shadow-[0_0_14px_rgba(57,174,169,0.95),0_0_6px_#39AEA9] transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-[3.5px] h-6 rounded-r-full bg-gradient-to-b from-[#A4C8E1] to-[#39AEA9] shadow-[0_0_14px_rgba(57,174,169,0.95),0_0_6px_#39AEA9] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
                     aria-hidden="true"
                   />
                 )}
@@ -189,14 +189,14 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
                     aria-label={item.label}
                     aria-expanded={isCategoriesDrawerOpen}
                     aria-haspopup="dialog"
-                    className={`relative w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B] ${
+                    className={`relative w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer transform-gpu transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.93] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B] ${
                       active
                         ? "bg-[#39AEA9]/20 text-[#39AEA9] backdrop-blur-xl border border-[#39AEA9]/50 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_0_20px_rgba(57,174,169,0.35)]"
                         : "bg-transparent text-[#8FA8AD] hover:bg-white/[0.08] hover:backdrop-blur-md hover:text-white hover:border hover:border-white/[0.12] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]"
                     }`}
                   >
                     <Icon
-                      className={`w-5 h-5 transition-transform duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:scale-110 ${
+                      className={`w-5 h-5 transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-110 ${
                         active ? "text-[#39AEA9] drop-shadow-[0_0_8px_rgba(57,174,169,0.6)]" : ""
                       }`}
                     />
@@ -207,14 +207,14 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
                     onClick={(e) => handleNavClick(item, e)}
                     aria-label={item.label}
                     aria-current={active ? "page" : undefined}
-                    className={`relative w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B] ${
+                    className={`relative w-11 h-11 rounded-xl flex items-center justify-center cursor-pointer transform-gpu transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.93] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B] ${
                       active
                         ? "bg-[#39AEA9]/20 text-[#39AEA9] backdrop-blur-xl border border-[#39AEA9]/50 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_0_20px_rgba(57,174,169,0.35)]"
                         : "bg-transparent text-[#8FA8AD] hover:bg-white/[0.08] hover:backdrop-blur-md hover:text-white hover:border hover:border-white/[0.12] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]"
                     }`}
                   >
                     <Icon
-                      className={`w-5 h-5 transition-transform duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:scale-110 ${
+                      className={`w-5 h-5 transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-110 ${
                         active ? "text-[#39AEA9] drop-shadow-[0_0_8px_rgba(57,174,169,0.6)]" : ""
                       }`}
                     />
@@ -231,7 +231,7 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
         <div className="mt-auto relative w-full flex items-center justify-center group pb-1">
           {pathname.startsWith("/profile") && (
             <span
-              className="absolute left-0 top-1/2 -translate-y-1/2 w-[3.5px] h-6 rounded-r-full bg-gradient-to-b from-[#A4C8E1] to-[#39AEA9] shadow-[0_0_14px_rgba(57,174,169,0.95),0_0_6px_#39AEA9] transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]"
+              className="absolute left-0 top-1/2 -translate-y-1/2 w-[3.5px] h-6 rounded-r-full bg-gradient-to-b from-[#A4C8E1] to-[#39AEA9] shadow-[0_0_14px_rgba(57,174,169,0.95),0_0_6px_#39AEA9] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
               aria-hidden="true"
             />
           )}
@@ -241,7 +241,7 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
             onClick={() => setClickedId("profile")}
             aria-label="User Profile & Settings"
             aria-current={pathname.startsWith("/profile") ? "page" : undefined}
-            className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] cursor-pointer active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B] ${
+            className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold transform-gpu transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer active:scale-[0.93] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B] ${
               pathname.startsWith("/profile")
                 ? "bg-[#39AEA9] text-[#0B131B] shadow-[0_0_20px_rgba(57,174,169,0.7),inset_0_1px_1px_rgba(255,255,255,0.35)] border border-[#39AEA9]"
                 : "bg-white/[0.05] text-[#8FA8AD] backdrop-blur-xl border border-white/[0.15] hover:bg-white/[0.12] hover:text-white hover:border-white/[0.3] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_4px_16px_rgba(0,0,0,0.5)]"
@@ -260,11 +260,11 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
           role="dialog"
           aria-modal="true"
           aria-labelledby="categories-heading"
-          className="fixed inset-0 z-50 bg-[#0B131B]/80 backdrop-blur-md flex items-center justify-center sm:justify-start p-4 sm:p-0 sm:pl-24 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 bg-[#0B131B]/80 backdrop-blur-md flex items-center justify-center sm:justify-start p-4 sm:p-0 sm:pl-24 transform-gpu animate-in fade-in duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
           onClick={() => setIsCategoriesDrawerOpen(false)}
         >
           <div
-            className="w-full sm:w-80 max-w-sm sm:max-w-[calc(100vw-100px)] bg-[#0B131B]/95 border border-white/[0.12] rounded-3xl p-5 sm:p-6 shadow-[0_24px_60px_rgba(0,0,0,0.95)] backdrop-blur-2xl animate-in slide-in-from-bottom-4 sm:slide-in-from-left-4 duration-200"
+            className="w-full sm:w-80 max-w-sm sm:max-w-[calc(100vw-100px)] bg-[#0B131B]/95 border border-white/[0.12] rounded-3xl p-5 sm:p-6 shadow-[0_24px_60px_rgba(0,0,0,0.95)] backdrop-blur-2xl transform-gpu animate-in slide-in-from-bottom-4 sm:slide-in-from-left-4 duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between pb-4 border-b border-white/[0.08] mb-4">
@@ -276,7 +276,7 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
                 type="button"
                 onClick={() => setIsCategoriesDrawerOpen(false)}
                 aria-label="Close Explore Genres"
-                className="w-8 h-8 rounded-full flex items-center justify-center text-[#8FA8AD] hover:text-white bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] cursor-pointer active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[#8FA8AD] hover:text-white bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] transform-gpu transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer active:scale-[0.93] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -288,7 +288,7 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
                   key={cat.id}
                   href={cat.href}
                   onClick={() => setIsCategoriesDrawerOpen(false)}
-                  className="px-4 py-3 rounded-xl text-sm font-medium text-[#F0F0F0]/90 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] hover:border-[#39AEA9]/40 transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-between shadow-sm active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
+                  className="px-4 py-3 rounded-xl text-sm font-medium text-[#F0F0F0]/90 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] hover:border-[#39AEA9]/40 transform-gpu transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-between shadow-sm active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                 >
                   <span>{cat.name}</span>
                   <span className="text-xs text-[#39AEA9]">&rarr;</span>
@@ -301,7 +301,7 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
 
       {/* Mobile Bottom Dock for small screens (< 640px) */}
       <nav
-        className="sm:hidden fixed bottom-0 inset-x-0 h-[calc(4rem+env(safe-area-inset-bottom,0px))] pb-[env(safe-area-inset-bottom,0px)] bg-[#0B131B]/75 backdrop-blur-2xl backdrop-saturate-150 border-t border-white/[0.12] z-50 flex items-center justify-around px-2 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.12),0_-8px_32px_rgba(0,0,0,0.85)] select-none"
+        className="sm:hidden fixed bottom-0 inset-x-0 h-[calc(4rem+env(safe-area-inset-bottom,0px))] pb-[env(safe-area-inset-bottom,0px)] bg-[#0B131B]/92 backdrop-blur-md border-t border-white/[0.12] z-50 flex items-center justify-around px-2 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.12),0_-8px_32px_rgba(0,0,0,0.85)] select-none"
         aria-label="Mobile Navigation"
       >
         {/* 1. Home */}
@@ -309,7 +309,7 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
           href="/"
           onClick={(e) => handleNavClick(navItems[0], e)}
           aria-label="Home"
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transform-gpu transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.93] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
             pathname === "/" ? "text-white" : "text-[#8FA8AD] hover:text-white"
           }`}
         >
@@ -326,7 +326,7 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
           href="/movies"
           onClick={(e) => handleNavClick(navItems[1], e)}
           aria-label="Movies"
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transform-gpu transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.93] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
             pathname.startsWith("/movies") || pathname.startsWith("/movie") ? "text-white" : "text-[#8FA8AD] hover:text-white"
           }`}
         >
@@ -343,7 +343,7 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
           href="/shows"
           onClick={(e) => handleNavClick(navItems[2], e)}
           aria-label="TV Shows"
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transform-gpu transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.93] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
             pathname.startsWith("/shows") || pathname.startsWith("/tv") ? "text-white" : "text-[#8FA8AD] hover:text-white"
           }`}
         >
@@ -361,7 +361,7 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
           onClick={toggleCategories}
           aria-label="Explore Categories"
           aria-expanded={isCategoriesDrawerOpen}
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transform-gpu transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.93] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
             isCategoriesDrawerOpen ? "text-white" : "text-[#8FA8AD] hover:text-white"
           }`}
         >
@@ -377,7 +377,7 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
         <Link
           href="/profile"
           aria-label="User Profile"
-          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
+          className={`flex flex-col items-center justify-center gap-0.5 py-1 px-3 rounded-xl transform-gpu transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-[0.93] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
             pathname.startsWith("/profile") ? "text-white" : "text-[#8FA8AD] hover:text-white"
           }`}
         >

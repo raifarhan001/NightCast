@@ -138,7 +138,7 @@ function HomePageContent() {
       if (!cleanId) return;
 
       // Filter out explicitly dismissed items so they never resurrect on refresh
-      if (isDismissedFromContinueWatching(cleanId, c.updated_at)) return;
+      if (isDismissedFromContinueWatching(cleanId, c.updated_at, activeProfile?.id)) return;
 
       const percent = Number(c.progress_percent ?? 0);
       const seconds = Number(c.timestamp_seconds ?? 0);

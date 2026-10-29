@@ -154,13 +154,11 @@ def sync_user_data(
                 if item.poster_path:
                     existing.poster_path = item.poster_path
 
-                if s_num is None and ep_num is None:
-                    db.query(models.ContinueWatching).filter(
-                        models.ContinueWatching.profile_id == active_profile.id,
-                        (models.ContinueWatching.media_id == clean_id) | (models.ContinueWatching.media_id == raw_id),
-                        (models.ContinueWatching.season.is_(None)) | (models.ContinueWatching.season == 0),
-                        models.ContinueWatching.id != existing.id
-                    ).delete(synchronize_session=False)
+                db.query(models.ContinueWatching).filter(
+                    models.ContinueWatching.profile_id == active_profile.id,
+                    (models.ContinueWatching.media_id == clean_id) | (models.ContinueWatching.media_id == raw_id),
+                    models.ContinueWatching.id != existing.id
+                ).delete(synchronize_session=False)
             else:
                 new_cw = models.ContinueWatching(
                     profile_id=active_profile.id,
@@ -176,6 +174,12 @@ def sync_user_data(
                     duration_seconds=duration
                 )
                 db.add(new_cw)
+                db.flush()
+                db.query(models.ContinueWatching).filter(
+                    models.ContinueWatching.profile_id == active_profile.id,
+                    (models.ContinueWatching.media_id == clean_id) | (models.ContinueWatching.media_id == raw_id),
+                    models.ContinueWatching.id != new_cw.id
+                ).delete(synchronize_session=False)
         db.commit()
 
     # 3. Ingest incoming watchlist (favorites)

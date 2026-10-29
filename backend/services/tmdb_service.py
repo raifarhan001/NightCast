@@ -178,23 +178,35 @@ class TMDBClient:
     def __init__(self):
         self.api_key = settings.TMDB_API_KEY
         self._client: Optional[httpx.AsyncClient] = None
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
 
     def is_configured(self) -> bool:
         return bool(self.api_key and self.api_key.strip())
 
     def get_client(self) -> httpx.AsyncClient:
-        if self._client is None or self._client.is_closed:
+        try:
+            current_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            current_loop = None
+
+        if (
+            self._client is None
+            or self._client.is_closed
+            or self._loop is not current_loop
+        ):
             self._client = httpx.AsyncClient(
                 timeout=httpx.Timeout(25.0, connect=12.0, read=20.0),
                 limits=httpx.Limits(max_keepalive_connections=25, max_connections=50),
                 follow_redirects=True
             )
+            self._loop = current_loop
         return self._client
 
     async def close(self):
         if self._client and not self._client.is_closed:
             await self._client.aclose()
             self._client = None
+            self._loop = None
 
     async def get_request(self, endpoint: str, params: Dict[str, Any] = None) -> Dict[str, Any]:
         if not self.is_configured():
@@ -227,6 +239,17 @@ class TMDBClient:
                 except Exception:
                     pass
                 return data
+            except httpx.HTTPStatusError as e:
+                # Do not retry on client errors (4xx) except 429 Too Many Requests
+                if e.response.status_code < 500 and e.response.status_code != 429:
+                    logger.warning(f"TMDB request client error {e.response.status_code} for {endpoint}: {e}")
+                    raise e
+                if attempt <= len(backoffs):
+                    logger.warning(f"TMDB request retry ({attempt}) for {endpoint}. Error: {repr(e)}")
+                    await asyncio.sleep(delay)
+                else:
+                    logger.error(f"TMDB request failed for {endpoint}. Error: {repr(e)}")
+                    raise e
             except Exception as e:
                 if attempt <= len(backoffs):
                     logger.warning(f"TMDB request retry ({attempt}) for {endpoint}. Error: {repr(e)}")

@@ -29,6 +29,16 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   initialize: async () => {
     try {
+      // If guest user with no token or cookie, skip network calls to prevent 401 console noise
+      const storedToken = typeof window !== 'undefined' 
+        ? (localStorage.getItem('nightcast_token') || localStorage.getItem('nightcast_access_token') || localStorage.getItem('vidking_access_token')) 
+        : null;
+      const hasCookieToken = typeof document !== 'undefined' && document.cookie.includes('access_token=');
+      if (!storedToken && !hasCookieToken) {
+        set({ user: null, activeProfile: null, profiles: [], settings: null });
+        return;
+      }
+
       const [user, rawProfiles] = await Promise.all([
         apiFetch('/api/auth/me'),
         apiFetch('/api/auth/profiles').catch(() => [])
@@ -152,3 +162,10 @@ export const useUserStore = create<UserState>((set, get) => ({
     set({ user: null, profiles: [], settings: null });
   }
 }));
+
+// Listen for auth expiration events dispatched by apiFetch
+if (typeof window !== 'undefined') {
+  window.addEventListener('nightcast:auth-expired', () => {
+    useUserStore.setState({ user: null, activeProfile: null, profiles: [], settings: null });
+  });
+}

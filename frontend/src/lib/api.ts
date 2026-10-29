@@ -202,6 +202,19 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
   if (storedToken && !headers['Authorization']) {
     headers['Authorization'] = `Bearer ${storedToken}`;
   }
+
+  // Attach active profile ID header if available so all backend calls are reliably profile-scoped
+  if (!headers['X-Profile-ID'] && typeof window !== 'undefined') {
+    try {
+      const storedProfile = localStorage.getItem('active_profile');
+      if (storedProfile) {
+        const parsed = JSON.parse(storedProfile);
+        if (parsed?.id) {
+          headers['X-Profile-ID'] = String(parsed.id);
+        }
+      }
+    } catch {}
+  }
   options.headers = headers;
 
   const response = await fetch(url, options);
@@ -227,6 +240,9 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
         errorDetail.includes('Not authenticated');
       if (isExplicitInvalidToken) {
         setStoredToken(null);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('nightcast:auth-expired'));
+        }
       }
     }
 

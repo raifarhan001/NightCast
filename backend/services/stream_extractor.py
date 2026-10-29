@@ -32,17 +32,17 @@ SOURCE_API_PATTERNS = [
 async def fetch_dual_audio_manifest(
     tmdb_id: str, season: int = 1, episode: int = 1, media_type: str = "tv"
 ) -> Dict[str, Any]:
-    """Free endpoints for primary (English/Original) and secondary (Hindi dubbed via ScreenScape) sources."""
+    """Free endpoints for primary (English/Original via VidSrc) and secondary (Hindi dubbed via ScreenScape) sources."""
     if media_type == "tv":
-        primary_url = f"https://player.autoembed.cc/embed/tv/{tmdb_id}/{season}/{episode}"
+        primary_url = f"https://vidsrc.su/embed/tv/{tmdb_id}/{season}/{episode}"
         hindi_fallback = f"https://nxsha.screenscape.me/embed?tmdb={tmdb_id}&type=tv&s={season}&e={episode}&lan=hindi"
     else:
-        primary_url = f"https://player.autoembed.cc/embed/movie/{tmdb_id}"
+        primary_url = f"https://vidsrc.su/embed/movie/{tmdb_id}"
         hindi_fallback = f"https://nxsha.screenscape.me/embed?tmdb={tmdb_id}&type=movie&lan=hindi"
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Referer": "https://autoembed.cc/"
+        "Referer": "https://vidsrc.su/"
     }
 
     streams = []

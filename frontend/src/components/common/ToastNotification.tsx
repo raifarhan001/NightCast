@@ -64,11 +64,11 @@ export default function ToastNotification() {
           return (
             <motion.div
               key={t.id}
-              initial={{ opacity: 0, y: 16, scale: 0.95 }}
+              initial={{ opacity: 0, y: 16, scale: 0.92 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 8, scale: 0.95 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.85)] border backdrop-blur-2xl transition-all ${
+              exit={{ opacity: 0, y: 8, scale: 0.92, transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] } }}
+              transition={{ type: "spring", stiffness: 350, damping: 26, mass: 0.8 }}
+              className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.85)] border backdrop-blur-2xl transform-gpu will-change-transform transition-all ${
                 isError
                   ? "bg-rose-950/75 border-rose-500/40 text-rose-200 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]"
                   : isSuccess
