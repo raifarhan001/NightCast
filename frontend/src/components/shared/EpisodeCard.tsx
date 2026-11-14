@@ -26,6 +26,7 @@ interface EpisodeCardProps {
   defaultRuntime?: number;
   seasonNumber?: number;
   compact?: boolean;
+  variant?: "list" | "grid";
 }
 
 function formatAirDate(dateStr?: string): string {
@@ -61,7 +62,8 @@ export default function EpisodeCard({
   fallbackBackdrop,
   defaultRuntime = 0,
   seasonNumber = 1,
-  compact = false
+  compact = false,
+  variant = "list"
 }: EpisodeCardProps) {
   const [imgError, setImgError] = useState(false);
 
@@ -102,6 +104,8 @@ export default function EpisodeCard({
     ? episode.overview
     : `Episode ${episode.episode_number} of Season ${seasonNumber}.`;
 
+  const isGrid = !compact && variant === "grid";
+
   const cardContent = compact ? (
     // Compact drawer layout
     <>
@@ -115,7 +119,7 @@ export default function EpisodeCard({
           className="object-cover transform-gpu will-change-transform transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
-        <div className="absolute bottom-1 left-1 z-10 px-1.5 py-0.2 rounded bg-black/85 border border-white/10 text-white font-mono font-bold text-[10px] tracking-wider">
+        <div className="absolute bottom-1 left-1 z-10 px-1.5 py-0.5 rounded bg-black/85 border border-white/10 text-white font-mono font-bold text-[10px] tracking-wider">
           E{episode.episode_number}
         </div>
         <div
@@ -145,7 +149,7 @@ export default function EpisodeCard({
               {displayTitle}
             </h4>
             {isActive && (
-              <span className="px-1.5 py-0.2 rounded text-[9px] font-sans font-bold bg-[#39AEA9] text-[#0B131B] uppercase tracking-wider shrink-0">
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-sans font-bold bg-[#39AEA9] text-[#0B131B] uppercase tracking-wider shrink-0">
                 Playing
               </span>
             )}
@@ -176,16 +180,103 @@ export default function EpisodeCard({
         </p>
       </div>
     </>
-  ) : (
-    // Full card layout matching the reference mockup
+  ) : isGrid ? (
+    // Modern Grid card layout (Netflix style)
     <>
-      {/* 1. Episode Thumbnail (Left Column) */}
-      <div className="relative w-full sm:w-52 md:w-60 aspect-video shrink-0 rounded-xl overflow-hidden bg-[#070b12] border border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]">
+      <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-[#070b12] border border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]">
         <Image
           src={stillUrl}
           alt={episode.name || `Episode ${episode.episode_number}`}
           fill
-          sizes="(max-width: 640px) 100vw, 240px"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 320px"
+          onError={() => setImgError(true)}
+          className="object-cover transform-gpu will-change-transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105"
+        />
+
+        {/* Gradient shadow vignette */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+
+        {/* Top Badges */}
+        <div className="absolute top-2.5 left-2.5 z-10">
+          {isActive ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-sans font-bold bg-[#39AEA9] text-[#0B131B] uppercase tracking-wider shadow-lg">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#0B131B] animate-ping" />
+              Now Playing
+            </span>
+          ) : (
+            <span className="px-2 py-0.5 rounded bg-black/85 backdrop-blur-sm border border-white/10 text-white font-mono font-bold text-[11px] tracking-wider shadow-md">
+              E{episode.episode_number}
+            </span>
+          )}
+        </div>
+
+        {/* Bottom Right Duration Badge */}
+        {formattedRuntime && (
+          <div className="absolute bottom-2.5 right-2.5 z-10 px-2 py-0.5 rounded bg-black/85 backdrop-blur-sm border border-white/10 text-[#A4C8E1] text-[10px] font-sans font-medium">
+            {formattedRuntime}
+          </div>
+        )}
+
+        {/* Centered Play Button (Visible on hover and when active) */}
+        <div
+          className={`absolute inset-0 z-10 flex items-center justify-center transition-all duration-200 ${
+            isActive
+              ? "opacity-100 bg-black/30"
+              : "opacity-0 group-hover:opacity-100 bg-black/40 backdrop-blur-[1px]"
+          }`}
+        >
+          <div
+            className={`w-11 h-11 rounded-full flex items-center justify-center shadow-2xl transition-transform duration-200 group-hover:scale-110 ${
+              isActive
+                ? "bg-[#39AEA9] text-[#0B131B] shadow-[0_0_16px_rgba(57,174,169,0.5)]"
+                : "bg-white/25 backdrop-blur-md border border-white/30 text-white"
+            }`}
+          >
+            <Play className={`w-5 h-5 ml-0.5 ${isActive ? "fill-[#0B131B] text-[#0B131B]" : "fill-white text-white"}`} />
+          </div>
+        </div>
+      </div>
+
+      {/* Episode Details in Grid View */}
+      <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2">
+        <div>
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <h4
+              className={`text-sm font-bold font-display tracking-tight line-clamp-1 transition-colors ${
+                isActive ? "text-[#39AEA9]" : "text-white group-hover:text-[#39AEA9]"
+              }`}
+            >
+              {displayTitle}
+            </h4>
+            {formattedRating && (
+              <div className="flex items-center gap-1 text-amber-400 font-bold text-xs shrink-0">
+                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                <span>{formattedRating}</span>
+              </div>
+            )}
+          </div>
+          {formattedDate && (
+            <div className="flex items-center gap-1.5 text-xs text-[#8FA8AD] font-sans mb-1">
+              <Calendar className="w-3 h-3 text-[#39AEA9]" />
+              <span>{formattedDate}</span>
+            </div>
+          )}
+        </div>
+        <p className="text-xs text-slate-300 leading-relaxed font-sans line-clamp-2">
+          {overviewText}
+        </p>
+      </div>
+    </>
+  ) : (
+    // Full horizontal list card layout
+    <>
+      {/* 1. Episode Thumbnail (Left Column) */}
+      <div className="relative w-full sm:w-56 md:w-64 aspect-video shrink-0 rounded-xl overflow-hidden bg-[#070b12] border border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]">
+        <Image
+          src={stillUrl}
+          alt={episode.name || `Episode ${episode.episode_number}`}
+          fill
+          sizes="(max-width: 640px) 100vw, 256px"
           onError={() => setImgError(true)}
           className="object-cover transform-gpu will-change-transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105"
         />
@@ -279,9 +370,15 @@ export default function EpisodeCard({
           ? "bg-[#0B1523] border-2 border-[#39AEA9] shadow-[0_0_18px_rgba(57,174,169,0.3)]"
           : "bg-[#080d1a] hover:bg-[#0f172a] border border-white/[0.08] hover:border-white/[0.2]"
       }`
-    : `w-full text-left rounded-2xl p-3.5 sm:p-4 transition-[transform,background-color,border-color] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 group cursor-pointer active:scale-[0.99] ${
+    : isGrid
+    ? `w-full text-left rounded-2xl overflow-hidden transition-[transform,background-color,border-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col group cursor-pointer active:scale-[0.98] ${
         isActive
-          ? "bg-[#0c1522] border-2 border-[#39AEA9] shadow-[0_0_24px_rgba(57,174,169,0.3)]"
+          ? "bg-[#0c1522] border-2 border-[#39AEA9] shadow-[0_0_24px_rgba(57,174,169,0.35)]"
+          : "bg-[#060913] hover:bg-[#0a0f1d] border border-white/[0.08] hover:border-white/[0.2] shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
+      }`
+    : `w-full text-left rounded-2xl p-3.5 sm:p-4 transition-[transform,background-color,border-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 group cursor-pointer active:scale-[0.99] ${
+        isActive
+          ? "bg-[#0c1522] border-2 border-[#39AEA9] shadow-[0_0_24px_rgba(57,174,169,0.35)]"
           : "bg-[#060913] hover:bg-[#0a0f1d] border border-white/[0.08] hover:border-white/[0.2] shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
       }`;
 
@@ -294,8 +391,19 @@ export default function EpisodeCard({
   }
 
   return (
-    <button type="button" onClick={onClick} className={containerClasses}>
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
+      }}
+      className={containerClasses}
+    >
       {cardContent}
-    </button>
+    </div>
   );
 }

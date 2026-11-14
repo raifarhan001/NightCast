@@ -27,6 +27,7 @@ import {
   ShieldAlert,
   ArrowLeft,
   Download,
+  LayoutGrid,
 } from 'lucide-react';
 import { soundFx } from '../../../../lib/soundEffects';
 import AmbientGlow from '../../../../components/shared/AmbientGlow';
@@ -243,6 +244,10 @@ export default function WatchPage() {
         } else {
           setIsAdShieldActive(true);
         }
+        const savedViewMode = localStorage.getItem('nightcast_episodes_view');
+        if (savedViewMode === 'grid' || savedViewMode === 'list') {
+          setEpisodesViewMode(savedViewMode);
+        }
       } catch {}
 
       if (!searchParams.get('season') && type === 'tv' && id) {
@@ -255,6 +260,7 @@ export default function WatchPage() {
   }, [type, id, searchParams, settings?.preferred_language]);
   const [isEpisodeDrawerOpen, setIsEpisodeDrawerOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [episodesViewMode, setEpisodesViewMode] = useState<'grid' | 'list'>('grid');
 
   // Next Episode & Auto-play states
   const [showNextOverlay, setShowNextOverlay] = useState(false);
@@ -1544,21 +1550,125 @@ export default function WatchPage() {
 
 
         {/* Server Selector Bar */}
-        <div className="p-5 bg-white/[0.04] backdrop-blur-2xl backdrop-saturate-150 border border-white/[0.12] rounded-2xl flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12),0_16px_40px_rgba(0,0,0,0.6)]">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 text-xs font-sans font-medium text-[#8FA8AD] mb-1">
-              <span className="w-2 h-2 bg-gradient-to-r from-[#A4C8E1] to-[#39AEA9] animate-pulse rounded-full" />
-              <span>Stream Engine</span>
+        <div className="p-4 sm:p-5 bg-white/[0.04] backdrop-blur-2xl backdrop-saturate-150 border border-white/[0.12] rounded-2xl sm:rounded-3xl space-y-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.12),0_16px_40px_rgba(0,0,0,0.6)]">
+          {/* Top Row: Stream Engine Badge + Title & Quick Action Pill Controls */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-white/[0.08]">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 text-xs font-sans font-medium text-[#8FA8AD] mb-1">
+                <span className="w-2 h-2 bg-gradient-to-r from-[#A4C8E1] to-[#39AEA9] animate-pulse rounded-full shrink-0" />
+                <span className="font-mono text-[11px] uppercase tracking-wider text-[#39AEA9]">Stream Engine</span>
+                {type === 'tv' && (
+                  <span className="px-2 py-0.5 rounded-md bg-[#39AEA9]/15 border border-[#39AEA9]/30 text-[#39AEA9] text-[11px] font-bold">
+                    S{currentSeason} • E{currentEpisode}
+                  </span>
+                )}
+              </div>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight font-display text-[#F8FAFC]">
+                {movieTitle} <span className="text-[#8FA8AD] font-sans font-normal text-base md:text-lg">({releaseYear})</span>
+              </h1>
             </div>
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight font-display text-[#F8FAFC]">
-              {movieTitle} <span className="text-[#8FA8AD] font-sans font-normal text-base">({releaseYear})</span>
-            </h1>
+
+            {/* Quick Action Pill Controls (Ad-Shield, Theater Mode, Episode Drawer, Shortcuts, Downloads) */}
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              {/* Direct Download Mirrors */}
+              <a
+                href={`https://nxsha.screenscape.me/download/${type === 'tv' ? 'tv' : 'movie'}/${id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => soundFx.playTap()}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-white/[0.1] bg-white/[0.08] hover:bg-white/[0.14] text-[#8FA8AD] hover:text-[#39AEA9] text-xs font-sans font-medium transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
+                title="Direct Download Links Across Mirrors (ScreenScape)"
+                aria-label="Direct Download Links"
+              >
+                <Download className="w-3.5 h-3.5 text-[#39AEA9]" />
+                <span className="hidden sm:inline font-semibold">Downloads</span>
+              </a>
+              {/* Ad-Shield Toggle Button */}
+              <button
+                onClick={() => {
+                  soundFx.playTap();
+                  setIsAdShieldActive(prev => {
+                    const next = !prev;
+                    if (typeof window !== 'undefined') {
+                      localStorage.setItem('nightcast_ad_shield_v3', String(next));
+                    }
+                    setToastMessage(next ? "Ad-Shield ON: Window popup blocker active" : "Ad-Shield OFF: Popup blocker disabled");
+                    return next;
+                  });
+                }}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-sans font-medium transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
+                  isAdShieldActive
+                    ? 'bg-[#39AEA9]/15 hover:bg-[#39AEA9]/25 text-[#39AEA9] border-[#39AEA9]/40 shadow-[0_0_12px_rgba(57,174,169,0.25)]'
+                    : 'bg-white/[0.08] hover:bg-white/[0.14] text-[#8FA8AD] hover:text-white border-white/[0.1]'
+                }`}
+                title={isAdShieldActive ? "Ad-Shield: Rogue popup blocker active" : "Ad-Shield: Popup blocker turned off"}
+                aria-label={isAdShieldActive ? "Ad-Shield is active" : "Ad-Shield is inactive"}
+              >
+                {isAdShieldActive ? (
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#39AEA9]" />
+                ) : (
+                  <ShieldAlert className="w-3.5 h-3.5 text-[#8FA8AD]" />
+                )}
+                <span className="hidden sm:inline font-semibold">
+                  {isAdShieldActive ? "Ad Shield: ON" : "Ad Shield: OFF"}
+                </span>
+              </button>
+
+              {/* Theater Mode Button */}
+              <button
+                onClick={() => {
+                  soundFx.playChime();
+                  setIsTheaterMode(prev => !prev);
+                }}
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-sans font-medium transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
+                  isTheaterMode
+                    ? 'bg-[#39AEA9] text-[#0B131B] border-[#39AEA9] font-bold shadow-[0_0_15px_rgba(57,174,169,0.5)]'
+                    : 'bg-white/[0.08] hover:bg-white/[0.14] text-[#E2E8F0] hover:text-white border-white/[0.1]'
+                }`}
+                title="Cinema Theater Mode [T]"
+                aria-label="Cinema Theater Mode [T]"
+              >
+                <Maximize2 className="w-3.5 h-3.5 text-[#39AEA9]" />
+                <span className="hidden sm:inline">Theater [T]</span>
+              </button>
+
+              {/* Episode Drawer Button for TV */}
+              {type === 'tv' && (
+                <button
+                  onClick={() => {
+                    soundFx.playTap();
+                    setIsEpisodeDrawerOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-[#E2E8F0] hover:text-white font-sans font-medium text-xs border border-white/[0.1] transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
+                  title="Quick Episode Drawer [E]"
+                  aria-label="Quick Episode Drawer [E]"
+                >
+                  <List className="w-3.5 h-3.5 text-[#39AEA9]" />
+                  <span className="hidden sm:inline">Episodes [E]</span>
+                </button>
+              )}
+
+              {/* Keyboard Shortcuts Button */}
+              <button
+                onClick={() => {
+                  soundFx.playTap();
+                  setIsShortcutsOpen(true);
+                }}
+                className="p-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-[#8FA8AD] hover:text-white font-sans text-xs border border-white/[0.1] transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
+                title="Keyboard Shortcuts [?]"
+                aria-label="Keyboard Shortcuts [?]"
+              >
+                <Keyboard className="w-3.5 h-3.5 text-[#39AEA9]" />
+              </button>
+            </div>
           </div>
 
-          {/* Server Selection & Action Row */}
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Server List */}
-            <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-[#0B131B]/60 backdrop-blur-xl border border-white/[0.1] rounded-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
+          {/* Bottom Row: Server Selector Pills */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-0.5">
+            <div className="flex items-center gap-2 text-xs font-sans font-medium text-[#8FA8AD] shrink-0">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-[#8FA8AD]">Servers:</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-[#0B131B]/80 backdrop-blur-xl border border-white/[0.1] rounded-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] w-full sm:w-auto">
               {servers.map((srv) => {
                 const isActive = srv.id === activeServerId;
                 const isFailed = failedServerIds.includes(srv.id);
@@ -1592,102 +1702,6 @@ export default function WatchPage() {
                 );
               })}
             </div>
-
-            {/* Quick Action Pill Controls (Ad-Shield, Theater Mode, Episode Drawer, Shortcuts, Downloads) */}
-            <div className="flex items-center gap-2">
-              {/* Direct Download Mirrors */}
-              <a
-                href={`https://nxsha.screenscape.me/download/${type === 'tv' ? 'tv' : 'movie'}/${id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => soundFx.playTap()}
-                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-white/[0.1] bg-white/[0.08] hover:bg-white/[0.14] text-[#8FA8AD] hover:text-[#39AEA9] text-xs font-sans font-medium transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
-                title="Direct Download Links Across Mirrors (ScreenScape)"
-                aria-label="Direct Download Links"
-              >
-                <Download className="w-3.5 h-3.5 text-[#39AEA9]" />
-                <span className="hidden sm:inline font-semibold">Downloads</span>
-              </a>
-              {/* Ad-Shield Toggle Button */}
-              <button
-                onClick={() => {
-                  soundFx.playTap();
-                  setIsAdShieldActive(prev => {
-                    const next = !prev;
-                    if (typeof window !== 'undefined') {
-                      localStorage.setItem('nightcast_ad_shield_v3', String(next));
-                    }
-                    setToastMessage(next ? "Ad-Shield ON: Window popup blocker active" : "Ad-Shield OFF: Popup blocker disabled");
-                    return next;
-                  });
-                }}
-                className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs font-sans font-medium transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
-                  isAdShieldActive
-                    ? 'bg-[#39AEA9]/15 hover:bg-[#39AEA9]/25 text-[#39AEA9] border-[#39AEA9]/40 shadow-[0_0_12px_rgba(57,174,169,0.25)]'
-                    : 'bg-white/[0.08] hover:bg-white/[0.14] text-[#8FA8AD] hover:text-white border-white/[0.1]'
-                }`}
-                title={isAdShieldActive ? "Ad-Shield: Rogue popup blocker active" : "Ad-Shield: Popup blocker turned off"}
-                aria-label={isAdShieldActive ? "Ad-Shield is active" : "Ad-Shield is inactive"}
-              >
-                {isAdShieldActive ? (
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#39AEA9]" />
-                ) : (
-                  <ShieldAlert className="w-3.5 h-3.5 text-[#8FA8AD]" />
-                )}
-                <span className="hidden sm:inline font-semibold">
-                  {isAdShieldActive ? "Ad Shield: ON" : "Ad Shield: OFF"}
-                </span>
-              </button>
-
-              {/* Theater Mode Button */}
-              <button
-                onClick={() => {
-                  soundFx.playChime();
-                  setIsTheaterMode(prev => !prev);
-                }}
-                className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-xs font-sans font-medium transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
-                  isTheaterMode
-                    ? 'bg-[#39AEA9] text-[#0B131B] border-[#39AEA9] font-bold shadow-[0_0_15px_rgba(57,174,169,0.5)]'
-                    : 'bg-white/[0.08] hover:bg-white/[0.14] text-[#E2E8F0] hover:text-white border-white/[0.1]'
-                }`}
-                title="Cinema Theater Mode [T]"
-                aria-label="Cinema Theater Mode [T]"
-              >
-                <Maximize2 className="w-3.5 h-3.5 text-[#39AEA9]" />
-                <span className="hidden sm:inline">Theater [T]</span>
-              </button>
-
-              {/* Episode Drawer Button for TV */}
-              {type === 'tv' && (
-                <button
-                  onClick={() => {
-                    soundFx.playTap();
-                    setIsEpisodeDrawerOpen(true);
-                  }}
-                  className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-[#E2E8F0] hover:text-white font-sans font-medium text-xs border border-white/[0.1] transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
-                  title="Quick Episode Drawer [E]"
-                  aria-label="Quick Episode Drawer [E]"
-                >
-                  <List className="w-3.5 h-3.5 text-[#39AEA9]" />
-                  <span className="hidden sm:inline">Episodes [E]</span>
-                </button>
-              )}
-
-              {/* Keyboard Shortcuts Button */}
-              <button
-                onClick={() => {
-                  soundFx.playTap();
-                  setIsShortcutsOpen(true);
-                }}
-                className="p-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.14] text-[#8FA8AD] hover:text-white font-sans text-xs border border-white/[0.1] transition-all active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
-                title="Keyboard Shortcuts [?]"
-                aria-label="Keyboard Shortcuts [?]"
-              >
-                <Keyboard className="w-3.5 h-3.5 text-[#39AEA9]" />
-              </button>
-            </div>
-
-
           </div>
         </div>
 
@@ -1946,46 +1960,99 @@ export default function WatchPage() {
 
         {/* TV Season & Episode Selector */}
         {type === 'tv' && (
-          <section className="space-y-5 pt-2">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-white/[0.08] pb-4">
+          <section className="space-y-6 pt-2">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-white/[0.08] pb-4">
               <div className="flex items-center gap-3">
+                <div className="h-6 w-1.5 rounded-full bg-gradient-to-b from-[#A4C8E1] to-[#39AEA9] shadow-[0_0_10px_rgba(57,174,169,0.7)]" />
                 <div>
-                  <h3 className="text-lg font-bold font-display text-[#F8FAFC]">Episodes</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-bold font-display text-[#F8FAFC]">Episodes</h3>
+                    <span className="px-2 py-0.5 rounded-md bg-white/[0.08] text-[#39AEA9] text-[11px] font-sans font-bold border border-white/[0.1]">
+                      Season {currentSeason} • {seasonEpisodes.length > 0 ? seasonEpisodes.length : episodesCount} eps
+                    </span>
+                  </div>
                   <p className="text-xs text-[#8FA8AD] font-sans">Chapter selection</p>
                 </div>
                 {nextEpisodeInfo && (
                   <button
                     onClick={() => handleEpisodeChange(nextEpisodeInfo.season, nextEpisodeInfo.episode)}
-                    className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/[0.08] hover:bg-[#39AEA9]/20 text-[#39AEA9] hover:text-white border border-[#39AEA9]/30 text-xs font-sans font-semibold transition-all cursor-pointer ml-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
+                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.08] hover:bg-[#39AEA9]/20 text-[#39AEA9] hover:text-white border border-[#39AEA9]/30 text-xs font-sans font-semibold transition-all cursor-pointer ml-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
                     title={`Skip directly to S${nextEpisodeInfo.season} E${nextEpisodeInfo.episode}`}
                     aria-label={`Skip directly to S${nextEpisodeInfo.season} E${nextEpisodeInfo.episode}`}
                   >
-                    <SkipForward className="w-3 h-3 fill-current" />
+                    <SkipForward className="w-3.5 h-3.5 fill-current" />
                     <span>Next: S{nextEpisodeInfo.season} E{nextEpisodeInfo.episode}</span>
                   </button>
                 )}
               </div>
-              <div className="flex flex-wrap gap-1.5 p-1.5 bg-[#0B131B]/60 backdrop-blur-xl border border-white/[0.08] rounded-xl">
-                {seasons.map((s: any) => (
+
+              {/* View Mode Toggle & Season Pills */}
+              <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar max-w-full">
+                {/* Layout View Mode Switcher (Grid / List) */}
+                <div className="flex items-center p-1 bg-[#0B131B]/80 backdrop-blur-xl border border-white/[0.1] rounded-xl shrink-0">
                   <button
-                    key={s.season_number}
-                    onClick={() => handleEpisodeChange(s.season_number, 1)}
-                    className={
-                      currentSeason === s.season_number
-                        ? "px-3.5 py-1.5 rounded-lg text-xs font-sans font-semibold bg-gradient-to-r from-[#A4C8E1] to-[#39AEA9] text-[#0B131B] shadow-[0_0_12px_rgba(57,174,169,0.4)] cursor-pointer"
-                        : "px-3.5 py-1.5 rounded-lg text-xs font-sans font-medium text-[#8FA8AD] hover:text-white hover:bg-white/[0.08] cursor-pointer"
-                    }
+                    type="button"
+                    onClick={() => {
+                      soundFx.playTap();
+                      setEpisodesViewMode('grid');
+                      if (typeof window !== 'undefined') localStorage.setItem('nightcast_episodes_view', 'grid');
+                    }}
+                    className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                      episodesViewMode === 'grid'
+                        ? 'bg-gradient-to-r from-[#A4C8E1] to-[#39AEA9] text-[#0B131B] shadow-[0_0_10px_rgba(57,174,169,0.4)]'
+                        : 'text-[#8FA8AD] hover:text-white hover:bg-white/[0.06]'
+                    }`}
+                    title="Grid View"
+                    aria-label="Grid View"
                   >
-                    {s.name || `Season ${s.season_number}`}
+                    <LayoutGrid className="w-4 h-4" />
                   </button>
-                ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      soundFx.playTap();
+                      setEpisodesViewMode('list');
+                      if (typeof window !== 'undefined') localStorage.setItem('nightcast_episodes_view', 'list');
+                    }}
+                    className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                      episodesViewMode === 'list'
+                        ? 'bg-gradient-to-r from-[#A4C8E1] to-[#39AEA9] text-[#0B131B] shadow-[0_0_10px_rgba(57,174,169,0.4)]'
+                        : 'text-[#8FA8AD] hover:text-white hover:bg-white/[0.06]'
+                    }`}
+                    title="List View"
+                    aria-label="List View"
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Season Pills */}
+                <div className="flex items-center gap-1.5 p-1 bg-[#0B131B]/60 backdrop-blur-xl border border-white/[0.08] rounded-xl overflow-x-auto no-scrollbar">
+                  {seasons.map((s: any) => (
+                    <button
+                      key={s.season_number}
+                      onClick={() => handleEpisodeChange(s.season_number, 1)}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-sans whitespace-nowrap transition-all cursor-pointer ${
+                        currentSeason === s.season_number
+                          ? "px-3.5 py-1.5 rounded-lg text-xs font-sans font-semibold bg-gradient-to-r from-[#A4C8E1] to-[#39AEA9] text-[#0B131B] shadow-[0_0_12px_rgba(57,174,169,0.4)] cursor-pointer"
+                          : "px-3.5 py-1.5 rounded-lg text-xs font-sans font-medium text-[#8FA8AD] hover:text-white hover:bg-white/[0.08] cursor-pointer"
+                      }`}
+                    >
+                      {s.name || `Season ${s.season_number}`}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
-            <div className="space-y-3.5">
+            <div className={
+              episodesViewMode === 'grid'
+                ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                : "space-y-3.5"
+            }>
               {episodesLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.04] animate-pulse h-28" />
+                Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.04] animate-pulse h-48" />
                 ))
               ) : seasonEpisodes.length > 0 ? (
                 seasonEpisodes.map((ep: any) => {
@@ -1996,6 +2063,7 @@ export default function WatchPage() {
                       episode={ep}
                       seasonNumber={currentSeason}
                       isActive={isActive}
+                      variant={episodesViewMode}
                       fallbackBackdrop={meta?.backdrop_path || meta?.poster_path}
                       defaultRuntime={meta?.episode_run_time?.[0]}
                       onClick={() => {
@@ -2021,6 +2089,7 @@ export default function WatchPage() {
                       }}
                       seasonNumber={currentSeason}
                       isActive={isActive}
+                      variant={episodesViewMode}
                       fallbackBackdrop={meta?.backdrop_path || meta?.poster_path}
                       defaultRuntime={meta?.episode_run_time?.[0]}
                       onClick={() => {
