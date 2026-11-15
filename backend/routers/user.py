@@ -107,7 +107,7 @@ def sync_user_data(
                 ).delete(synchronize_session=False)
                 continue
 
-            if progress < 0.5 and seconds < 3.0:
+            if progress <= 0 and seconds <= 0:
                 continue
 
             s_num = int(item.season) if item.season is not None and str(item.season).isdigit() else None

@@ -64,8 +64,10 @@ function HomePageContent() {
   const hasScrolledRef = React.useRef(false);
 
   const [localContinueWatching, setLocalContinueWatching] = React.useState<LocalProgressItem[]>([]);
+  const [isMounted, setIsMounted] = React.useState(false);
 
   React.useEffect(() => {
+    setIsMounted(true);
     const refreshList = () => {
       setLocalContinueWatching(getContinueWatchingList(activeProfile?.id));
       if (activeProfile) {
@@ -74,10 +76,12 @@ function HomePageContent() {
     };
     refreshList();
 
+    window.addEventListener("focus", refreshList);
     window.addEventListener("storage", refreshList);
     window.addEventListener("nightcast:progress-update", refreshList);
 
     return () => {
+      window.removeEventListener("focus", refreshList);
       window.removeEventListener("storage", refreshList);
       window.removeEventListener("nightcast:progress-update", refreshList);
     };
@@ -147,8 +151,8 @@ function HomePageContent() {
       // Filter out completed (>= 90%)
       if (percent >= 90.0 || (duration > 60 && seconds >= duration - 25)) return;
       
-      const isUpNextMarker = (c.media_type === 'tv' || c.season) && c.episode !== undefined && percent >= 0.5;
-      const hasWatchedContent = seconds >= 3 || percent >= 0.5;
+      const isUpNextMarker = (c.media_type === 'tv' || c.season) && c.episode !== undefined;
+      const hasWatchedContent = seconds >= 1 || percent > 0;
       if (!isUpNextMarker && !hasWatchedContent) return;
 
       const existing = map.get(cleanId);
@@ -187,7 +191,7 @@ function HomePageContent() {
       const timeB = b.updated_at ? new Date(b.updated_at).getTime() : 0;
       return timeB - timeA;
     });
-  }, [localContinueWatching, continueWatching]);
+  }, [localContinueWatching, continueWatching, activeProfile?.id]);
 
   const handleRemoveContinueWatching = React.useCallback(async (item: any) => {
     const cleanId = getCleanMediaId(item.id);
@@ -257,7 +261,7 @@ function HomePageContent() {
       {/* Content Rows Container (Seamlessly Flowing From Hero) */}
       <div className="relative z-20 space-y-6 sm:space-y-8 -mt-6 sm:-mt-10">
         {/* Continue Watching (If User Has In-Progress Titles) */}
-        {mergedContinueWatching.length > 0 && (
+        {isMounted && mergedContinueWatching.length > 0 && (
           <MovieRow
             title="Continue Watching"
             subtitle="Pick up where you left off"

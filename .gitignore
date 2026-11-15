@@ -49,6 +49,8 @@ __pycache__/
 *.db-wal
 *.sqlite
 *.sqlite3
+.cache_store.json
+**/.cache_store.json
 
 # OS files
 .DS_Store

@@ -156,7 +156,15 @@ const TOKEN_KEY = 'nightcast_token';
 export function getStoredToken(): string | null {
   if (typeof window === 'undefined') return null;
   try {
-    return localStorage.getItem(TOKEN_KEY) || localStorage.getItem('nightcast_access_token') || localStorage.getItem('vidking_access_token');
+    const fromStorage = localStorage.getItem(TOKEN_KEY) || localStorage.getItem('nightcast_access_token') || localStorage.getItem('vidking_access_token');
+    if (fromStorage) return fromStorage;
+
+    // Check cookie fallback if storage is empty
+    if (typeof document !== 'undefined') {
+      const match = document.cookie.match(/(?:^|;\s*)nightcast_token=([^;]+)/);
+      if (match) return decodeURIComponent(match[1]);
+    }
+    return null;
   } catch { return null; }
 }
 
@@ -166,10 +174,14 @@ export function setStoredToken(token: string | null): void {
     if (token) {
       localStorage.setItem(TOKEN_KEY, token);
       localStorage.setItem('nightcast_access_token', token);
+      // Synchronize client-side cookie so Next.js Edge Middleware and server can see it immediately
+      document.cookie = `nightcast_token=${encodeURIComponent(token)}; path=/; max-age=2592000; SameSite=Lax`;
     } else {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem('nightcast_access_token');
       localStorage.removeItem('vidking_access_token');
+      // Expire the cookie
+      document.cookie = `nightcast_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
     }
   } catch {}
 }

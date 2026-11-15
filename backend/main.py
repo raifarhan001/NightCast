@@ -11,7 +11,7 @@ if sys_path_dir not in sys.path:
 from fastapi import FastAPI, Request, Response, status, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.responses import JSONResponse, HTMLResponse
+from starlette.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy import text
@@ -80,27 +80,6 @@ async def global_exception_handler(request: Request, exc: Exception):
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={"detail": exc.errors()}
-        )
-    if "proxy-embed" in str(request.url) or "proxy-stream" in str(request.url):
-        return HTMLResponse(
-            content=f"""
-            <!DOCTYPE html>
-            <html>
-            <head><meta charset="utf-8"><style>
-                body {{ background-color: #090A0F; color: #ffffff; font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }}
-                .card {{ background: #12141F; border: 1px solid rgba(255,255,255,0.1); padding: 24px; border-radius: 16px; text-align: center; max-width: 400px; }}
-                h3 {{ margin: 0 0 8px 0; color: #f59e0b; font-size: 16px; }}
-                p {{ margin: 0; color: rgba(255,255,255,0.6); font-size: 13px; }}
-            </style></head>
-            <body>
-                <div class="card">
-                    <h3>Stream Proxy Unavailable</h3>
-                    <p>The requested embed stream source is restricted or unavailable. Please switch to another server.</p>
-                </div>
-            </body>
-            </html>
-            """,
-            status_code=200
         )
     return JSONResponse(
         status_code=500,

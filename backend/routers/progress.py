@@ -110,23 +110,63 @@ def update_progress(
             db.add(history_entry)
         db.commit()
 
-    # Clean up continue watching list if play has ended (progress >= 90% or ended/skipped event)
-    if (payload.progress or 0.0) >= 90.0 or ((payload.duration or 0.0) > 60 and (payload.current_time or 0.0) >= (payload.duration or 0.0) - 25) or payload.event in ("ended", "skipped"):
-        cw_delete_query = db.query(models.ContinueWatching).filter(
-            models.ContinueWatching.profile_id == active_profile.id,
-            (models.ContinueWatching.media_id == clean_id) | (models.ContinueWatching.media_id == str(payload.id))
-        )
-        if s_num is not None or ep_num is not None:
-            cw_delete_query = cw_delete_query.filter(
-                models.ContinueWatching.season == s_num,
-                models.ContinueWatching.episode == ep_num
-            )
+    # Handle completion (progress >= 90% or ended/skipped event)
+    is_completed = (payload.progress or 0.0) >= 90.0 or ((payload.duration or 0.0) > 60 and (payload.current_time or 0.0) >= (payload.duration or 0.0) - 25) or payload.event in ("ended", "skipped")
+    if is_completed:
+        # If this is a TV show with a next episode available, auto-advance to next episode
+        if (s_num is not None or payload.media_type == "tv") and payload.next_season and payload.next_episode:
+            # Upsert continue watching to point to next episode
+            existing_next = db.query(models.ContinueWatching).filter(
+                models.ContinueWatching.profile_id == active_profile.id,
+                (models.ContinueWatching.media_id == clean_id) | (models.ContinueWatching.media_id == str(payload.id))
+            ).first()
+            if existing_next:
+                existing_next.media_id = clean_id
+                existing_next.season = payload.next_season
+                existing_next.episode = payload.next_episode
+                existing_next.progress_percent = 0.5
+                existing_next.timestamp_seconds = 0.0
+                existing_next.updated_at = datetime.utcnow()
+                if payload.title:
+                    existing_next.title = payload.title
+                if payload.poster_path:
+                    existing_next.poster_path = payload.poster_path
+                if payload.backdrop_path:
+                    existing_next.backdrop_path = payload.backdrop_path
+            else:
+                next_cw = models.ContinueWatching(
+                    profile_id=active_profile.id,
+                    media_id=clean_id,
+                    media_type="tv",
+                    title=payload.title or "Untitled",
+                    poster_path=payload.poster_path,
+                    backdrop_path=payload.backdrop_path,
+                    season=payload.next_season,
+                    episode=payload.next_episode,
+                    progress_percent=0.5,
+                    timestamp_seconds=0.0,
+                    duration_seconds=payload.duration or 0.0,
+                    updated_at=datetime.utcnow()
+                )
+                db.add(next_cw)
+            db.commit()
         else:
-            cw_delete_query = cw_delete_query.filter(
-                (models.ContinueWatching.season.is_(None)) | (models.ContinueWatching.season == 0)
+            # Movie finished or series end: remove completely from continue watching
+            cw_delete_query = db.query(models.ContinueWatching).filter(
+                models.ContinueWatching.profile_id == active_profile.id,
+                (models.ContinueWatching.media_id == clean_id) | (models.ContinueWatching.media_id == str(payload.id))
             )
-        cw_delete_query.delete(synchronize_session=False)
-        db.commit()
+            if s_num is not None or ep_num is not None:
+                cw_delete_query = cw_delete_query.filter(
+                    models.ContinueWatching.season == s_num,
+                    models.ContinueWatching.episode == ep_num
+                )
+            else:
+                cw_delete_query = cw_delete_query.filter(
+                    (models.ContinueWatching.season.is_(None)) | (models.ContinueWatching.season == 0)
+                )
+            cw_delete_query.delete(synchronize_session=False)
+            db.commit()
 
     return {"status": "success"}
 
@@ -144,10 +184,10 @@ def get_continue_watching(
     consolidated = []
     for item in items:
         clean_id = item.media_id.split('_s')[0].split('-s')[0].split('_')[0].strip()
-        if item.progress_percent >= 92.0:
+        if item.progress_percent >= 90.0:
             continue
-        is_up_next = (item.season is not None and item.episode is not None and item.progress_percent >= 1.0)
-        has_watched = (item.progress_percent >= 1.5 or (item.timestamp_seconds or 0) >= 5.0)
+        is_up_next = (item.season is not None and item.episode is not None)
+        has_watched = (item.progress_percent > 0 or (item.timestamp_seconds or 0) > 0)
         if not is_up_next and not has_watched:
             continue
         if clean_id not in seen_media:

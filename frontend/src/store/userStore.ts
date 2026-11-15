@@ -33,9 +33,10 @@ export const useUserStore = create<UserState>((set, get) => ({
       const storedToken = typeof window !== 'undefined' 
         ? (localStorage.getItem('nightcast_token') || localStorage.getItem('nightcast_access_token') || localStorage.getItem('vidking_access_token')) 
         : null;
-      const hasCookieToken = typeof document !== 'undefined' && document.cookie.includes('access_token=');
+      const hasCookieToken = typeof document !== 'undefined' && 
+        (document.cookie.includes('nightcast_token=') || document.cookie.includes('access_token='));
       if (!storedToken && !hasCookieToken) {
-        set({ user: null, activeProfile: null, profiles: [], settings: null });
+        set({ user: null, activeProfile: null, profiles: [], settings: null, loading: false, initialized: true });
         return;
       }
 
@@ -160,6 +161,15 @@ export const useUserStore = create<UserState>((set, get) => ({
     setStoredToken(null);
     get().setActiveProfile(null);
     set({ user: null, profiles: [], settings: null });
+
+    // If logging out while on a protected route, redirect to login
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      if (pathname.startsWith('/profile') || pathname.startsWith('/admin')) {
+        const returnUrl = encodeURIComponent(pathname + window.location.search);
+        window.location.href = `/login?redirect=${returnUrl}`;
+      }
+    }
   }
 }));
 

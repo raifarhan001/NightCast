@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID
+from urllib.parse import unquote
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 import jwt
@@ -84,8 +85,9 @@ def get_current_user(
 
     # 2. Try checking for cookies if header isn't present
     if not actual_token:
-        cookie_val = request.cookies.get("access_token")
-        if cookie_val:
+        raw_cookie = request.cookies.get("nightcast_token") or request.cookies.get("access_token")
+        if raw_cookie:
+            cookie_val = unquote(raw_cookie).strip()
             if cookie_val.startswith("Bearer "):
                 actual_token = cookie_val[7:]
             elif cookie_val.startswith("Bearer%20"):

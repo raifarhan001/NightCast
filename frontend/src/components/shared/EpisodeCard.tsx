@@ -238,26 +238,26 @@ export default function EpisodeCard({
       </div>
 
       {/* Episode Details in Grid View */}
-      <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2">
+      <div className="w-full p-3.5 flex flex-col justify-between gap-2.5 min-h-[105px] bg-[#0E1722]/95 border-t border-white/[0.08] relative z-10">
         <div>
-          <div className="flex items-start justify-between gap-2 mb-1">
+          <div className="flex items-start justify-between gap-2 mb-1.5">
             <h4
               className={`text-sm font-bold font-display tracking-tight line-clamp-1 transition-colors ${
-                isActive ? "text-[#39AEA9]" : "text-white group-hover:text-[#39AEA9]"
+                isActive ? "text-[#39AEA9] font-extrabold" : "text-white group-hover:text-[#39AEA9]"
               }`}
             >
               {displayTitle}
             </h4>
             {formattedRating && (
               <div className="flex items-center gap-1 text-amber-400 font-bold text-xs shrink-0">
-                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                 <span>{formattedRating}</span>
               </div>
             )}
           </div>
           {formattedDate && (
-            <div className="flex items-center gap-1.5 text-xs text-[#8FA8AD] font-sans mb-1">
-              <Calendar className="w-3 h-3 text-[#39AEA9]" />
+            <div className="flex items-center gap-1.5 text-xs text-[#A4C8E1] font-sans mb-1.5">
+              <Calendar className="w-3.5 h-3.5 text-[#39AEA9]" />
               <span>{formattedDate}</span>
             </div>
           )}
@@ -310,14 +310,14 @@ export default function EpisodeCard({
       </div>
 
       {/* 2. Episode Details (Right Column) */}
-      <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5 sm:py-1">
+      <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5 sm:py-1 relative z-10">
         {/* Top Header Row: Episode Title + Now Playing Badge + Gold Star Rating */}
         <div className="flex items-start sm:items-center justify-between gap-3 mb-1.5">
           <div className="flex items-center gap-2.5 min-w-0 flex-wrap">
             <h4
               className={`text-base sm:text-lg font-bold font-display tracking-tight truncate transition-colors duration-150 ${
                 isActive
-                  ? "text-white"
+                  ? "text-[#39AEA9] font-extrabold"
                   : "text-white group-hover:text-[#39AEA9]"
               }`}
             >
@@ -341,7 +341,7 @@ export default function EpisodeCard({
         </div>
 
         {/* Metadata Row: Air Date + Runtime */}
-        <div className="flex flex-wrap items-center gap-3.5 sm:gap-4 text-xs font-sans text-slate-300 mb-2">
+        <div className="flex flex-wrap items-center gap-3.5 sm:gap-4 text-xs font-sans text-[#A4C8E1] mb-2">
           {formattedDate && (
             <div className="flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-[#39AEA9]" />
@@ -367,19 +367,19 @@ export default function EpisodeCard({
   const containerClasses = compact
     ? `w-full text-left rounded-xl p-2.5 transition-[transform,background-color,border-color] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center gap-3 group cursor-pointer active:scale-[0.98] ${
         isActive
-          ? "bg-[#0B1523] border-2 border-[#39AEA9] shadow-[0_0_18px_rgba(57,174,169,0.3)]"
-          : "bg-[#080d1a] hover:bg-[#0f172a] border border-white/[0.08] hover:border-white/[0.2]"
+          ? "bg-[#132738] border-2 border-[#39AEA9] shadow-[0_0_18px_rgba(57,174,169,0.3)]"
+          : "bg-[#111c2a] hover:bg-[#182738] border border-white/[0.12] hover:border-white/[0.25]"
       }`
     : isGrid
     ? `w-full text-left rounded-2xl overflow-hidden transition-[transform,background-color,border-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col group cursor-pointer active:scale-[0.98] ${
         isActive
-          ? "bg-[#0c1522] border-2 border-[#39AEA9] shadow-[0_0_24px_rgba(57,174,169,0.35)]"
-          : "bg-[#060913] hover:bg-[#0a0f1d] border border-white/[0.08] hover:border-white/[0.2] shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
+          ? "bg-[#132738] border-2 border-[#39AEA9] shadow-[0_0_24px_rgba(57,174,169,0.35)]"
+          : "bg-[#111c2a] hover:bg-[#182738] border border-white/[0.12] hover:border-white/[0.25] shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
       }`
     : `w-full text-left rounded-2xl p-3.5 sm:p-4 transition-[transform,background-color,border-color,box-shadow] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 group cursor-pointer active:scale-[0.99] ${
         isActive
-          ? "bg-[#0c1522] border-2 border-[#39AEA9] shadow-[0_0_24px_rgba(57,174,169,0.35)]"
-          : "bg-[#060913] hover:bg-[#0a0f1d] border border-white/[0.08] hover:border-white/[0.2] shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
+          ? "bg-[#132738] border-2 border-[#39AEA9] shadow-[0_0_24px_rgba(57,174,169,0.35)]"
+          : "bg-[#111c2a] hover:bg-[#182738] border border-white/[0.12] hover:border-white/[0.25] shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
       }`;
 
   if (href) {

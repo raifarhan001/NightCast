@@ -139,7 +139,7 @@ function formatPlayerTime(seconds: number): string {
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 
-export default function NightCastPlayer({
+const NightCastPlayer = React.memo(function NightCastPlayer({
   streamUrl,
   isHls = true,
   playbackData,
@@ -156,6 +156,17 @@ export default function NightCastPlayer({
   const volumeBarRef = useRef<HTMLDivElement>(null);
   const controlsTimerRef = useRef<NodeJS.Timeout | null>(null);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const initialStartAtRef = useRef<number>(startAt);
+  const onErrorRef = useRef(onError);
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
+
+  const onProgressRef = useRef(onProgress);
+  useEffect(() => {
+    onProgressRef.current = onProgress;
+  }, [onProgress]);
 
   const rawUrl = playbackData?.manifest_url || streamUrl || "";
   const isEmbedUrl =
@@ -239,8 +250,10 @@ export default function NightCastPlayer({
 
       hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
         setIsLoading(false);
-        if (startAt > 0) {
-          video.currentTime = startAt;
+        const seekTime = initialStartAtRef.current;
+        if (seekTime > 0) {
+          video.currentTime = seekTime;
+          initialStartAtRef.current = 0;
         }
 
         // Parse HLS Quality levels
@@ -295,7 +308,7 @@ export default function NightCastPlayer({
               break;
             default:
               setErrorMsg("Playback error. Server source is currently unavailable.");
-              onError?.();
+              onErrorRef.current?.();
               hls?.destroy();
               break;
           }
@@ -308,12 +321,16 @@ export default function NightCastPlayer({
       video.src = rawUrl;
       video.addEventListener("loadedmetadata", () => {
         setIsLoading(false);
-        if (startAt > 0) video.currentTime = startAt;
+        const seekTime = initialStartAtRef.current;
+        if (seekTime > 0) {
+          video.currentTime = seekTime;
+          initialStartAtRef.current = 0;
+        }
         setCurrentQualityLabel("720p");
       });
       video.addEventListener("error", () => {
         setErrorMsg("Failed to load video stream.");
-        onError?.();
+        onErrorRef.current?.();
       });
     }
 
@@ -323,7 +340,7 @@ export default function NightCastPlayer({
         hlsRef.current = null;
       }
     };
-  }, [rawUrl, isEffectiveHls, startAt, onError]);
+  }, [rawUrl, isEffectiveHls]);
 
   // Video Native Event Handlers
   useEffect(() => {
@@ -370,16 +387,16 @@ export default function NightCastPlayer({
   // Periodic Progress Reporting for Continue Watching
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !onProgress) return;
+    if (!video) return;
 
     const interval = setInterval(() => {
       if (!video.paused && video.duration > 0) {
-        onProgress(video.currentTime, video.duration);
+        onProgressRef.current?.(video.currentTime, video.duration);
       }
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [onProgress]);
+  }, []);
 
   // Fullscreen Detection
   useEffect(() => {
@@ -1181,4 +1198,6 @@ export default function NightCastPlayer({
       </div>
     </div>
   );
-}
+});
+
+export default NightCastPlayer;

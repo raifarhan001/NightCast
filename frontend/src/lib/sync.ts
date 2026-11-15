@@ -59,7 +59,8 @@ export async function syncUserDataWithCloud(profileId?: string): Promise<void> {
         if (isDismissedFromContinueWatching(cleanId, item.updated_at, profileId)) return false;
         const prog = item.progress_percent;
         const secs = item.timestamp_seconds;
-        return (prog >= 0.5 || secs >= 3.0) && prog < 90.0;
+        const isUpNext = item.media_type === 'tv' && item.season !== null && item.episode !== null;
+        return (isUpNext || prog > 0 || secs > 0) && prog < 90.0;
       });
 
     // 2. Gather local watchlist

@@ -130,6 +130,8 @@ class ProgressUpdatePayload(BaseModel):
     progress: Optional[float] = 0.0
     season: Optional[int] = None
     episode: Optional[int] = None
+    next_season: Optional[int] = Field(None, alias="nextSeason")
+    next_episode: Optional[int] = Field(None, alias="nextEpisode")
     event: Optional[str] = "progress"
     title: Optional[str] = "Untitled"
     poster_path: Optional[str] = Field(None, alias="posterPath")

@@ -11,12 +11,19 @@ import { getContinueWatchingList, removeWatchProgress, getCleanMediaId, LocalPro
 import { User, Settings as SettingsIcon, LogOut, Trash2, Plus, Bookmark, Clock, Eye, Mail, Lock, PlayCircle, LogIn } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 function ProfilePageContent() {
+  const router = useRouter();
   const queryClient = useQueryClient();
-  const { user, activeProfile, profiles, settings, fetchProfiles, setActiveProfile, updateSettings, logout, setUser } = useUserStore();
+  const { user, activeProfile, profiles, settings, fetchProfiles, setActiveProfile, updateSettings, logout, setUser, initialized, loading } = useUserStore();
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (initialized && !loading && !user) {
+      router.replace('/login?redirect=%2Fprofile');
+    }
+  }, [initialized, loading, user, router]);
 
   const [authMode, setAuthMode] = useState<'login' | 'register'>(() => searchParams.get('mode') === 'register' ? 'register' : 'login');
   const [email, setEmail] = useState('');
@@ -96,11 +103,11 @@ function ProfilePageContent() {
       const seconds = Number(c.timestamp_seconds ?? 0);
       const duration = Number(c.duration_seconds ?? 0);
 
-      // Filter out completed (>= 92%)
-      if (percent >= 92.0 || (duration > 60 && seconds >= duration - 30)) return;
+      // Filter out completed (>= 90%)
+      if (percent >= 90.0 || (duration > 60 && seconds >= duration - 25)) return;
       
-      const isUpNextMarker = (c.media_type === 'tv' || c.season) && c.episode !== undefined && percent >= 1;
-      const hasWatchedContent = seconds >= 5 || percent >= 1.5;
+      const isUpNextMarker = (c.media_type === 'tv' || c.season) && c.episode !== undefined;
+      const hasWatchedContent = seconds >= 1 || percent > 0;
       if (!isUpNextMarker && !hasWatchedContent) return;
 
       const existing = map.get(cleanId);

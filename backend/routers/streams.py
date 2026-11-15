@@ -24,9 +24,9 @@ async def resolve_stream(
         return {"status": "success", "data": stream_data}
     except Exception as e:
         fallback_url = (
-            f"https://nxsha.screenscape.me/embed?tmdb={tmdb_id}&type=tv&s={season}&e={episode}&lan=hindi"
+            f"https://web.screenscape.fun/embed?tmdb={tmdb_id}&type=tv&s={season}&e={episode}&lan=hindi"
             if media_type == "tv"
-            else f"https://nxsha.screenscape.me/embed?tmdb={tmdb_id}&type=movie&lan=hindi"
+            else f"https://web.screenscape.fun/embed?tmdb={tmdb_id}&type=movie&lan=hindi"
         )
         return {
             "status": "fallback",

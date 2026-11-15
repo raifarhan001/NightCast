@@ -107,6 +107,7 @@ def login(response: Response, login_data: schemas.UserLogin, db: Session = Depen
 def logout(response: Response):
     is_prod = bool(os.getenv("VERCEL") or os.getenv("RENDER") or os.getenv("ENVIRONMENT") == "production")
     response.delete_cookie("access_token", path="/", httponly=True, samesite="lax", secure=is_prod)
+    response.delete_cookie("nightcast_token", path="/", samesite="lax")
     response.delete_cookie("profile_id", path="/", samesite="lax")
     return {"message": "Successfully logged out"}
 
@@ -120,6 +121,19 @@ def get_profiles(
     db: Session = Depends(get_db)
 ):
     profiles = db.query(models.Profile).filter(models.Profile.user_id == current_user.id).all()
+    if not profiles:
+        primary_profile = models.Profile(
+            user_id=current_user.id,
+            name="Primary Profile",
+            avatar_url="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256"
+        )
+        db.add(primary_profile)
+        db.commit()
+        db.refresh(primary_profile)
+        default_settings = models.Setting(profile_id=primary_profile.id)
+        db.add(default_settings)
+        db.commit()
+        profiles = [primary_profile]
     return profiles
 
 @router.post("/profiles", response_model=schemas.ProfileResponse)

@@ -1,14 +1,10 @@
 import asyncio
-import ipaddress
 import logging
-import socket
 import random
 from datetime import datetime, timezone
-from urllib.parse import urlparse
 from typing import List, Dict, Any
 import httpx
 from fastapi import APIRouter, Query, Response, HTTPException
-from fastapi.responses import HTMLResponse
 
 from services.tmdb_service import tmdb_client, MOCK_TV, MOCK_MOVIES
 from services.stream_extractor import stream_extractor
@@ -380,122 +376,9 @@ async def get_streams(
             tmdb_id=tmdb_id,
             season=season,
             episode=episode,
-            language_pref=language
+            language_pref=language_pref
         )
     except Exception as e:
         return {"servers": [], "streams": [], "error": str(e)}
 
-ALLOWED_PROXY_DOMAINS = {
-    "player.autoembed.cc",
-    "autoembed.cc",
-    "vidsrc.me",
-    "vidsrc.to",
-    "vidsrc.net",
-    "vidsrc.su",
-    "vidsrc.pm",
-    "vidsrc.cc",
-    "vidsrc.xyz",
-    "vidbolt.xyz",
-    "vidlink.pro",
-    "2embed.to",
-    "2embed.cc",
-    "embed.su",
-    "multiembed.mov",
-    "screenscape.me",
-    "nxsha.screenscape.me"
-}
-
-def validate_proxy_url(target_url: str):
-    parsed = urlparse(target_url)
-    if parsed.scheme not in ("http", "https"):
-        raise HTTPException(status_code=400, detail="Invalid URL scheme. Only HTTP/HTTPS allowed.")
-
-    hostname = (parsed.hostname or "").lower()
-    if not hostname:
-        raise HTTPException(status_code=400, detail="Invalid target hostname.")
-
-    # Guard against localhost, loopback, and cloud metadata addresses
-    if hostname in ("localhost", "127.0.0.1", "0.0.0.0", "::1", "169.254.169.254"):
-        raise HTTPException(status_code=403, detail="Access to local or cloud metadata network denied.")
-
-    # Restrict to verified streaming engine domains
-    is_allowed = any(hostname == d or hostname.endswith(f".{d}") for d in ALLOWED_PROXY_DOMAINS)
-    if not is_allowed:
-        raise HTTPException(status_code=403, detail=f"Domain '{hostname}' is not authorized for proxying.")
-
-    # Guard against private IP / DNS rebinding SSRF
-    try:
-        try:
-            ip = ipaddress.ip_address(hostname)
-            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
-                raise HTTPException(status_code=403, detail="Access to private or local networks denied.")
-        except ValueError:
-            # Resolved IP check for DNS rebinding protection
-            addr_info = socket.getaddrinfo(hostname, None)
-            for item in addr_info:
-                resolved_ip = item[4][0]
-                ip = ipaddress.ip_address(resolved_ip)
-                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
-                    raise HTTPException(status_code=403, detail="Access to private or local networks denied.")
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=400, detail="Could not safely resolve target hostname.")
-
-
-@router.get("/proxy-stream")
-async def proxy_stream(url: str):
-    validate_proxy_url(url)
-    try:
-        async with httpx.AsyncClient(follow_redirects=True, timeout=12.0, verify=True) as client:
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.5",
-            }
-            response = await client.get(url, headers=headers)
-            if response.status_code != 200:
-                raise HTTPException(status_code=response.status_code, detail=f"Failed to fetch target URL: Status {response.status_code}")
-            
-            html = response.text
-            parsed = urlparse(url)
-            base_url = f"{parsed.scheme}://{parsed.netloc}/"
-            
-            base_tag = f'<base href="{base_url}">'
-            if "<head>" in html:
-                html = html.replace("<head>", f"<head>{base_tag}", 1)
-            else:
-                html = f"<html><head>{base_tag}</head>{html}"
-                
-            return HTMLResponse(content=html, status_code=200)
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=502, detail="Failed to fetch proxy stream.")
-
-@router.get("/proxy-embed")
-async def proxy_embed(url: str):
-    validate_proxy_url(url)
-    try:
-        async with httpx.AsyncClient(follow_redirects=True, timeout=12.0, verify=True) as client:
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            }
-            res = await client.get(url, headers=headers)
-            
-            html = res.text
-            parsed = urlparse(url)
-            base_url = f"{parsed.scheme}://{parsed.netloc}/"
-            
-            base_tag = f'<base href="{base_url}">'
-            if "<head>" in html:
-                html = html.replace("<head>", f"<head>{base_tag}", 1)
-            else:
-                html = f"<html><head>{base_tag}</head>{html}"
-                
-            return Response(content=html, media_type="text/html")
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(status_code=502, detail="Failed to proxy embed stream.")
 

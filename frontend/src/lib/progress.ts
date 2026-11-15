@@ -307,8 +307,8 @@ export function getContinueWatchingList(profileId?: string | null): LocalProgres
       }
 
       // 2. Validate content has been engaged with or is up next marker
-      const isUpNextMarker = item.media_type === 'tv' && item.season !== undefined && item.episode !== undefined;
-      const hasWatchedContent = current >= 3 || progress >= 0.5;
+      const isUpNextMarker = (item.media_type === 'tv' || item.season !== undefined) && item.episode !== undefined;
+      const hasWatchedContent = current >= 1 || progress > 0;
 
       if (!isUpNextMarker && !hasWatchedContent) {
         const itemKey = item.media_type === 'tv'

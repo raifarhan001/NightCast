@@ -687,7 +687,7 @@ function HeaderContent() {
                 if (user) {
                   setIsProfileModalOpen(true);
                 } else {
-                  router.push("/profile?signin=1");
+                  router.push("/login");
                 }
               }}
               className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] backdrop-blur-2xl backdrop-saturate-150 border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.4)] text-[#F0F0F0] text-xs font-medium transition cursor-pointer active:scale-95 shrink-0 focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
