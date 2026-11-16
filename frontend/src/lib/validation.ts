@@ -35,7 +35,7 @@ export const ZodMovieDetailSchema = z.object({
   videos: z.object({
     results: z.array(ZodTrailerVideo).default([])
   }).optional().default({ results: [] })
-});
+}).passthrough();
 
 // --- TV Detail & Season Schemas ---
 export const ZodTvEpisode = z.object({
@@ -84,7 +84,7 @@ export const ZodTvDetailSchema = z.object({
   videos: z.object({
     results: z.array(ZodTrailerVideo).default([])
   }).optional().default({ results: [] })
-});
+}).passthrough();
 
 // --- Generic Media List Item (Rows & Search cards) ---
 export const ZodMediaItemSchema = z.object({
@@ -94,6 +94,9 @@ export const ZodMediaItemSchema = z.object({
   name: z.string().optional(),
   overview: z.string().nullable().optional().transform((val) => val || ''),
   backdrop_path: z.string().nullable().optional().default(null),
+  clean_backdrop_path: z.string().nullable().optional().default(null),
+  logo_path: z.string().nullable().optional().default(null),
+  has_en_title_backdrop: z.boolean().optional().default(false),
   poster_path: z.string().nullable().optional().default(null),
   vote_average: z.coerce.number().nullable().optional().transform((val) => val ?? 0),
   release_date: z.string().optional(),
@@ -101,8 +104,9 @@ export const ZodMediaItemSchema = z.object({
   genre_ids: z.array(z.coerce.number()).optional().default([]),
   genres: z.array(z.any()).optional().default([]),
   runtime: z.coerce.number().optional(),
-  score: z.coerce.number().optional()
-});
+  score: z.coerce.number().optional(),
+  tagline: z.string().optional()
+}).passthrough();
 
 export const ZodMediaListSchema = z.array(ZodMediaItemSchema);
 export type ZodMediaItem = z.infer<typeof ZodMediaItemSchema>;

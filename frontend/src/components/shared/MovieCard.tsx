@@ -1,48 +1,12 @@
 "use client";
 
-import React, { useState, useRef, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
-import { Play, Plus, Check, ThumbsUp, ChevronDown, X } from "lucide-react";
+import { X, Play, Star } from "lucide-react";
 import { ImageService } from "../../lib/ImageService";
 import { soundFx } from "../../lib/soundEffects";
-import { useAmbientStore } from "../../store/ambientStore";
-import { useUserStore } from "../../store/userStore";
-import { apiFetch } from "../../lib/api";
-import { triggerToast } from "../common/ToastNotification";
 import { getCleanMediaId } from "../../lib/progress";
-import PlatformBadge from "./PlatformBadge";
-
-export const TMDB_GENRES: Record<number, string> = {
-  28: "Action",
-  12: "Adventure",
-  16: "Animation",
-  35: "Comedy",
-  80: "Crime",
-  99: "Documentary",
-  18: "Drama",
-  10751: "Family",
-  14: "Fantasy",
-  23: "History",
-  24: "Horror",
-  10402: "Music",
-  9648: "Mystery",
-  10749: "Romantic",
-  878: "Sci-Fi",
-  10770: "TV Movie",
-  53: "Thriller",
-  10752: "War",
-  37: "Western",
-  10759: "Action & Adventure",
-  10762: "Kids",
-  10763: "News",
-  10764: "Reality",
-  10765: "Sci-Fi & Fantasy",
-  10766: "Soap",
-  10767: "Talk",
-  10768: "War & Politics",
-};
 
 interface MovieCardProps {
   item: {
@@ -68,6 +32,8 @@ interface MovieCardProps {
     content_rating?: string;
     ai_pitch?: string;
     ai_vibe_tag?: string;
+    has_en_title_backdrop?: boolean;
+    logo_path?: string | null;
   };
   subtitle?: string;
   isFirst?: boolean;
@@ -75,290 +41,110 @@ interface MovieCardProps {
   onRemove?: () => void;
 }
 
-let cachedWatchlistMap: Record<string, boolean> | null = null;
-let lastWatchlistCacheTime = 0;
-
-function getCachedWatchlistStatus(id: string | number): boolean {
-  if (typeof window === "undefined" || !id) return false;
-  const now = Date.now();
-  if (!cachedWatchlistMap || now - lastWatchlistCacheTime > 2000) {
-    try {
-      const stored = localStorage.getItem("nightcast_watchlist");
-      cachedWatchlistMap = stored ? JSON.parse(stored) : {};
-    } catch {
-      cachedWatchlistMap = {};
-    }
-    lastWatchlistCacheTime = now;
-  }
-  return !!cachedWatchlistMap?.[String(id)];
-}
-
-function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps) {
-  const [added, setAdded] = useState<boolean>(false);
-
-  useEffect(() => {
-    setAdded(getCachedWatchlistStatus(item.id));
-    const handleSync = (e: Event) => {
-      cachedWatchlistMap = null; // invalidate cache
-      const customEvent = e as CustomEvent<{ id: string | number; added: boolean }>;
-      if (customEvent.detail && String(customEvent.detail.id) === String(item.id)) {
-        setAdded(customEvent.detail.added);
-      }
-    };
-    window.addEventListener("nightcast:watchlist-update", handleSync);
-    return () => window.removeEventListener("nightcast:watchlist-update", handleSync);
-  }, [item.id]);
-
-  const [liked, setLiked] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-  const [align, setAlign] = useState<"left" | "center" | "right">("center");
-  const [openDownward, setOpenDownward] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const hoverTimerRef = useRef<NodeJS.Timeout | null>(null);
-
+function MovieCard({ item, subtitle, onRemove }: MovieCardProps) {
   const type = item.media_type || (item.season ? "tv" : (item.first_air_date ? "tv" : "movie"));
   const title = item.title || item.name || "Untitled";
-
   const [imgError, setImgError] = useState(false);
 
+  const cleanId = useMemo(() => getCleanMediaId(item.id), [item.id]);
+  const detailUrl = `/${type}/${cleanId}`;
+
+  // Horizontal style: Priority on English title-treated backdrop
   const rawImageUrl = item.backdrop_path
     ? ImageService.getBackdrop(item.backdrop_path, "w780", title)
     : item.poster_path
     ? ImageService.getPoster(item.poster_path, "w500", title)
     : null;
 
-  const imageUrl = imgError ? ImageService.FallbackImage('backdrop', title) : rawImageUrl;
+  const imageUrl = imgError ? ImageService.FallbackImage("backdrop", title) : rawImageUrl;
 
   const progress = Number(item.progress_percent ?? 0);
   const displayPercent = Math.max(1, Math.min(99, Math.round(progress)));
 
-  const defaultSubtitle = progress > 0
-    ? (item.season ? `S${item.season} E${item.episode || 1} • ${displayPercent}% completed` : `${displayPercent}% completed`)
-    : item.season
-    ? `Season ${item.season}, Episode ${item.episode || 1}`
-    : subtitle || (type === "tv" ? "TV Series" : "Movie");
-
-  // Dynamic Match percentage based on genuine TMDB vote average
-  const matchScore = useMemo(() => {
-    if (item.vote_average && item.vote_average > 0) {
-      return Math.min(99, Math.max(50, Math.round((item.vote_average / 10) * 100)));
-    }
-    return null;
-  }, [item.vote_average]);
-
-  // Genuine duration or seasons string
-  const durationText = useMemo(() => {
-    if (item.duration_seconds && item.duration_seconds > 0) {
-      const mins = Math.round(item.duration_seconds / 60);
-      const hrs = Math.floor(mins / 60);
-      const remMins = mins % 60;
-      return hrs > 0 ? `${hrs}h ${remMins}m` : `${mins}m`;
-    }
-    if (item.runtime && item.runtime > 0) {
-      const hrs = Math.floor(item.runtime / 60);
-      const remMins = item.runtime % 60;
-      return hrs > 0 ? `${hrs}h ${remMins}m` : `${item.runtime}m`;
-    }
-    if (type === "tv" && item.season) {
-      return item.season > 1 ? `${item.season} Seasons` : "1 Season";
-    }
-    return null;
-  }, [item.duration_seconds, item.runtime, item.season, type]);
-
-  // Genuine dot-separated genres list (up to 3)
-  const genresList: string[] = useMemo(() => {
-    if (Array.isArray(item.genres) && item.genres.length > 0) {
-      const parsed = item.genres
-        .map((g: any) => (typeof g === "string" ? g : g?.name))
-        .filter(Boolean)
-        .slice(0, 3);
-      if (parsed.length > 0) return parsed;
-    }
-    if (Array.isArray(item.genre_ids) && item.genre_ids.length > 0) {
-      const mapped = item.genre_ids
-        .map((id) => TMDB_GENRES[id])
-        .filter(Boolean)
-        .slice(0, 3);
-      if (mapped.length > 0) return mapped;
-    }
-    return [];
-  }, [item.genres, item.genre_ids]);
-
-  const ageRating = useMemo(() => {
-    if (item.adult) return "18+";
-    if (item.content_rating) return item.content_rating;
-    return null;
-  }, [item.adult, item.content_rating]);
-
-  const handleWatchlistClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    soundFx.playTap();
-
-    const nextState = !added;
-    setAdded(nextState);
-
-    // 1. Update localStorage nightcast_watchlist
-    try {
-      const stored = localStorage.getItem("nightcast_watchlist");
-      const map = stored ? JSON.parse(stored) : {};
-      const cleanId = String(item.id);
-
-      if (nextState) {
-        map[cleanId] = {
-          id: item.id,
-          media_id: cleanId,
-          title: title,
-          poster_path: item.poster_path || null,
-          backdrop_path: item.backdrop_path || null,
-          media_type: type,
-          vote_average: item.vote_average || 0,
-          release_date: item.release_date || item.first_air_date,
-        };
-      } else {
-        delete map[cleanId];
-      }
-      localStorage.setItem("nightcast_watchlist", JSON.stringify(map));
-    } catch (err) {
-      console.error("Failed to update local watchlist:", err);
-    }
-
-    // 2. Call backend /api/user/favorites if logged in
-    const activeProfile = useUserStore.getState().activeProfile;
-    if (activeProfile && item.id) {
-      const cleanId = String(item.id);
-      if (nextState) {
-        apiFetch("/api/user/favorites", {
-          method: "POST",
-          headers: { "X-Profile-ID": activeProfile.id },
-          body: JSON.stringify({
-            media_id: cleanId,
-            media_type: type,
-            title: title,
-            poster_path: item.poster_path || "",
-          }),
-        }).catch((err) => console.error("Failed to save backend favorite:", err));
-      } else {
-        apiFetch(`/api/user/favorites/${cleanId}`, {
-          method: "DELETE",
-          headers: { "X-Profile-ID": activeProfile.id },
-        }).catch((err) => console.error("Failed to delete backend favorite:", err));
-      }
-    }
-
-    // 3. Dispatch real-time custom event for all cards and pages
-    window.dispatchEvent(
-      new CustomEvent("nightcast:watchlist-update", {
-        detail: { id: item.id, added: nextState },
-      })
-    );
-
-    // 4. Trigger visual feedback toast
-    triggerToast(nextState ? `Added "${title}" to Watchlist` : `Removed "${title}" from Watchlist`, "success");
-  }, [added, item, title, type]);
-
-  const handleLikeClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    soundFx.playTap();
-    setLiked(!liked);
-  };
-
-  const handleMouseEnter = () => {
-    soundFx.playHover();
-    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-    hoverTimerRef.current = setTimeout(() => {
-      const backdrop = item.backdrop_path || item.poster_path;
-      if (backdrop) {
-        useAmbientStore.getState().setActiveBackdrop(backdrop, title);
-      }
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setOpenDownward(rect.top < 120);
-      }
-      setIsHovered(true);
-    }, 280);
-
-    if (isFirst) {
-      setAlign("left");
-    } else if (isLast) {
-      setAlign("right");
-    } else {
-      setAlign("center");
-    }
-  };
-
-  const handleMouseLeave = () => {
-    useAmbientStore.getState().clearActiveBackdrop(400);
-    if (hoverTimerRef.current) {
-      clearTimeout(hoverTimerRef.current);
-      hoverTimerRef.current = null;
-    }
-    setIsHovered(false);
-  };
-
-  const cleanId = useMemo(() => getCleanMediaId(item.id), [item.id]);
-
-  const watchUrl = useMemo(() => {
-    const params = new URLSearchParams();
-    if (item.season) params.set("season", item.season.toString());
-    if (item.episode) params.set("episode", (item.episode || 1).toString());
-    if (item.timestamp_seconds && Number(item.timestamp_seconds) > 3) {
-      params.set("time", Math.floor(Number(item.timestamp_seconds)).toString());
-    }
-    const qs = params.toString();
-    return `/watch/${type}/${cleanId}${qs ? `?${qs}` : ""}`;
-  }, [type, cleanId, item.season, item.episode, item.timestamp_seconds]);
-  const detailUrl = `/${type}/${cleanId}`;
-
-  const positionClasses = useMemo(() => {
-    const vOffset = openDownward ? "top-2 sm:top-4" : "-top-10 sm:-top-12";
-    if (align === "left") {
-      return `${vOffset} left-0 w-[280px] sm:w-[310px] md:w-[330px] origin-top-left`;
-    }
-    if (align === "right") {
-      return `${vOffset} right-0 w-[280px] sm:w-[310px] md:w-[330px] origin-top-right`;
-    }
-    return `${vOffset} left-1/2 -translate-x-1/2 w-[280px] sm:w-[310px] md:w-[330px] origin-top`;
-  }, [align, openDownward]);
+  const releaseYear = (item.release_date || item.first_air_date || "").split("-")[0] || "";
+  const typeLabel = type === "tv" ? "SERIES" : "MOVIE";
+  const rating = item.vote_average && item.vote_average > 0 ? item.vote_average.toFixed(1) : null;
 
   return (
-    <div
-      ref={containerRef}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      className={`w-[220px] sm:w-[250px] md:w-[270px] min-w-[220px] sm:min-w-[250px] md:min-w-[270px] max-w-[220px] sm:max-w-[250px] md:max-w-[270px] shrink-0 select-none snap-start relative ${
-        isHovered ? "z-50" : "z-10"
-      }`}
-    >
-      {/* Default Base Card */}
+    <div className="w-[240px] sm:w-[280px] md:w-[310px] min-w-[240px] sm:min-w-[280px] md:min-w-[310px] max-w-[240px] sm:max-w-[280px] md:max-w-[310px] shrink-0 select-none snap-start relative transform-gpu">
+      {/* Isolated per-card group: group/card ensures hover only affects THIS specific card */}
       <Link
-        href={watchUrl}
-        aria-label={`Watch ${title}`}
-        className="group block cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B]"
+        href={detailUrl}
+        onClick={() => soundFx.playTap()}
+        aria-label={`View details for ${title}`}
+        className="group/card block cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B] transform-gpu"
       >
-        <div className="cinema-card-landscape w-full rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.6)] relative">
+        <div className="cinema-card-landscape w-full rounded-2xl relative overflow-hidden transform-gpu will-change-transform">
           {imageUrl ? (
             <Image
               src={imageUrl}
-              alt={`${title} poster`}
+              alt={`${title} backdrop`}
               fill
-              sizes="(max-width: 768px) 250px, 270px"
-              className="object-cover rounded-2xl opacity-100 brightness-[0.96]"
+              sizes="(max-width: 768px) 280px, 310px"
+              decoding="async"
+              draggable={false}
+              className="object-cover rounded-2xl opacity-100 brightness-[0.96] select-none pointer-events-none transform-gpu will-change-transform transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/card:scale-106 group-hover/card:brightness-[1.03]"
               loading="lazy"
               placeholder="blur"
               blurDataURL={ImageService.getBlurHash()}
               onError={() => setImgError(true)}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-[#A4C8E1]/60 text-xs font-mono font-medium p-3 text-center bg-white/[0.04] backdrop-blur-md rounded-2xl">
+            <div className="w-full h-full flex items-center justify-center text-white/60 text-xs font-mono font-medium p-3 text-center bg-white/[0.04] backdrop-blur-md rounded-2xl">
               {title}
             </div>
           )}
 
-          {/* Dynamic Streaming Platform Tag Top Left */}
-          <div className="absolute top-2.5 left-2.5 z-20 pointer-events-none transition-transform duration-200">
-            <PlatformBadge item={item} />
+          {/* Fallback Studio Logo or Clean Title for cards without English-treated backdrops */}
+          {!item.has_en_title_backdrop && (
+            <div className="absolute inset-x-0 bottom-0 p-3 sm:p-3.5 bg-gradient-to-t from-black/90 via-black/45 to-transparent pointer-events-none z-10 transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/card:opacity-0 group-hover/card:translate-y-2">
+              {item.logo_path ? (
+                <div className="relative h-6 sm:h-7 w-auto max-w-[160px] sm:max-w-[200px] aspect-[3/1]">
+                  <Image
+                    src={item.logo_path.startsWith("http") ? item.logo_path : `https://image.tmdb.org/t/p/w300${item.logo_path}`}
+                    alt={title}
+                    fill
+                    sizes="200px"
+                    className="object-contain object-left filter drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]"
+                  />
+                </div>
+              ) : (
+                <h4 className="text-white font-black text-xs sm:text-sm uppercase tracking-wider drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)] line-clamp-1">
+                  {title}
+                </h4>
+              )}
+            </div>
+          )}
+
+          {/* Hover Overlay: ONLY shows on the single hovered card with smooth staggered entrance */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/20 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 ease-out pointer-events-none flex items-end p-3 sm:p-3.5 z-20">
+            <div className="w-full flex items-center gap-2.5 min-w-0 transform-gpu translate-y-3 opacity-0 group-hover/card:translate-y-0 group-hover/card:opacity-100 transition-all duration-320 ease-[cubic-bezier(0.22,1,0.36,1)]">
+              {/* White Circular Play Button with spring bounce */}
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white flex items-center justify-center shrink-0 shadow-[0_4px_16px_rgba(255,255,255,0.4)] transform-gpu scale-75 group-hover/card:scale-100 active:scale-90 transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]">
+                <Play className="w-3.5 h-3.5 fill-black text-black ml-0.5" />
+              </div>
+
+              {/* Title & Metadata Details */}
+              <div className="min-w-0 flex-1 space-y-0.5 transform-gpu translate-y-1 group-hover/card:translate-y-0 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] delay-75">
+                <h4 className="text-white font-bold text-xs sm:text-sm leading-snug truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]">
+                  {title}
+                </h4>
+                <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-neutral-300 font-medium drop-shadow">
+                  {releaseYear && <span>{releaseYear}</span>}
+                  {releaseYear && <span className="text-neutral-500">•</span>}
+                  <span className="uppercase tracking-wider font-semibold text-[#A4C8E1]">{typeLabel}</span>
+                  {rating && rating !== "0.0" && (
+                    <>
+                      <span className="text-neutral-500">•</span>
+                      <span className="flex items-center gap-1 text-amber-400 font-semibold">
+                        <Star className="w-3 h-3 fill-amber-400 text-amber-400 shrink-0" />
+                        <span className="text-neutral-200">{rating}</span>
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Dismiss from Continue Watching Button */}
@@ -368,9 +154,10 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                soundFx.playTap();
                 onRemove();
               }}
-              className="absolute top-2.5 right-2.5 z-40 w-7 h-7 rounded-full bg-[#0B131B]/70 hover:bg-rose-600/90 text-[#F0F0F0]/80 hover:text-white border border-white/[0.15] hover:border-rose-400 backdrop-blur-xl flex items-center justify-center transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_4px_12px_rgba(0,0,0,0.5)] group-hover:opacity-100 sm:opacity-0 opacity-100 cursor-pointer"
+              className="absolute top-2.5 right-2.5 z-30 w-7 h-7 rounded-full bg-black/75 hover:bg-rose-600 text-white/80 hover:text-white border border-white/15 opacity-0 group-hover/card:opacity-100 flex items-center justify-center transition-all cursor-pointer shadow-md pointer-events-auto"
               title="Remove from Continue Watching"
               aria-label="Remove from Continue Watching"
             >
@@ -378,219 +165,28 @@ function MovieCard({ item, subtitle, isFirst, isLast, onRemove }: MovieCardProps
             </button>
           )}
 
-          {/* AI Vibe Tag Top Right */}
-          {!onRemove && item.ai_vibe_tag && (
-            <div className="absolute top-2.5 right-2.5 z-20 pointer-events-none">
-              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#39AEA9]/30 text-[#39AEA9] backdrop-blur-xl border border-[#39AEA9]/40 shadow-[0_0_10px_rgba(57,174,169,0.3)]">
-                ✨ {item.ai_vibe_tag}
-              </span>
-            </div>
-          )}
-
-
-
-          {/* Progress Bar (if watched) */}
+          {/* Progress Bar (if in continue watching) */}
           {progress > 0 && (
-            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-[#0B131B]/80 z-30 overflow-hidden rounded-b-2xl">
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/80 z-30 overflow-hidden">
               <div
-                className="h-full bg-[#A4C8E1] shadow-[0_0_8px_rgba(164,200,225,0.8)] origin-left transition-transform duration-300 ease-out"
+                className="h-full bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.8)] origin-left transition-transform duration-300 ease-out"
                 style={{ transform: `scaleX(${Math.max(0.02, Math.min(1, displayPercent / 100))})` }}
               />
             </div>
           )}
         </div>
-
-        {/* Card Title & Subtitle */}
-        <div className="w-full min-w-0 pt-2.5 px-2.5 sm:px-3 space-y-0.5 overflow-hidden">
-          <h4 className="text-xs sm:text-sm font-sans font-semibold text-[#F0F0F0] truncate block w-full group-hover:text-[#A4C8E1] transition-colors duration-200">
-            {title}
-          </h4>
-          <p className="text-[11px] font-sans text-[#8FA8AD] group-hover:text-[#A4C8E1]/75 truncate block w-full transition-colors">{defaultSubtitle}</p>
-        </div>
       </Link>
-
-      {/* Netflix-Style Hover Preview Pop-Up Card with Fluid Spring Motion */}
-      <AnimatePresence>
-        {isHovered && (
-          <div
-            className={`absolute ${positionClasses} z-50 pointer-events-auto`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.94, y: openDownward ? -4 : 6 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{
-                opacity: 0,
-                scale: 0.96,
-                transition: { duration: 0.16, ease: [0.16, 1, 0.3, 1] },
-              }}
-              transition={{
-                duration: 0.22,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              style={{
-                transformOrigin:
-                  align === "left"
-                    ? (openDownward ? "top left" : "bottom left")
-                    : align === "right"
-                    ? (openDownward ? "top right" : "bottom right")
-                    : (openDownward ? "top center" : "bottom center"),
-              }}
-              className="w-full bg-[#0B131B]/95 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.95)] border border-white/[0.12] overflow-hidden"
-            >
-              {/* Top Banner: High-Res Cinema Artwork / Poster */}
-              <div className="relative aspect-video w-full bg-[#0B131B] overflow-hidden group/thumb">
-                <Link href={watchUrl} aria-label={`Play ${title}`} className="block w-full h-full relative cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]">
-                  {imageUrl ? (
-                    <Image
-                      src={imageUrl}
-                      alt={`${title} preview cover`}
-                      fill
-                      sizes="340px"
-                      className="object-cover transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/thumb:scale-105 brightness-[0.98]"
-                      placeholder="blur"
-                      blurDataURL={ImageService.getBlurHash()}
-                      onError={() => setImgError(true)}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-xs text-[#8FA8AD] font-mono">
-                      {title}
-                    </div>
-                  )}
-                </Link>
-
-                {/* Platform Tag Top Left */}
-                <div className="absolute top-2.5 left-2.5 z-20 pointer-events-none">
-                  <PlatformBadge item={item} />
-                </div>
-
-                {/* Dismiss from Continue Watching if applicable */}
-                {onRemove && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      soundFx.playTap();
-                      onRemove();
-                    }}
-                    className="absolute top-2.5 right-2.5 z-30 w-7 h-7 rounded-full bg-[#0B131B]/70 hover:bg-rose-600/90 text-[#F0F0F0]/80 hover:text-white border border-white/[0.15] backdrop-blur-xl flex items-center justify-center transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_4px_12px_rgba(0,0,0,0.5)] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
-                    title="Remove from Continue Watching"
-                    aria-label="Remove from Continue Watching"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-
-                {/* Progress bar on popup image */}
-                {progress > 0 && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#0B131B]/80 z-20">
-                    <div
-                      className="h-full bg-[#39AEA9] shadow-[0_0_8px_rgba(57,174,169,0.8)]"
-                      style={{ width: `${Math.max(2, Math.min(100, displayPercent))}%` }}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Details Section (Frosted Glass Layout with Rounded Bottom) */}
-              <div className="p-3 sm:p-3.5 space-y-2.5 bg-white/[0.04] backdrop-blur-2xl rounded-b-2xl sm:rounded-b-3xl border-t border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
-                {/* Row 1: Action Controls */}
-                <div className="flex items-center gap-2">
-                  {/* Primary Platinum Play Button */}
-                  <Link
-                    href={watchUrl}
-                    onClick={() => soundFx.playTap()}
-                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#F0F0F0] hover:bg-white text-[#0B131B] flex items-center justify-center shadow-[inset_0_1px_1px_rgba(255,255,255,0.6),0_0_16px_rgba(240,240,240,0.35)] transform-gpu active:scale-[0.92] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
-                    title="Play Now"
-                    aria-label={`Play ${title} now`}
-                  >
-                    <Play className="w-4 h-4 fill-[#0B131B] text-[#0B131B] ml-0.5" />
-                  </Link>
-
-                  {/* Add to Watchlist Button */}
-                  <button
-                    type="button"
-                    onClick={handleWatchlistClick}
-                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/[0.12] hover:border-white/[0.28] text-[#F0F0F0] hover:text-white flex items-center justify-center transform-gpu active:scale-[0.92] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer shrink-0 backdrop-blur-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_4px_16px_rgba(0,0,0,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
-                    title={added ? "In Watchlist" : "Add to Watchlist"}
-                    aria-label={added ? "Remove from Watchlist" : "Add to Watchlist"}
-                  >
-                    {added ? <Check className="w-4 h-4 text-[#39AEA9]" /> : <Plus className="w-4 h-4 text-[#F0F0F0]" />}
-                  </button>
-
-                  {/* Like / ThumbsUp Button */}
-                  <button
-                    type="button"
-                    onClick={handleLikeClick}
-                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/[0.12] hover:border-white/[0.28] text-[#F0F0F0] hover:text-white flex items-center justify-center transform-gpu active:scale-[0.92] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer shrink-0 backdrop-blur-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_4px_16px_rgba(0,0,0,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
-                    title="Like"
-                    aria-label="Like title"
-                  >
-                    <ThumbsUp className={`w-4 h-4 ${liked ? "text-[#39AEA9] fill-current" : "text-[#F0F0F0]"}`} />
-                  </button>
-
-                  {/* Chevron Down Button (Right Aligned - More Info) */}
-                  <Link
-                    href={detailUrl}
-                    onClick={() => soundFx.playTap()}
-                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/[0.08] hover:bg-white/[0.16] border border-white/[0.12] hover:border-white/[0.28] text-[#F0F0F0] hover:text-white flex items-center justify-center ml-auto transform-gpu active:scale-[0.92] transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer shrink-0 backdrop-blur-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_4px_16px_rgba(0,0,0,0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
-                    title="More info"
-                    aria-label={`More info about ${title}`}
-                  >
-                    <ChevronDown className="w-4 h-4 text-[#F0F0F0]" />
-                  </Link>
-                </div>
-
-                {/* Row 2: Match %, Age Rating, Duration, Quality Badge */}
-                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-xs font-sans">
-                  {matchScore !== null && (
-                    <span className="text-[#39AEA9] font-bold text-xs drop-shadow-[0_0_8px_rgba(57,174,169,0.5)]">
-                      {matchScore}% match
-                    </span>
-                  )}
-                  {ageRating && (
-                    <span className="border border-white/[0.12] bg-white/[0.08] px-1.5 py-0.5 rounded text-[10px] font-semibold text-[#F0F0F0] backdrop-blur-md">
-                      {ageRating}
-                    </span>
-                  )}
-                  {durationText && (
-                    <span className="text-[#8FA8AD] font-medium text-[11px]">
-                      {durationText}
-                    </span>
-                  )}
-                  <span className="border border-white/[0.12] bg-white/[0.08] text-[#A4C8E1] px-1.5 py-0.5 rounded text-[9px] font-bold tracking-wider backdrop-blur-md">
-                    4K UHD
-                  </span>
-                </div>
-
-                {/* Row 3: Genres (Dot-separated) */}
-                {genresList.length > 0 && (
-                  <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-[#F0F0F0]/85 font-sans font-medium pt-0.5 pb-1">
-                    {genresList.map((g, idx) => (
-                      <React.Fragment key={g}>
-                        <span>{g}</span>
-                        {idx < genresList.length - 1 && (
-                          <span className="text-[#8FA8AD]">•</span>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </div>
-                )}
-
-                {/* AI Pitch Quote */}
-                {item.ai_pitch && (
-                  <div className="pt-1.5 text-[11px] text-[#A4C8E1] italic font-sans border-t border-white/[0.08] line-clamp-2 leading-relaxed">
-                    &ldquo;{item.ai_pitch}&rdquo;
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
 
-export default React.memo(MovieCard);
+export default React.memo(MovieCard, (prev, next) => {
+  return (
+    prev.item.id === next.item.id &&
+    prev.item.backdrop_path === next.item.backdrop_path &&
+    prev.item.poster_path === next.item.poster_path &&
+    prev.item.logo_path === next.item.logo_path &&
+    prev.item.has_en_title_backdrop === next.item.has_en_title_backdrop &&
+    prev.item.progress_percent === next.item.progress_percent
+  );
+});

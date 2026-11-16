@@ -81,13 +81,16 @@ function HeaderContent() {
   const [isScrolled, setIsScrolled] = useState(false);
   const lastScrollYRef = useRef(0);
 
-  // Auto-hide header on scroll down, smoothly reveal on scroll up or top
+  // Auto-hide header on scroll down, smoothly reveal on scroll up or top (60fps rAF throttled)
   useEffect(() => {
     const isWatch = pathname.startsWith('/watch');
+    let ticking = false;
+    let rafId: number | null = null;
 
-    const handleScroll = () => {
+    const updateScroll = () => {
       const currentScrollY = window.scrollY;
-      setIsScrolled(currentScrollY > 15);
+      const shouldBeScrolled = currentScrollY > 15;
+      setIsScrolled((prev) => (prev !== shouldBeScrolled ? shouldBeScrolled : prev));
 
       if (isWatch) {
         // On watch page: hide header on any downward scroll past 25px
@@ -120,10 +123,23 @@ function HeaderContent() {
       }
 
       lastScrollYRef.current = currentScrollY;
+      ticking = false;
+    };
+
+    const handleScroll = () => {
+      if (!ticking) {
+        rafId = window.requestAnimationFrame(updateScroll);
+        ticking = true;
+      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+    };
   }, [pathname]);
 
   // Reset dropdowns and restore header visibility on route change
@@ -261,12 +277,18 @@ function HeaderContent() {
     }
     if (searchQuery.trim()) {
       setIsSuggestionsOpen(false);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("nightcast:start-loading"));
+      }
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}${isAiMode ? '&ai=true' : ''}`);
     }
   };
 
   const handleSelectSuggestion = (item: MediaItem) => {
     const mediaType = item.media_type || (item.title ? "movie" : "tv");
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("nightcast:start-loading"));
+    }
     router.push(`/watch/${mediaType}/${item.id}`);
     setIsSuggestionsOpen(false);
     setSearchQuery("");
@@ -515,9 +537,12 @@ function HeaderContent() {
                         key={g.id}
                         onClick={() => {
                           setIsFilterOpen(false);
+                          if (typeof window !== "undefined") {
+                            window.dispatchEvent(new CustomEvent("nightcast:start-loading"));
+                          }
                           router.push(`/search?genre=${g.id}`);
                         }}
-                        className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/[0.06] hover:bg-white/[0.14] text-[#F0F0F0] border border-white/[0.1] hover:border-white/[0.22] backdrop-blur-md transition"
+                        className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/[0.06] hover:bg-white/[0.14] text-[#F0F0F0] border border-white/[0.1] hover:border-white/[0.22] backdrop-blur-md transition cursor-pointer active:scale-95"
                       >
                         {g.name}
                       </button>

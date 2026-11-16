@@ -28,10 +28,52 @@ MOCK_ASSETS = {
     "severance_backdrop": "/39bifj2FNytJ2m1cqOBcWMTKgmV.jpg",
     "severance_poster": "/6rWIip9MZELAA0SKii5WqsBDCYW.jpg",
     "creator_backdrop": "/8VyTWJrNEyV2MTWvniDVp0MpOAe.jpg",
-    "creator_poster": "/cpf7vsRZ0MYRQcnLWteD5jK9ymT.jpg"
+    "creator_poster": "/cpf7vsRZ0MYRQcnLWteD5jK9ymT.jpg",
+    "heart_of_the_beast_backdrop": "/nlqHh1zGH8HYERr4eRICN9ligk.jpg",
+    "heart_of_the_beast_poster": "/6sYemVUn79UPKz1ZsSG6kPU4RVy.jpg",
+    "resident_evil_backdrop": "/qBzH6VAkjYTGP4MGvMYGasu8ZA0.jpg",
+    "resident_evil_poster": "/gAgWJhUSQWCgtKR8170nMkYlBda.jpg",
+    "other_mommy_backdrop": "/zNaLP9XKRGdLYdKiLjEap5zqYWt.jpg",
+    "other_mommy_poster": "/fGRNCssTRrhYZxNzykGGCoMsAVq.jpg"
 }
 
 MOCK_MOVIES = {
+    "1263337": {
+        "id": 1263337,
+        "title": "Heart of the Beast",
+        "overview": "A retired soldier and his combat canine search for redemption across a perilous wilderness.",
+        "backdrop_path": "/nlqHh1zGH8HYERr4eRICN9ligk.jpg",
+        "poster_path": "/6sYemVUn79UPKz1ZsSG6kPU4RVy.jpg",
+        "release_date": "2026-01-15",
+        "vote_average": 7.6,
+        "runtime": 114,
+        "genres": [{"id": 28, "name": "Action"}, {"id": 18, "name": "Drama"}],
+        "has_en_title_backdrop": True
+    },
+    "1423191": {
+        "id": 1423191,
+        "title": "Resident Evil",
+        "overview": "Medical courier Bryan unwittingly finds himself fighting for survival as one fateful night collapses into chaos.",
+        "backdrop_path": "/qBzH6VAkjYTGP4MGvMYGasu8ZA0.jpg",
+        "poster_path": "/gAgWJhUSQWCgtKR8170nMkYlBda.jpg",
+        "release_date": "2026-03-01",
+        "vote_average": 7.5,
+        "runtime": 94,
+        "genres": [{"id": 27, "name": "Horror"}, {"id": 878, "name": "Science Fiction"}, {"id": 12, "name": "Adventure"}],
+        "has_en_title_backdrop": True
+    },
+    "1400837": {
+        "id": 1400837,
+        "title": "Other Mommy",
+        "overview": "A sinister presence infiltrates a fractured family with nightmarish intentions.",
+        "backdrop_path": "/zNaLP9XKRGdLYdKiLjEap5zqYWt.jpg",
+        "poster_path": "/fGRNCssTRrhYZxNzykGGCoMsAVq.jpg",
+        "release_date": "2026-02-14",
+        "vote_average": 7.4,
+        "runtime": 102,
+        "genres": [{"id": 27, "name": "Horror"}, {"id": 53, "name": "Thriller"}],
+        "has_en_title_backdrop": True
+    },
     "157336": {
         "id": 157336,
         "title": "Interstellar",
@@ -179,6 +221,7 @@ class TMDBClient:
         self.api_key = settings.TMDB_API_KEY
         self._client: Optional[httpx.AsyncClient] = None
         self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._details_cache: Dict[str, Dict[str, Any]] = {}
 
     def is_configured(self) -> bool:
         return bool(self.api_key and self.api_key.strip())
@@ -195,8 +238,8 @@ class TMDBClient:
             or self._loop is not current_loop
         ):
             self._client = httpx.AsyncClient(
-                timeout=httpx.Timeout(25.0, connect=12.0, read=20.0),
-                limits=httpx.Limits(max_keepalive_connections=25, max_connections=50),
+                timeout=httpx.Timeout(15.0, connect=4.0, read=10.0),
+                limits=httpx.Limits(max_keepalive_connections=50, max_connections=100, keepalive_expiry=60.0),
                 follow_redirects=True
             )
             self._loop = current_loop
@@ -218,7 +261,7 @@ class TMDBClient:
 
         url = f"{TMDB_BASE_URL}{endpoint}"
         
-        # Redis caching layer
+        # Redis / Disk persistent caching layer
         cache_key = f"tmdb:{endpoint}:{sorted(params.items())}"
         try:
             cached_result = await redis_cache.get(cache_key)
@@ -228,14 +271,14 @@ class TMDBClient:
             pass
 
         client = self.get_client()
-        backoffs = [0.8, 1.8, 3.0]
+        backoffs = [0.2, 0.5]
         for attempt, delay in enumerate(backoffs + [0], start=1):
             try:
                 response = await client.get(url, params=params)
                 response.raise_for_status()
                 data = response.json()
                 try:
-                    await redis_cache.set(cache_key, data, expire_seconds=21600)
+                    await redis_cache.set(cache_key, data, expire_seconds=86400)
                 except Exception:
                     pass
                 return data
@@ -295,6 +338,22 @@ class TMDBClient:
             return [{**item, "media_type": media_type, "title": item.get("title") or item.get("name")} for item in sorted_items]
 
     async def get_details(self, media_type: str, tmdb_id: str) -> Dict[str, Any]:
+        cache_key = f"{media_type}:{tmdb_id}"
+
+        # 1. Level 1: In-memory detail cache (< 0.1ms latency, 0ms repeat clicks)
+        if cache_key in self._details_cache:
+            return self._details_cache[cache_key]
+
+        # 2. Level 2: Persistent redis / disk cache (< 2ms latency)
+        redis_detail_key = f"tmdb:detail:{cache_key}"
+        try:
+            cached_detail = await redis_cache.get(redis_detail_key)
+            if cached_detail and isinstance(cached_detail, dict) and (cached_detail.get("id") or cached_detail.get("title") or cached_detail.get("name")):
+                self._details_cache[cache_key] = cached_detail
+                return cached_detail
+        except Exception:
+            pass
+
         try:
             endpoint = f"/{media_type}/{tmdb_id}"
             # Fetch details, credits, and videos in ONE single HTTP request using append_to_response!
@@ -305,6 +364,17 @@ class TMDBClient:
             details["crew"] = credits.get("crew", [])[:5]
             if "videos" not in details or not details["videos"]:
                 details["videos"] = {"results": []}
+
+            # Cache formatted details in fast memory and persistent store (7 days TTL)
+            if len(self._details_cache) >= 1000:
+                for k in list(self._details_cache.keys())[:200]:
+                    self._details_cache.pop(k, None)
+            self._details_cache[cache_key] = details
+
+            try:
+                await redis_cache.set(redis_detail_key, details, expire_seconds=604800)
+            except Exception:
+                pass
                 
             return details
         except Exception:
@@ -313,7 +383,7 @@ class TMDBClient:
             if not item:
                 # Generate generic mock item if ID not in standard mock list
                 is_movie = media_type == "movie"
-                return {
+                item = {
                     "id": int(tmdb_id) if str(tmdb_id).isdigit() else 0,
                     "title" if is_movie else "name": f"Mock {media_type.capitalize()} {tmdb_id}",
                     "overview": f"This is an elegant showcase movie representing TMDB identifier {tmdb_id}. Curated for cinematic preview details.",
@@ -327,6 +397,7 @@ class TMDBClient:
                     "crew": [{"name": "Director A24", "job": "Director"}],
                     "seasons": [{"season_number": 1, "episode_count": 8, "name": "Season 1"}] if not is_movie else None
                 }
+            self._details_cache[cache_key] = item
             return item
 
     async def search(self, query: str, media_type: str = "multi") -> List[Dict[str, Any]]:
@@ -357,5 +428,122 @@ class TMDBClient:
                 if m_id != str(tmdb_id):
                     rec_list.append({**val, "media_type": media_type, "title": val.get("title") or val.get("name")})
             return rec_list
+
+    async def get_english_backdrop(self, media_id: int, media_type: str = "movie") -> Optional[str]:
+        """Fetches and caches the official English title-branded backdrop for a movie or TV show."""
+        cache_key = f"tmdb:en_bd:{media_type}:{media_id}"
+        try:
+            cached = await redis_cache.get(cache_key)
+            if cached:
+                return cached
+        except Exception:
+            pass
+
+        try:
+            data = await self.get_request(
+                f"/{media_type}/{media_id}/images",
+                params={"include_image_language": "en,null"}
+            )
+            backdrops = data.get("backdrops", [])
+            en_backdrops = [
+                b["file_path"] for b in backdrops
+                if b.get("iso_639_1") == "en" and b.get("file_path")
+            ]
+            if en_backdrops:
+                en_path = en_backdrops[0]
+                try:
+                    await redis_cache.set(cache_key, en_path, expire_seconds=86400 * 14)
+                except Exception:
+                    pass
+                return en_path
+        except Exception as e:
+            logger.debug(f"Could not fetch EN backdrop for {media_type} {media_id}: {e}")
+
+        return None
+
+    async def get_media_branding(self, media_id: int, media_type: str = "movie") -> Dict[str, Any]:
+        """
+        Fetches official English title-branded backdrop if available,
+        or transparent studio logo as fallback.
+        """
+        cache_key = f"tmdb:branding:{media_type}:{media_id}"
+        try:
+            cached = await redis_cache.get(cache_key)
+            if cached and isinstance(cached, dict):
+                return cached
+        except Exception:
+            pass
+
+        branding = {"en_backdrop_path": None, "logo_path": None, "has_en_title_backdrop": False}
+        try:
+            data = await self.get_request(
+                f"/{media_type}/{media_id}/images",
+                params={"include_image_language": "en,null"}
+            )
+            backdrops = data.get("backdrops", [])
+            en_backdrops = [
+                b["file_path"] for b in backdrops
+                if b.get("iso_639_1") == "en" and b.get("file_path")
+            ]
+            if en_backdrops:
+                branding["en_backdrop_path"] = en_backdrops[0]
+                branding["has_en_title_backdrop"] = True
+
+            logos = data.get("logos", [])
+            en_logos = [l["file_path"] for l in logos if l.get("iso_639_1") == "en" and l.get("file_path")]
+            any_logos = [l["file_path"] for l in logos if l.get("file_path")]
+            if en_logos:
+                branding["logo_path"] = en_logos[0]
+            elif any_logos:
+                branding["logo_path"] = any_logos[0]
+
+            try:
+                await redis_cache.set(cache_key, branding, expire_seconds=86400 * 14)
+            except Exception:
+                pass
+        except Exception as e:
+            logger.debug(f"Could not fetch branding for {media_type} {media_id}: {e}")
+
+        return branding
+
+    async def get_hero_assets(self, media_id: int, media_type: str = "movie") -> Dict[str, Optional[str]]:
+        """Fetches clean textless backdrop and transparent studio logo for hero presentation."""
+        cache_key = f"tmdb:hero_assets:{media_type}:{media_id}"
+        try:
+            cached = await redis_cache.get(cache_key)
+            if cached and isinstance(cached, dict):
+                return cached
+        except Exception:
+            pass
+
+        result = {"clean_backdrop_path": None, "logo_path": None}
+        try:
+            data = await self.get_request(
+                f"/{media_type}/{media_id}/images",
+                params={"include_image_language": "en,null"}
+            )
+            backdrops = data.get("backdrops", [])
+            # Priority: Textless clean backdrop (iso_639_1 is None or empty)
+            clean_bds = [b["file_path"] for b in backdrops if not b.get("iso_639_1") and b.get("file_path")]
+            if clean_bds:
+                result["clean_backdrop_path"] = clean_bds[0]
+
+            # Studio transparent PNG logos: en first, then any
+            logos = data.get("logos", [])
+            en_logos = [l["file_path"] for l in logos if l.get("iso_639_1") == "en" and l.get("file_path")]
+            any_logos = [l["file_path"] for l in logos if l.get("file_path")]
+            if en_logos:
+                result["logo_path"] = en_logos[0]
+            elif any_logos:
+                result["logo_path"] = any_logos[0]
+
+            try:
+                await redis_cache.set(cache_key, result, expire_seconds=86400 * 14)
+            except Exception:
+                pass
+        except Exception as e:
+            logger.debug(f"Could not fetch hero assets for {media_type} {media_id}: {e}")
+
+        return result
 
 tmdb_client = TMDBClient()

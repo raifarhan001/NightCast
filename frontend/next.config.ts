@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   compiler: {},
   experimental: {
-    optimizePackageImports: ["lucide-react"],
+    optimizePackageImports: ["lucide-react", "framer-motion", "@tanstack/react-query"],
   },
   images: {
     unoptimized: true,
@@ -24,7 +24,7 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.BACKEND_URL || 'http://127.0.0.1:8001';
+    const backendUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || process.env.BACKEND_URL || 'http://127.0.0.1:8001').replace(/\/+$/, '');
     return [
       {
         source: '/api/v1/:path*',

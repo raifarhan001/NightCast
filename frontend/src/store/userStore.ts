@@ -93,7 +93,9 @@ export const useUserStore = create<UserState>((set, get) => ({
     if (profile) {
       localStorage.setItem('active_profile', JSON.stringify(profile));
       // Write profile_id to cookie so server middleware/headers can read it
-      document.cookie = `profile_id=${profile.id}; path=/; max-age=31536000; SameSite=Lax`;
+      const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+      const sec = isHttps ? '; Secure; SameSite=None' : '; SameSite=Lax';
+      document.cookie = `profile_id=${profile.id}; path=/; max-age=31536000${sec}`;
       set({ activeProfile: profile });
       
       // Fetch settings for profile

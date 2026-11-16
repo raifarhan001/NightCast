@@ -53,14 +53,17 @@ def register(response: Response, user_data: schemas.UserCreate, db: Session = De
 
     # Create access token and set session cookies
     access_token = auth.create_access_token(data={"sub": new_user.email.strip().lower()})
-    is_prod = bool(os.getenv("VERCEL") or os.getenv("RENDER") or os.getenv("ENVIRONMENT") == "production")
+    is_prod = bool(os.getenv("VERCEL") or os.getenv("RENDER") or os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("ENVIRONMENT") == "production")
+    cookie_samesite = "none" if is_prod else "lax"
+    cookie_secure = True if is_prod else False
+
     response.set_cookie(
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
         max_age=2592000,  # 30 days
-        samesite="lax",
-        secure=is_prod,
+        samesite=cookie_samesite,
+        secure=cookie_secure,
         path="/"
     )
     response.set_cookie(
@@ -68,8 +71,8 @@ def register(response: Response, user_data: schemas.UserCreate, db: Session = De
         value=access_token,
         httponly=False,
         max_age=2592000,  # 30 days
-        samesite="lax",
-        secure=is_prod,
+        samesite=cookie_samesite,
+        secure=cookie_secure,
         path="/"
     )
 
@@ -94,14 +97,17 @@ def login(response: Response, login_data: schemas.UserLogin, db: Session = Depen
     access_token = auth.create_access_token(data={"sub": user.email.strip().lower()})
     
     # Store tokens in cookies with explicit path="/"
-    is_prod = bool(os.getenv("VERCEL") or os.getenv("RENDER") or os.getenv("ENVIRONMENT") == "production")
+    is_prod = bool(os.getenv("VERCEL") or os.getenv("RENDER") or os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("ENVIRONMENT") == "production")
+    cookie_samesite = "none" if is_prod else "lax"
+    cookie_secure = True if is_prod else False
+
     response.set_cookie(
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
         max_age=2592000,  # 30 days
-        samesite="lax",
-        secure=is_prod,
+        samesite=cookie_samesite,
+        secure=cookie_secure,
         path="/"
     )
     response.set_cookie(
@@ -109,8 +115,8 @@ def login(response: Response, login_data: schemas.UserLogin, db: Session = Depen
         value=access_token,
         httponly=False,
         max_age=2592000,  # 30 days
-        samesite="lax",
-        secure=is_prod,
+        samesite=cookie_samesite,
+        secure=cookie_secure,
         path="/"
     )
 
@@ -123,10 +129,13 @@ def login(response: Response, login_data: schemas.UserLogin, db: Session = Depen
 
 @router.post("/logout")
 def logout(response: Response):
-    is_prod = bool(os.getenv("VERCEL") or os.getenv("RENDER") or os.getenv("ENVIRONMENT") == "production")
-    response.delete_cookie("access_token", path="/", httponly=True, samesite="lax", secure=is_prod)
-    response.delete_cookie("nightcast_token", path="/", samesite="lax")
-    response.delete_cookie("profile_id", path="/", samesite="lax")
+    is_prod = bool(os.getenv("VERCEL") or os.getenv("RENDER") or os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("ENVIRONMENT") == "production")
+    cookie_samesite = "none" if is_prod else "lax"
+    cookie_secure = True if is_prod else False
+
+    response.delete_cookie("access_token", path="/", httponly=True, samesite=cookie_samesite, secure=cookie_secure)
+    response.delete_cookie("nightcast_token", path="/", samesite=cookie_samesite, secure=cookie_secure)
+    response.delete_cookie("profile_id", path="/", samesite=cookie_samesite, secure=cookie_secure)
     return {"message": "Successfully logged out"}
 
 @router.get("/me", response_model=schemas.UserResponse)

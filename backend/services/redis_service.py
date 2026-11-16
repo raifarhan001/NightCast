@@ -17,6 +17,7 @@ class BoundedTTLCache:
     def __init__(self, maxsize: int = 1000):
         self.maxsize = maxsize
         self._cache: OrderedDict[str, tuple[Any, float]] = OrderedDict()
+        self._dump_lock = threading.Lock()
         self._load_from_disk()
 
     def _load_from_disk(self):
@@ -36,17 +37,18 @@ class BoundedTTLCache:
             logger.warning(f"Failed loading disk cache store: {e}")
 
     def _dump_to_disk(self):
-        try:
-            data = {}
-            for k, (val, exp) in list(self._cache.items())[-500:]:
-                data[k] = {"val": val, "exp": exp}
-            tmp_file = CACHE_FILE + ".tmp"
-            with open(tmp_file, "w", encoding="utf-8") as f:
-                json.dump(data, f)
-            if os.path.exists(tmp_file):
-                os.replace(tmp_file, CACHE_FILE)
-        except Exception:
-            pass
+        with self._dump_lock:
+            try:
+                data = {}
+                for k, (val, exp) in list(self._cache.items())[-500:]:
+                    data[k] = {"val": val, "exp": exp}
+                tmp_file = CACHE_FILE + ".tmp"
+                with open(tmp_file, "w", encoding="utf-8") as f:
+                    json.dump(data, f)
+                if os.path.exists(tmp_file):
+                    os.replace(tmp_file, CACHE_FILE)
+            except Exception:
+                pass
 
     def get(self, key: str) -> Optional[Any]:
         if key not in self._cache:

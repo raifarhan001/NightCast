@@ -29,35 +29,6 @@ const selectHomeFeed = (data: any) => ({
   documentary_movies: ((data?.documentary_movies || []) as MediaItem[]).map((m) => ({ ...m, media_type: "movie" as const })),
 });
 
-function DeferredRow({ children }: { children: React.ReactNode }) {
-  const [isVisible, setIsVisible] = React.useState(false);
-  const rowRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    if (typeof IntersectionObserver === "undefined") {
-      setIsVisible(true);
-      return;
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "500px 0px" }
-    );
-    if (rowRef.current) observer.observe(rowRef.current);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div ref={rowRef} className="min-h-[180px]">
-      {isVisible ? children : null}
-    </div>
-  );
-}
-
 function HomePageContent() {
   const { activeProfile } = useUserStore();
   const queryClient = useQueryClient();
@@ -89,7 +60,7 @@ function HomePageContent() {
 
   // 1. Aggregated Composite Home Feed (1 single cached request replacing individual queries)
   const { data: homeFeed, isLoading: isFeedLoading, isError: isFeedError, refetch: refetchFeed } = useQuery({
-    queryKey: ["home-feed-v4"],
+    queryKey: ["home-feed-v9"],
     queryFn: () => apiFetch("/api/v1/tmdb/home_feed"),
     select: selectHomeFeed,
     staleTime: 1000 * 60 * 10,
@@ -241,7 +212,7 @@ function HomePageContent() {
   // Dynamic Hero Carousel items
   const heroItems = topPicks.length > 0 ? topPicks.slice(0, 7) : newMovies.slice(0, 7);
 
-  if (isFeedLoading && !homeFeed) {
+  if ((isFeedLoading && !homeFeed) || (!homeFeed && !isFeedError)) {
     return (
       <div className="w-full min-h-screen bg-[#0B131B]">
         <HeroSkeleton />
@@ -280,7 +251,6 @@ function HomePageContent() {
         {isMounted && mergedContinueWatching.length > 0 && (
           <MovieRow
             title="Continue Watching"
-            subtitle="Pick up where you left off"
             items={mergedContinueWatching}
             onRemoveItem={handleRemoveContinueWatching}
           />
@@ -298,7 +268,6 @@ function HomePageContent() {
       {aiMovieSuggestions.length > 0 && (
         <MovieRow
           title="AI Movie Suggestions"
-          subtitle="All-time hit masterpieces • Refreshed daily by AI"
           isAi
           items={aiMovieSuggestions}
         />
@@ -308,7 +277,6 @@ function HomePageContent() {
       {aiSeriesSuggestions.length > 0 && (
         <MovieRow
           title="AI Web Series Suggestions"
-          subtitle="Legendary binge-worthy hits • Refreshed daily by AI"
           isAi
           items={aiSeriesSuggestions}
         />
@@ -317,106 +285,74 @@ function HomePageContent() {
       {/* 4. New Movies */}
       <MovieRow
         title="New Movies"
-        subtitle="Latest releases & fresh premieres"
         items={newMovies}
       />
 
       {/* 4. Popular TV Shows */}
       <MovieRow
         title="Popular TV Shows"
-        subtitle="Top binge-worthy series"
         items={popularTvShows}
       />
 
       {/* 5. Action */}
-      <DeferredRow>
-        <MovieRow
-          title="Action"
-          subtitle="High-octane & explosive adventures"
-          items={actionMovies}
-        />
-      </DeferredRow>
+      <MovieRow
+        title="Action"
+        items={actionMovies}
+      />
 
       {/* 6. Comedy */}
-      <DeferredRow>
-        <MovieRow
-          title="Comedy"
-          subtitle="Hilarious & feel-good hits"
-          items={comedyMovies}
-        />
-      </DeferredRow>
+      <MovieRow
+        title="Comedy"
+        items={comedyMovies}
+      />
 
       {/* 7. Drama */}
-      <DeferredRow>
-        <MovieRow
-          title="Drama"
-          subtitle="Compelling stories & cinematic masterpieces"
-          items={dramaMovies}
-        />
-      </DeferredRow>
+      <MovieRow
+        title="Drama"
+        items={dramaMovies}
+      />
 
       {/* 8. Horror */}
-      <DeferredRow>
-        <MovieRow
-          title="Horror"
-          subtitle="Nightmares & supernatural chills"
-          items={horrorMovies}
-        />
-      </DeferredRow>
+      <MovieRow
+        title="Horror"
+        items={horrorMovies}
+      />
 
       {/* 9. Sci Fi */}
-      <DeferredRow>
-        <MovieRow
-          title="Sci-Fi"
-          subtitle="Futuristic visions & space epics"
-          items={sciFiMovies}
-        />
-      </DeferredRow>
+      <MovieRow
+        title="Sci-Fi"
+        items={sciFiMovies}
+      />
 
       {/* 10. Thriller */}
-      <DeferredRow>
-        <MovieRow
-          title="Thriller"
-          subtitle="Edge-of-your-seat suspense"
-          items={thrillerMovies}
-        />
-      </DeferredRow>
+      <MovieRow
+        title="Thriller"
+        items={thrillerMovies}
+      />
 
       {/* 11. Romance */}
-      <DeferredRow>
-        <MovieRow
-          title="Romance"
-          subtitle="Heartwarming passion & love stories"
-          items={romanceMovies}
-        />
-      </DeferredRow>
+      <MovieRow
+        title="Romance"
+        items={romanceMovies}
+      />
 
       {/* 12. Animation */}
-      <DeferredRow>
-        <MovieRow
-          title="Animation"
-          subtitle="Anime & animated wonders"
-          items={animationMovies}
-        />
-      </DeferredRow>
+      <MovieRow
+        title="Animation"
+        items={animationMovies}
+      />
 
       {/* 13. Crime */}
-      <DeferredRow>
-        <MovieRow
-          title="Crime"
-          subtitle="Underworld sagas & detective mysteries"
-          items={crimeMovies}
-        />
-      </DeferredRow>
+      <MovieRow
+        title="Crime"
+        items={crimeMovies}
+      />
 
       {/* 14. Documentary */}
-      <DeferredRow>
-        <MovieRow
-          title="Documentary"
-          subtitle="Real stories & untold truths"
-          items={documentaryMovies}
-        />
-      </DeferredRow>
+      <MovieRow
+        title="Documentary"
+        items={documentaryMovies}
+      />
       </div>
     </div>
   );

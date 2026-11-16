@@ -12,7 +12,7 @@ import { DetailsSkeleton } from '../../../components/shared/Skeletons';
 import { TvErrorBoundary } from '../../../components/shared/ErrorBoundaries';
 import MovieRow from '../../../components/shared/MovieRow';
 import EpisodeCard from '../../../components/shared/EpisodeCard';
-import { Play, Star, Bookmark, BookmarkCheck, Clock, Calendar, Languages, Send, Sparkles, RotateCcw, Tv } from 'lucide-react';
+import { Play, Star, Bookmark, BookmarkCheck, Clock, Calendar, Languages, Send, Sparkles, RotateCcw, Tv, Plus, Check, Clapperboard, Download, Share2, X } from 'lucide-react';
 
 function TvDetailsPage() {
   const router = useRouter();
@@ -24,6 +24,8 @@ function TvDetailsPage() {
   const [ratingInput, setRatingInput] = useState(8.0);
   const [reviewInput, setReviewInput] = useState('');
   const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [showTrailerModal, setShowTrailerModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const { data: tv, isLoading, refetch: refetchTv } = useQuery<TvDetail>({
     queryKey: ['tv-details', id],
@@ -126,6 +128,9 @@ function TvDetailsPage() {
   const releaseYear = (tv.first_air_date || '').split('-')[0] || 'N/A';
   const rating = tv.vote_average ? tv.vote_average.toFixed(1) : 'N/A';
   const trailerKey = tv.videos?.results?.find((v: TrailerVideo) => v.type === 'Trailer' && v.site === 'YouTube')?.key;
+  const languageName = tv.original_language === 'en'
+    ? 'English'
+    : (tv.spoken_languages?.[0]?.english_name || tv.original_language?.toUpperCase() || 'English');
 
   const seasons = tv.seasons || [{"season_number": 1, "episode_count": 8, "name": "Season 1"}];
   const selectedSeasonData = seasons.find((s) => s.season_number === activeSeason) || seasons[0];
@@ -137,134 +142,203 @@ function TvDetailsPage() {
     still_path: tv.backdrop_path || null
   }));
 
+  const handleShare = async () => {
+    if (typeof window !== 'undefined') {
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: tv?.name || 'Nightcast',
+            text: `Watch ${tv?.name || 'this show'} on Nightcast`,
+            url: window.location.href,
+          });
+          return;
+        } catch {
+          // User dismissed
+        }
+      }
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(window.location.href);
+        setToastMessage('Link copied to clipboard!');
+        setTimeout(() => setToastMessage(null), 2500);
+      }
+    }
+  };
+
+  const handleToggleFavorite = () => {
+    if (!activeProfile) {
+      router.push('/profile');
+      return;
+    }
+    toggleFavoriteMutation.mutate();
+  };
+
   return (
     <div className="w-full min-h-screen bg-[#0B131B] text-[#F0F0F0] pb-28">
-      {/* Immersive Backdrop Banner */}
-      <div className="relative w-full h-[65vh] md:h-[80vh] select-none border-b border-white/[0.08]">
+      {/* Cinematic Redesigned Hero Banner matching reference image */}
+      <div className="relative w-full min-h-[72vh] md:min-h-[82vh] flex items-center select-none overflow-hidden pt-28 pb-16 md:py-32">
+        {/* Full-bleed Backdrop Artwork */}
         <Image
           src={backdropUrl}
-          alt={`${tv.name} backdrop cinematic artwork`}
+          alt={`${tv.name} backdrop`}
           fill
           priority
           placeholder="blur"
           blurDataURL={ImageService.getBlurHash()}
-          className="object-cover object-top opacity-40 grayscale-[20%]"
+          className="object-cover object-top opacity-60 md:opacity-75"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0B131B] via-[#0B131B]/60 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0B131B] via-transparent to-[#0B131B]/80" />
-      </div>
 
-      {/* Main TV Poster & Info Grid */}
-      <div className="max-w-7xl mx-auto px-6 md:px-12 -mt-48 md:-mt-72 relative z-10 grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
-        <div className="space-y-4 flex flex-col items-center md:items-stretch">
-          <div className="relative w-56 md:w-full aspect-[2/3] rounded-3xl overflow-hidden shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_25px_60px_rgba(0,0,0,0.9)] border border-white/[0.15] bg-[#0B131B]/60 backdrop-blur-2xl">
-            <Image
-              src={posterUrl}
-              alt={`${tv.name} official series poster`}
-              fill
-              placeholder="blur"
-              blurDataURL={ImageService.getBlurHash()}
-              sizes="(max-width: 768px) 224px, 300px"
-              className="object-cover"
-            />
-          </div>
-          <button
-            onClick={() => {
-              if (!activeProfile) {
-                router.push('/profile');
-                return;
-              }
-              toggleFavoriteMutation.mutate();
-            }}
-            disabled={toggleFavoriteMutation.isPending}
-            aria-label={isFavorite ? "Remove from watchlist" : "Add to watchlist"}
-            className={`w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl border transition-all font-mono font-bold text-xs uppercase tracking-wider cursor-pointer active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] ${
-              isFavorite
-                ? 'bg-[#A4C8E1] text-[#0B131B] border-[#A4C8E1] shadow-[0_0_24px_rgba(164,200,225,0.4),inset_0_1px_1px_rgba(255,255,255,0.5)]'
-                : 'border-white/[0.15] bg-white/[0.06] text-[#F0F0F0] hover:bg-white/[0.12] hover:border-white/[0.25] backdrop-blur-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]'
-            }`}
-          >
-            {isFavorite ? (
-              <>
-                <BookmarkCheck className="w-4 h-4 text-[#0B131B]" />
-                <span>Bookmarked</span>
-              </>
-            ) : (
-              <>
-                <Bookmark className="w-4 h-4 text-white/80" />
-                <span>Add to Watchlist</span>
-              </>
-            )}
-          </button>
-        </div>
+        {/* Seamless Vignettes */}
+        {/* Left Dark Vignette */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0B131B] via-[#0B131B]/90 md:via-[#0B131B]/75 to-transparent z-[1]" />
+        {/* Bottom Smooth Blend */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0B131B] via-[#0B131B]/60 to-transparent z-[1]" />
+        {/* Top Navbar Shadow */}
+        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#0B131B]/80 to-transparent z-[1]" />
 
-        <div className="md:col-span-3 space-y-6">
-          {/* Metadata Chips */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="px-3.5 py-1.5 rounded-full bg-[#39AEA9]/15 border border-[#39AEA9]/35 text-[#39AEA9] text-[10px] font-sans font-semibold backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
-              Series Premiere
-            </span>
-            <span className="px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.12] text-[10px] font-sans font-medium text-[#F0F0F0]/90 backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
-              Dolby Atmos
-            </span>
-            <span className="px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.12] text-[10px] font-sans font-medium text-[#F0F0F0]/90 backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
-              4K HDR
-            </span>
-          </div>
-
-          <div className="space-y-2">
-            <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-[#F0F0F0] leading-[0.95]">
+        {/* Hero Content Overlay */}
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 md:px-12 w-full relative z-10">
+          <div className="max-w-2xl space-y-4 md:space-y-5">
+            {/* Title */}
+            <h1 className="font-display text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tight text-red-600 drop-shadow-[0_4px_30px_rgba(220,38,38,0.35)] leading-[1.02]">
               {tv.name}
             </h1>
-            {tv.tagline && <p className="text-sm italic text-[#8FA8AD] font-light">&ldquo;{tv.tagline}&rdquo;</p>}
-          </div>
 
-          <div className="flex flex-wrap gap-5 text-xs font-sans text-[#8FA8AD] items-center pb-4 border-b border-white/[0.08]">
-            <div className="flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-[#8FA8AD]" />
-              <span>{releaseYear}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-[#8FA8AD]" />
-              <span>{seasons.length} Seasons ({tv.episode_run_time?.[0] || 50}m eps)</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-[#F0F0F0]">
-              <Star className="w-3.5 h-3.5 text-[#A4C8E1] fill-[#A4C8E1]" />
-              <span className="font-bold">{rating}</span>
-              <span className="text-[#8FA8AD]">/ 10</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Languages className="w-3.5 h-3.5 text-[#8FA8AD]" />
-              <span>English, Hindi &amp; Multi-Audio</span>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="text-xs uppercase tracking-wider text-[#8FA8AD] font-sans font-semibold">Overview</h3>
-            <p className="text-sm md:text-base font-normal text-[#F0F0F0]/90 leading-relaxed font-sans max-w-3xl">
-              {tv.overview}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {tv.genres?.map((g: any) => (
-              <span key={g.id} className="px-3 py-1 rounded-full border border-white/[0.12] bg-white/[0.04] backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)] text-xs font-sans text-[#F0F0F0]/90 hover:text-white hover:border-[#39AEA9]/50 hover:bg-white/[0.08] transition-all">
-                {g.name}
+            {/* TMDB Rating */}
+            <div className="flex items-center gap-2">
+              <span className="text-red-500 font-extrabold text-sm md:text-base tracking-wider uppercase">
+                TMDB {rating}
               </span>
-            ))}
-          </div>
+            </div>
 
-          <div className="pt-2">
-            <Link
-              href={`/watch/tv/${id}?season=${activeSeason}&episode=1`}
-              className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-[#F0F0F0]/95 hover:bg-white text-[#0B131B] text-xs font-sans font-bold tracking-wide rounded-full backdrop-blur-xl border border-white/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.6),0_4px_24px_rgba(240,240,240,0.3)] transition-all cursor-pointer active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
-            >
-              <Play className="w-4 h-4 fill-current ml-0.5 text-[#0B131B]" />
-              <span>Play S{activeSeason} E1</span>
-            </Link>
+            {/* Metadata Row: Year • Seasons • Language */}
+            <div className="flex items-center gap-2.5 text-xs md:text-sm text-neutral-300 font-medium tracking-wide">
+              <span>{releaseYear}</span>
+              <span className="text-neutral-500">•</span>
+              <span>{seasons.length} Season{seasons.length > 1 ? 's' : ''}</span>
+              <span className="text-neutral-500">•</span>
+              <span>{languageName}</span>
+            </div>
+
+            {/* Synopsis */}
+            {tv.overview && (
+              <p className="text-sm md:text-base text-neutral-300/90 leading-relaxed font-normal line-clamp-3 md:line-clamp-4 max-w-xl">
+                {tv.overview}
+              </p>
+            )}
+
+            {/* Genres Row (pipe separated) */}
+            {tv.genres && tv.genres.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm font-bold text-white pt-1">
+                {tv.genres.map((g: any, i: number) => (
+                  <React.Fragment key={g.id}>
+                    <span className="hover:text-red-400 transition-colors">{g.name}</span>
+                    {i < tv.genres.length - 1 && (
+                      <span className="text-neutral-500 font-normal">|</span>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            )}
+
+            {/* Action Buttons Bar */}
+            <div className="flex flex-wrap items-center gap-3 pt-3">
+              {/* Watch Now Button */}
+              <Link
+                href={`/watch/tv/${id}?season=${activeSeason}&episode=1`}
+                className="inline-flex items-center gap-2.5 px-7 sm:px-8 py-3.5 bg-white hover:bg-neutral-200 text-black font-extrabold text-sm rounded-2xl shadow-[0_4px_24px_rgba(255,255,255,0.25)] transition-all cursor-pointer active:scale-95"
+              >
+                <Play className="w-5 h-5 fill-black text-black ml-0.5" />
+                <span>Watch S{activeSeason} E1</span>
+              </Link>
+
+              {/* Watchlist (+ / ✓) */}
+              <button
+                onClick={handleToggleFavorite}
+                disabled={toggleFavoriteMutation.isPending}
+                title={isFavorite ? "In Watchlist" : "Add to Watchlist"}
+                aria-label={isFavorite ? "In Watchlist" : "Add to Watchlist"}
+                className={`w-12 h-12 rounded-2xl border flex items-center justify-center transition-all cursor-pointer active:scale-95 ${
+                  isFavorite
+                    ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/40 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                    : "bg-white/[0.08] hover:bg-white/[0.16] border-white/15 text-white backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]"
+                }`}
+              >
+                {isFavorite ? <Check className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+              </button>
+
+              {/* Trailer Clapperboard */}
+              {trailerKey && (
+                <button
+                  onClick={() => setShowTrailerModal(true)}
+                  title="Watch Trailer Preview"
+                  aria-label="Watch Trailer Preview"
+                  className="w-12 h-12 rounded-2xl bg-white/[0.08] hover:bg-white/[0.16] border border-white/15 backdrop-blur-xl flex items-center justify-center text-white transition-all cursor-pointer active:scale-95 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]"
+                >
+                  <Clapperboard className="w-5 h-5 text-white/90" />
+                </button>
+              )}
+
+              {/* Download */}
+              <a
+                href={`https://web.screenscape.fun/download/tv/${id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Download Options"
+                aria-label="Download Options"
+                className="w-12 h-12 rounded-2xl bg-white/[0.08] hover:bg-white/[0.16] border border-white/15 backdrop-blur-xl flex items-center justify-center text-white transition-all cursor-pointer active:scale-95 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]"
+              >
+                <Download className="w-5 h-5 text-white/90" />
+              </a>
+
+              {/* Share */}
+              <button
+                onClick={handleShare}
+                title="Share Series"
+                aria-label="Share Series"
+                className="w-12 h-12 rounded-2xl bg-white/[0.08] hover:bg-white/[0.16] border border-white/15 backdrop-blur-xl flex items-center justify-center text-white transition-all cursor-pointer active:scale-95 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]"
+              >
+                <Share2 className="w-5 h-5 text-white/90" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Trailer Modal */}
+      {showTrailerModal && trailerKey && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 sm:p-6"
+          onClick={() => setShowTrailerModal(false)}
+        >
+          <div
+            className="relative w-full max-w-4xl aspect-video rounded-3xl overflow-hidden border border-white/20 bg-black shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowTrailerModal(false)}
+              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/70 hover:bg-black text-white flex items-center justify-center border border-white/20 transition-all cursor-pointer"
+              title="Close Preview"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <iframe
+              src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&controls=1`}
+              title="Official Trailer"
+              className="w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-xl bg-white text-black font-semibold text-xs shadow-2xl flex items-center gap-2">
+          <Check className="w-4 h-4 text-emerald-600" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
       {/* Chapter / Episode Selection */}
       <section className="max-w-7xl mx-auto px-6 md:px-12 mt-20 space-y-6">
@@ -364,7 +438,6 @@ function TvDetailsPage() {
         <div className="mt-20">
           <MovieRow
             title="Recommended Masterpieces"
-            subtitle="Similar shows curated for you"
             items={recommendations.map(m => ({ ...m, media_type: 'tv' }))}
           />
         </div>

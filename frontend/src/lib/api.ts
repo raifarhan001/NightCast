@@ -10,6 +10,9 @@ export interface MediaItem {
   name?: string;
   overview?: string;
   backdrop_path?: string;
+  clean_backdrop_path?: string;
+  logo_path?: string;
+  has_en_title_backdrop?: boolean;
   poster_path?: string;
   vote_average?: number;
   release_date?: string;
@@ -80,6 +83,8 @@ export interface MovieDetail {
   vote_average: number;
   runtime: number | null;
   genres: Array<{ id: number; name: string }>;
+  original_language?: string;
+  spoken_languages?: Array<{ english_name: string; name: string }>;
   cast?: CastMember[];
   crew?: CrewMember[];
   videos?: { results: TrailerVideo[] };
@@ -109,6 +114,8 @@ export interface TvDetail {
   vote_average: number;
   episode_run_time?: number[];
   genres: Array<{ id: number; name: string }>;
+  original_language?: string;
+  spoken_languages?: Array<{ english_name: string; name: string }>;
   cast?: CastMember[];
   crew?: CrewMember[];
   seasons?: TvSeason[];
@@ -171,18 +178,22 @@ export function getStoredToken(): string | null {
 export function setStoredToken(token: string | null): void {
   if (typeof window === 'undefined') return;
   try {
+    const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+    const sec = isHttps ? '; Secure; SameSite=None' : '; SameSite=Lax';
+
     if (token) {
       localStorage.setItem(TOKEN_KEY, token);
       localStorage.setItem('nightcast_access_token', token);
-      // Synchronize client-side cookie so Next.js Edge Middleware and server can see it immediately
-      document.cookie = `nightcast_token=${encodeURIComponent(token)}; path=/; max-age=2592000; SameSite=Lax`;
+      // Synchronize client-side cookies so Next.js Edge Middleware and server can see it immediately
+      document.cookie = `nightcast_token=${encodeURIComponent(token)}; path=/; max-age=2592000${sec}`;
+      document.cookie = `access_token=Bearer ${encodeURIComponent(token)}; path=/; max-age=2592000${sec}`;
     } else {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem('nightcast_access_token');
       localStorage.removeItem('vidking_access_token');
       // Expire the cookies across both names
-      document.cookie = `nightcast_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-      document.cookie = `access_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+      document.cookie = `nightcast_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${sec}`;
+      document.cookie = `access_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT${sec}`;
     }
   } catch {}
 }

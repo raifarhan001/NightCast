@@ -27,8 +27,12 @@ logger = logging.getLogger("nightcast_main")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     import asyncio
+    from routers.tmdb import warm_up_home_feed_cache
     
-    # Run DB schema check and vector pre-population in background so Uvicorn starts INSTANTLY (< 1 second)
+    # 1. Non-blocking background task: Pre-warm home feed memory cache IMMEDIATELY on server boot!
+    asyncio.create_task(warm_up_home_feed_cache())
+
+    # 2. Run DB schema check and vector pre-population in parallel background task so startup is instant (< 1 second)
     async def background_startup():
         try:
             await asyncio.to_thread(init_db)
@@ -43,13 +47,6 @@ async def lifespan(app: FastAPI):
                 db.close()
         except Exception as e:
             logger.warning(f"Background embeddings task warning: {e}")
-
-        # Pre-warm home feed in background so user's first request responds instantly (< 10ms)
-        try:
-            from routers.tmdb import get_home_feed
-            await get_home_feed()
-        except Exception as e:
-            logger.warning(f"Background pre-warm error: {e}")
             
     asyncio.create_task(background_startup())
     
@@ -153,7 +150,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
-# CORS configuration — specific origins and regex allow credentials without throwing Starlette AssertionError
+# CORS configuration — support any Vercel, Netlify, Render, Railway, custom domain, or local development origin
+cors_env_origins = os.getenv("CORS_ORIGINS", "")
+EXTRA_ORIGINS = [o.strip() for o in cors_env_origins.split(",") if o.strip()]
+
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
@@ -162,12 +162,12 @@ ALLOWED_ORIGINS = [
     "http://localhost:8001",
     "http://127.0.0.1:8001",
     "https://night-cast.vercel.app",
-]
+] + EXTRA_ORIGINS
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$",
+    allow_origin_regex=r"^https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

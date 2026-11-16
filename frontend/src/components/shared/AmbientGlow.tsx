@@ -37,8 +37,9 @@ function AmbientGlow({ className = "" }: AmbientGlowProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.5, ease: "linear" }}
-            className="absolute inset-0 overflow-hidden z-0"
+            transition={{ duration: 0.6, ease: "linear" }}
+            style={{ transform: "translate3d(0, 0, 0)", willChange: "opacity" }}
+            className="absolute inset-0 overflow-hidden z-0 transform-gpu"
           >
             <Image
               src={backdropUrl}
