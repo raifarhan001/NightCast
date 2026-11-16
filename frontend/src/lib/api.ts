@@ -180,8 +180,9 @@ export function setStoredToken(token: string | null): void {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem('nightcast_access_token');
       localStorage.removeItem('vidking_access_token');
-      // Expire the cookie
+      // Expire the cookies across both names
       document.cookie = `nightcast_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
+      document.cookie = `access_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
     }
   } catch {}
 }
@@ -244,17 +245,11 @@ export async function apiFetch(endpoint: string, options: RequestInit = {}): Pro
       }
     } catch (_) {}
 
-    // Clear stale stored token only on explicit auth failures (not transient server/proxy errors)
+    // Clear stale stored token on any 401 auth failure (not login/register attempts where invalid credentials return 401)
     if (response.status === 401 && !cleanEndpoint.includes('/auth/login') && !cleanEndpoint.includes('/auth/register')) {
-      const isExplicitInvalidToken =
-        errorDetail.includes('Could not validate') ||
-        errorDetail.includes('Session expired') ||
-        errorDetail.includes('Not authenticated');
-      if (isExplicitInvalidToken) {
-        setStoredToken(null);
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('nightcast:auth-expired'));
-        }
+      setStoredToken(null);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('nightcast:auth-expired'));
       }
     }
 

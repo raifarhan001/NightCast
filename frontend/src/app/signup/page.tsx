@@ -96,8 +96,14 @@ function SignupForm() {
       }
 
       // Smooth redirect to requested page or home
-      const target = decodeURIComponent(returnUrl);
-      router.push(target.startsWith("/") ? target : "/");
+      const decodedTarget = decodeURIComponent(returnUrl);
+      const safeTarget = decodedTarget.startsWith("/") && 
+                         !decodedTarget.startsWith("/login") && 
+                         !decodedTarget.startsWith("/signup") && 
+                         !decodedTarget.startsWith("/register")
+        ? decodedTarget 
+        : "/";
+      router.push(safeTarget);
       router.refresh();
     } catch (err: any) {
       const msg = err?.message || "Failed to create account. Please try again.";

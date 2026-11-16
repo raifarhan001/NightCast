@@ -51,13 +51,22 @@ def register(response: Response, user_data: schemas.UserCreate, db: Session = De
     db.add(default_settings)
     db.commit()
 
-    # Create access token and set session cookie
+    # Create access token and set session cookies
     access_token = auth.create_access_token(data={"sub": new_user.email.strip().lower()})
     is_prod = bool(os.getenv("VERCEL") or os.getenv("RENDER") or os.getenv("ENVIRONMENT") == "production")
     response.set_cookie(
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
+        max_age=2592000,  # 30 days
+        samesite="lax",
+        secure=is_prod,
+        path="/"
+    )
+    response.set_cookie(
+        key="nightcast_token",
+        value=access_token,
+        httponly=False,
         max_age=2592000,  # 30 days
         samesite="lax",
         secure=is_prod,
@@ -84,12 +93,21 @@ def login(response: Response, login_data: schemas.UserLogin, db: Session = Depen
     
     access_token = auth.create_access_token(data={"sub": user.email.strip().lower()})
     
-    # Store token in cookie with explicit path="/"
+    # Store tokens in cookies with explicit path="/"
     is_prod = bool(os.getenv("VERCEL") or os.getenv("RENDER") or os.getenv("ENVIRONMENT") == "production")
     response.set_cookie(
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,
+        max_age=2592000,  # 30 days
+        samesite="lax",
+        secure=is_prod,
+        path="/"
+    )
+    response.set_cookie(
+        key="nightcast_token",
+        value=access_token,
+        httponly=False,
         max_age=2592000,  # 30 days
         samesite="lax",
         secure=is_prod,

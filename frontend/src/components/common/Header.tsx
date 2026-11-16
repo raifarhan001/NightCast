@@ -680,30 +680,37 @@ function HeaderContent() {
             </div>
 
             {/* Profile / Account Trigger */}
-            <button
-              type="button"
-              aria-label="User profile account selector"
-              onClick={() => {
-                if (user) {
-                  setIsProfileModalOpen(true);
-                } else {
-                  router.push("/login");
-                }
-              }}
-              className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] backdrop-blur-2xl backdrop-saturate-150 border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.4)] text-[#F0F0F0] text-xs font-medium transition cursor-pointer active:scale-95 shrink-0 focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
-              title={user ? (activeProfile?.name || "Switch Profile") : "Sign In / Register"}
-            >
-              {user && activeProfile ? (
-                <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#A4C8E1] text-[#0B131B] text-[10px] font-bold flex items-center justify-center uppercase shrink-0">
-                  {activeProfile.name.slice(0, 1)}
-                </div>
-              ) : (
+            {user ? (
+              <button
+                type="button"
+                aria-label="User profile account selector"
+                onClick={() => setIsProfileModalOpen(true)}
+                className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] backdrop-blur-2xl backdrop-saturate-150 border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.4)] text-[#F0F0F0] text-xs font-medium transition cursor-pointer active:scale-95 shrink-0 focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
+                title={activeProfile?.name || "Switch Profile"}
+              >
+                {activeProfile ? (
+                  <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#A4C8E1] text-[#0B131B] text-[10px] font-bold flex items-center justify-center uppercase shrink-0">
+                    {activeProfile.name.slice(0, 1)}
+                  </div>
+                ) : (
+                  <User className="w-3.5 h-3.5 text-white/80 shrink-0" />
+                )}
+                <span className="hidden min-[480px]:inline text-xs font-medium">
+                  {activeProfile?.name || "Profile"}
+                </span>
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] backdrop-blur-2xl backdrop-saturate-150 border border-white/[0.12] shadow-[inset_0_1px_1px_rgba(255,255,255,0.15),0_8px_24px_rgba(0,0,0,0.4)] text-[#F0F0F0] text-xs font-medium transition cursor-pointer active:scale-95 shrink-0 focus-visible:ring-2 focus-visible:ring-[#39AEA9]"
+                title="Sign In / Register"
+              >
                 <User className="w-3.5 h-3.5 text-white/80 shrink-0" />
-              )}
-              <span className="hidden min-[480px]:inline text-xs font-medium">
-                {user ? (activeProfile?.name || "Profile") : "Sign In"}
-              </span>
-            </button>
+                <span className="hidden min-[480px]:inline text-xs font-medium">
+                  Sign In
+                </span>
+              </Link>
+            )}
           </div>
         </div>
       </header>

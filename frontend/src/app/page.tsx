@@ -88,12 +88,13 @@ function HomePageContent() {
   }, [activeProfile, queryClient]);
 
   // 1. Aggregated Composite Home Feed (1 single cached request replacing individual queries)
-  const { data: homeFeed, isLoading: isFeedLoading } = useQuery({
+  const { data: homeFeed, isLoading: isFeedLoading, isError: isFeedError, refetch: refetchFeed } = useQuery({
     queryKey: ["home-feed-v4"],
     queryFn: () => apiFetch("/api/v1/tmdb/home_feed"),
     select: selectHomeFeed,
     staleTime: 1000 * 60 * 10,
     refetchOnWindowFocus: false,
+    retry: 2,
   });
 
   const topPicks = homeFeed?.top_picks || [];
@@ -246,6 +247,21 @@ function HomePageContent() {
         <HeroSkeleton />
         <MovieRowSkeleton />
         <MovieRowSkeleton />
+      </div>
+    );
+  }
+
+  if (isFeedError && !homeFeed) {
+    return (
+      <div className="w-full min-h-[70vh] flex flex-col items-center justify-center px-4 text-center">
+        <p className="text-base font-semibold text-white mb-2">Unable to load titles</p>
+        <p className="text-xs text-[#8FA8AD] mb-4">Please check your connection or restart the backend.</p>
+        <button
+          onClick={() => refetchFeed()}
+          className="px-4 py-2 rounded-xl bg-[#39AEA9] text-[#0B131B] font-bold text-xs hover:bg-[#45bcb7] transition cursor-pointer"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
