@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
 const BACKEND_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || process.env.BACKEND_URL || 'http://127.0.0.1:8001').replace(/\/+$/, '');
 
 function buildForwardHeaders(req: NextRequest, hasBody: boolean = false): Record<string, string> {
@@ -155,10 +158,12 @@ export async function GET(req: NextRequest) {
 
   try {
     const backendUrl = `${BACKEND_URL}${pathname}${search}`;
+    const isHomeFeed = pathname.includes('/tmdb/home_feed');
+    const fetchTimeout = isHomeFeed ? 3000 : (isTmdbRoute ? 5000 : 8000);
     const fetchOptions: RequestInit = {
       headers: buildForwardHeaders(req, false),
       cache: 'no-store',
-      signal: isTmdbRoute ? AbortSignal.timeout(5000) : undefined,
+      signal: AbortSignal.timeout(fetchTimeout),
     };
 
     const res = await fetch(backendUrl, fetchOptions);

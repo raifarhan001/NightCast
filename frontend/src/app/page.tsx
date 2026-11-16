@@ -60,12 +60,13 @@ function HomePageContent() {
 
   // 1. Aggregated Composite Home Feed (1 single cached request replacing individual queries)
   const { data: homeFeed, isLoading: isFeedLoading, isError: isFeedError, refetch: refetchFeed } = useQuery({
-    queryKey: ["home-feed-v10"],
+    queryKey: ["home-feed-v11"],
     queryFn: () => apiFetch("/api/v1/tmdb/home_feed"),
     select: selectHomeFeed,
     staleTime: 1000 * 60 * 3,
-    refetchOnWindowFocus: false,
-    retry: 2,
+    refetchOnWindowFocus: true,
+    retry: 3,
+    retryDelay: (attempt) => Math.min(attempt * 1000, 3000),
   });
 
   const topPicks = homeFeed?.top_picks || [];
@@ -211,8 +212,9 @@ function HomePageContent() {
 
   // Dynamic Hero Carousel items
   const heroItems = topPicks.length > 0 ? topPicks.slice(0, 7) : newMovies.slice(0, 7);
+  const hasLoadedContent = topPicks.length > 0 || newMovies.length > 0 || actionMovies.length > 0 || comedyMovies.length > 0;
 
-  if ((isFeedLoading && !homeFeed) || (!homeFeed && !isFeedError)) {
+  if (isFeedLoading && !hasLoadedContent) {
     return (
       <div className="w-full min-h-screen bg-[#0B131B]">
         <HeroSkeleton />
@@ -222,16 +224,16 @@ function HomePageContent() {
     );
   }
 
-  if (isFeedError && !homeFeed) {
+  if (isFeedError || (!isFeedLoading && !hasLoadedContent)) {
     return (
       <div className="w-full min-h-[70vh] flex flex-col items-center justify-center px-4 text-center">
-        <p className="text-base font-semibold text-white mb-2">Unable to load titles</p>
-        <p className="text-xs text-[#8FA8AD] mb-4">Please check your connection or restart the backend.</p>
+        <p className="text-base font-semibold text-white mb-2">Connecting to NightCast Engine...</p>
+        <p className="text-xs text-[#8FA8AD] mb-4">The streaming service is loading titles. Click below to refresh.</p>
         <button
           onClick={() => refetchFeed()}
-          className="px-4 py-2 rounded-xl bg-[#39AEA9] text-[#0B131B] font-bold text-xs hover:bg-[#45bcb7] transition cursor-pointer"
+          className="px-5 py-2.5 rounded-xl bg-[#39AEA9] text-[#0B131B] font-bold text-xs hover:bg-[#45bcb7] transition cursor-pointer shadow-lg hover:scale-105 active:scale-95"
         >
-          Try Again
+          Refresh Now
         </button>
       </div>
     );
