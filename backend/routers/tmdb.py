@@ -240,7 +240,7 @@ async def warm_up_home_feed_cache():
     now = datetime.now(timezone.utc)
     day_of_year = now.timetuple().tm_yday
     today_str = now.strftime("%Y-%m-%d")
-    cache_key = f"tmdb:home_feed:v9:{today_str}"
+    cache_key = f"tmdb:home_feed:v10:{today_str}"
 
     try:
         await redis_cache._ensure_connected()
@@ -250,7 +250,14 @@ async def warm_up_home_feed_cache():
     logger.info("Starting background cache pre-warm for TMDB home feed...")
     try:
         cached, is_stale = await redis_cache.get_with_stale(cache_key)
-        if cached and isinstance(cached, dict) and cached.get("new_movies") and cached.get("ai_movie_suggestions"):
+        if (
+            cached
+            and isinstance(cached, dict)
+            and cached.get("new_movies")
+            and cached.get("ai_movie_suggestions")
+            and cached.get("comedy_movies")
+            and cached["comedy_movies"] != cached.get("drama_movies")
+        ):
             raw_cached = json.dumps(cached)
             _MEMORY_FEED_CACHE["data"] = cached
             _MEMORY_FEED_CACHE["raw_json"] = raw_cached
@@ -261,18 +268,16 @@ async def warm_up_home_feed_cache():
                 await _safe_build_home_feed(cache_key, today_str, day_of_year)
             return
 
-        # If no valid cache in store, set fallback immediately so early requests get instant sub-10ms response
+        # Build fresh feed from TMDB directly
+        await build_and_cache_home_feed(cache_key, today_str, day_of_year)
+        logger.info("Home feed cache successfully initialized from TMDB.")
+    except Exception as e:
+        logger.warning(f"Error during warm_up_home_feed_cache: {repr(e)}")
         fallback = get_fallback_home_feed(today_str)
         _MEMORY_FEED_CACHE["data"] = fallback
         _MEMORY_FEED_CACHE["raw_json"] = json.dumps(fallback)
         _MEMORY_FEED_CACHE["timestamp"] = time.time()
         _MEMORY_FEED_CACHE["date_str"] = today_str
-
-        # Build fresh feed from TMDB in background
-        await _safe_build_home_feed(cache_key, today_str, day_of_year)
-        logger.info("Home feed cache successfully initialized from TMDB.")
-    except Exception as e:
-        logger.warning(f"Error during warm_up_home_feed_cache: {repr(e)}")
 
 @router.get("/home_feed")
 async def get_home_feed():
@@ -280,7 +285,7 @@ async def get_home_feed():
     now = datetime.now(timezone.utc)
     day_of_year = now.timetuple().tm_yday
     today_str = now.strftime("%Y-%m-%d")
-    cache_key = f"tmdb:home_feed:v9:{today_str}"
+    cache_key = f"tmdb:home_feed:v10:{today_str}"
     current_time = time.time()
 
     # 1. Level 1: Ultra-fast path - Direct pre-serialized in-memory JSON bytes (< 3ms latency!)
@@ -294,7 +299,14 @@ async def get_home_feed():
         return Response(content=mem_raw, media_type="application/json")
 
     mem_data = _MEMORY_FEED_CACHE.get("data")
-    if mem_data and isinstance(mem_data, dict) and mem_data.get("new_movies") and mem_data.get("ai_movie_suggestions"):
+    if (
+        mem_data
+        and isinstance(mem_data, dict)
+        and mem_data.get("new_movies")
+        and mem_data.get("ai_movie_suggestions")
+        and mem_data.get("comedy_movies")
+        and mem_data["comedy_movies"] != mem_data.get("drama_movies")
+    ):
         if not mem_raw:
             mem_raw = json.dumps(mem_data)
             _MEMORY_FEED_CACHE["raw_json"] = mem_raw
@@ -304,7 +316,14 @@ async def get_home_feed():
 
     # 2. Level 2: Secondary fast path - Persistent redis / disk LRU cache (~1-2ms latency)
     cached, is_stale = await redis_cache.get_with_stale(cache_key)
-    if cached and isinstance(cached, dict) and cached.get("new_movies") and cached.get("ai_movie_suggestions"):
+    if (
+        cached
+        and isinstance(cached, dict)
+        and cached.get("new_movies")
+        and cached.get("ai_movie_suggestions")
+        and cached.get("comedy_movies")
+        and cached["comedy_movies"] != cached.get("drama_movies")
+    ):
         raw_cached = json.dumps(cached)
         _MEMORY_FEED_CACHE["data"] = cached
         _MEMORY_FEED_CACHE["raw_json"] = raw_cached
@@ -314,16 +333,20 @@ async def get_home_feed():
             trigger_background_feed_refresh(cache_key, today_str, day_of_year)
         return Response(content=raw_cached, media_type="application/json")
 
-    # 3. Level 3: Cold start path - Return curated catalog immediately (< 5ms) and populate TMDB in background!
-    fallback = get_fallback_home_feed(today_str)
-    raw_fallback = json.dumps(fallback)
-    _MEMORY_FEED_CACHE["data"] = fallback
-    _MEMORY_FEED_CACHE["raw_json"] = raw_fallback
-    _MEMORY_FEED_CACHE["timestamp"] = current_time
-    _MEMORY_FEED_CACHE["date_str"] = today_str
-
-    trigger_background_feed_refresh(cache_key, today_str, day_of_year)
-    return Response(content=raw_fallback, media_type="application/json")
+    # 3. Level 3: Cold start path - Build real TMDB feed directly and return it
+    try:
+        real_feed = await build_and_cache_home_feed(cache_key, today_str, day_of_year)
+        raw_json = _MEMORY_FEED_CACHE.get("raw_json") or json.dumps(real_feed)
+        return Response(content=raw_json, media_type="application/json")
+    except Exception as e:
+        logger.warning(f"Cold start build_and_cache_home_feed error: {e}")
+        fallback = get_fallback_home_feed(today_str)
+        raw_fallback = json.dumps(fallback)
+        _MEMORY_FEED_CACHE["data"] = fallback
+        _MEMORY_FEED_CACHE["raw_json"] = raw_fallback
+        _MEMORY_FEED_CACHE["timestamp"] = current_time
+        _MEMORY_FEED_CACHE["date_str"] = today_str
+        return Response(content=raw_fallback, media_type="application/json")
 
 @router.get("/ai/movies")
 async def get_ai_movie_suggestions():

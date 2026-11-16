@@ -60,10 +60,10 @@ function HomePageContent() {
 
   // 1. Aggregated Composite Home Feed (1 single cached request replacing individual queries)
   const { data: homeFeed, isLoading: isFeedLoading, isError: isFeedError, refetch: refetchFeed } = useQuery({
-    queryKey: ["home-feed-v9"],
+    queryKey: ["home-feed-v10"],
     queryFn: () => apiFetch("/api/v1/tmdb/home_feed"),
     select: selectHomeFeed,
-    staleTime: 1000 * 60 * 10,
+    staleTime: 1000 * 60 * 3,
     refetchOnWindowFocus: false,
     retry: 2,
   });
