@@ -242,7 +242,7 @@ def health_check():
         }
     }
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def read_root():
     return {
         "status": "healthy",

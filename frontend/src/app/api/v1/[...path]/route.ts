@@ -63,8 +63,70 @@ function createProxiedResponse(res: Response, data: any, status: number) {
 
 const TMDB_API_KEY = process.env.TMDB_API_KEY || '8b36fc4dff6127d090085bcebf286978';
 
+let _EDGE_FEED_CACHE: { data: any; timestamp: number } | null = null;
+
+async function buildDirectHomeFeed() {
+  if (_EDGE_FEED_CACHE && Date.now() - _EDGE_FEED_CACHE.timestamp < 1000 * 60 * 15) {
+    return _EDGE_FEED_CACHE.data;
+  }
+
+  const categories: Record<string, string> = {
+    top_picks: '/trending/all/week',
+    new_movies: '/movie/now_playing',
+    popular_tv: '/tv/popular',
+    action_movies: '/discover/movie?with_genres=28',
+    comedy_movies: '/discover/movie?with_genres=35',
+    drama_movies: '/discover/movie?with_genres=18',
+    horror_movies: '/discover/movie?with_genres=27',
+    scifi_movies: '/discover/movie?with_genres=878',
+    thriller_movies: '/discover/movie?with_genres=53',
+    romance_movies: '/discover/movie?with_genres=10749',
+    animation_movies: '/discover/movie?with_genres=16',
+    crime_movies: '/discover/movie?with_genres=80',
+    documentary_movies: '/discover/movie?with_genres=99',
+    ai_movie_suggestions: '/discover/movie?sort_by=vote_average.desc&vote_count.gte=2500',
+    ai_series_suggestions: '/discover/tv?sort_by=vote_average.desc&vote_count.gte=1000',
+  };
+
+  const results: Record<string, any[]> = {};
+  await Promise.all(
+    Object.entries(categories).map(async ([key, path]) => {
+      try {
+        const sep = path.includes('?') ? '&' : '?';
+        const url = `https://api.themoviedb.org/3${path}${sep}api_key=${TMDB_API_KEY}`;
+        const res = await fetch(url, {
+          headers: { Accept: 'application/json' },
+          cache: 'no-store',
+          signal: AbortSignal.timeout(6000),
+        });
+        if (res.ok) {
+          const json = await res.json();
+          results[key] = json.results || [];
+        } else {
+          results[key] = [];
+        }
+      } catch {
+        results[key] = [];
+      }
+    })
+  );
+
+  if (results.top_picks && results.top_picks.length > 0) {
+    _EDGE_FEED_CACHE = {
+      data: results,
+      timestamp: Date.now(),
+    };
+  }
+
+  return results;
+}
+
 async function fetchFromTmdbDirect(pathname: string, searchParams: URLSearchParams) {
   try {
+    if (pathname.includes('/tmdb/home_feed')) {
+      return await buildDirectHomeFeed();
+    }
+
     const tmdbPrefixIndex = pathname.indexOf('/tmdb/');
     if (tmdbPrefixIndex === -1) return null;
     const tmdbSubPath = pathname.slice(tmdbPrefixIndex + 5);
