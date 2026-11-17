@@ -572,7 +572,7 @@ const NightCastPlayer = React.memo(function NightCastPlayer({
     setIsSettingsOpen(false);
   }, []);
 
-  // Keyboard Shortcuts
+  // Keyboard & Remote Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeEl = document.activeElement;
@@ -585,6 +585,14 @@ const NightCastPlayer = React.memo(function NightCastPlayer({
         return;
       }
 
+      // If a button or link is focused (e.g. user navigating player control buttons with TV remote D-Pad),
+      // let spatial navigation move focus instead of seeking
+      const isControlFocused = activeEl && activeEl !== document.body && (
+        activeEl.tagName === "BUTTON" ||
+        activeEl.tagName === "A" ||
+        activeEl.getAttribute("role") === "button"
+      );
+
       switch (e.key.toLowerCase()) {
         case " ":
         case "k":
@@ -592,20 +600,30 @@ const NightCastPlayer = React.memo(function NightCastPlayer({
           togglePlay();
           break;
         case "arrowleft":
+          if (isControlFocused) return;
+          e.preventDefault();
+          handleSkip(-10);
+          break;
         case "j":
           e.preventDefault();
           handleSkip(-10);
           break;
         case "arrowright":
+          if (isControlFocused) return;
+          e.preventDefault();
+          handleSkip(10);
+          break;
         case "l":
           e.preventDefault();
           handleSkip(10);
           break;
         case "arrowup":
+          if (isControlFocused) return;
           e.preventDefault();
           handleVolumeChange(volume + 0.1);
           break;
         case "arrowdown":
+          if (isControlFocused) return;
           e.preventDefault();
           handleVolumeChange(volume - 0.1);
           break;
@@ -621,12 +639,32 @@ const NightCastPlayer = React.memo(function NightCastPlayer({
           e.preventDefault();
           togglePip();
           break;
+        case "escape":
+          if (isSettingsOpen) {
+            setIsSettingsOpen(false);
+          }
+          break;
+      }
+    };
+
+    const handleTvBack = (e: Event) => {
+      if (isSettingsOpen) {
+        setIsSettingsOpen(false);
+        e.preventDefault();
+      } else if (isFullscreen) {
+        toggleFullscreen();
+        e.preventDefault();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [togglePlay, handleSkip, handleVolumeChange, volume, toggleMute, toggleFullscreen, togglePip]);
+    window.addEventListener("nightcast:tv-back", handleTvBack);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("nightcast:tv-back", handleTvBack);
+    };
+  }, [togglePlay, handleSkip, handleVolumeChange, volume, toggleMute, toggleFullscreen, togglePip, isSettingsOpen, isFullscreen]);
 
   // Calculate percentages
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;

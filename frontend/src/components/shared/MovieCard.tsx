@@ -72,6 +72,7 @@ function MovieCard({ item, subtitle, onRemove }: MovieCardProps) {
         href={detailUrl}
         onClick={() => soundFx.playTap()}
         aria-label={`View details for ${title}`}
+        data-tv-card="true"
         className="group/card block cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B] transform-gpu"
       >
         <div className="cinema-card-landscape w-full rounded-2xl relative overflow-hidden transform-gpu will-change-transform">

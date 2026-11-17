@@ -272,6 +272,7 @@ function SearchPageContent() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              data-tv-initial="true"
               placeholder={aiParam ? "✨ Describe mood or plot in Urdu / English..." : "Search movies, TV series, directors, cast..."}
               aria-label="Search movies, TV series, directors, cast"
               className={`w-full h-12 pl-12 pr-28 bg-[#0B131B]/60 hover:bg-[#0B131B]/70 focus:bg-[#0B131B]/80 backdrop-blur-xl border rounded-full text-[#F0F0F0] placeholder-[#8FA8AD] focus:outline-none text-sm font-sans font-medium transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)] ${

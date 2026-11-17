@@ -384,7 +384,7 @@ export default function EpisodeCard({
 
   if (href) {
     return (
-      <Link href={href} onClick={onClick} className={containerClasses}>
+      <Link href={href} onClick={onClick} data-tv-card="true" className={containerClasses}>
         {cardContent}
       </Link>
     );
@@ -394,6 +394,7 @@ export default function EpisodeCard({
     <div
       role="button"
       tabIndex={0}
+      data-tv-card="true"
       onClick={onClick}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {

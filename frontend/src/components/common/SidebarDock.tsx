@@ -64,15 +64,25 @@ export default function SidebarDock({ onOpenCategories }: SidebarDockProps) {
     setClickedId(null);
   }, [pathname]);
 
-  // Handle Escape key to dismiss categories drawer
+  // Handle Escape and TV Back key to dismiss categories drawer
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isCategoriesDrawerOpen) {
         setIsCategoriesDrawerOpen(false);
       }
     };
+    const handleTvBack = (e: Event) => {
+      if (isCategoriesDrawerOpen) {
+        setIsCategoriesDrawerOpen(false);
+        e.preventDefault();
+      }
+    };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("nightcast:tv-back", handleTvBack);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("nightcast:tv-back", handleTvBack);
+    };
   }, [isCategoriesDrawerOpen]);
 
   const toggleCategories = () => {

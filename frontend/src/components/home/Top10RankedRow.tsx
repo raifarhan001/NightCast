@@ -155,6 +155,7 @@ const RankedCardItem = React.memo(function RankedCardItem({ item, rank }: { item
       href={`/${type}/${item.id}`}
       onClick={() => soundFx.playTap()}
       aria-label={`Rank ${rank}: Watch ${displayTitle}`}
+      data-tv-card="true"
       className="group/item relative flex items-center shrink-0 snap-start select-none cursor-pointer transform-gpu rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#39AEA9] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B]"
     >
       {/* Monumental Modern Rank Number */}

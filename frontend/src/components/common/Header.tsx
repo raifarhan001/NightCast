@@ -228,7 +228,7 @@ function HeaderContent() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Handle escape key
+  // Handle escape and TV Back key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -237,9 +237,21 @@ function HeaderContent() {
         setIsFilterOpen(false);
       }
     };
+    const handleTvBack = (e: Event) => {
+      if (isCategoriesOpen || isSuggestionsOpen || isFilterOpen) {
+        setIsCategoriesOpen(false);
+        setIsSuggestionsOpen(false);
+        setIsFilterOpen(false);
+        e.preventDefault();
+      }
+    };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+    window.addEventListener("nightcast:tv-back", handleTvBack);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("nightcast:tv-back", handleTvBack);
+    };
+  }, [isCategoriesOpen, isSuggestionsOpen, isFilterOpen]);
 
   const handleInputKeyDown = (e: React.KeyboardEvent) => {
     if (!isSuggestionsOpen || suggestions.length === 0) {

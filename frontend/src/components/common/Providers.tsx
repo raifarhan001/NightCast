@@ -6,6 +6,7 @@ import { useUserStore } from '../../store/userStore';
 import { getStoredToken } from '../../lib/api';
 
 import ToastNotification from './ToastNotification';
+import SpatialNavigationProvider from './SpatialNavigationProvider';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
@@ -78,8 +79,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
-      <ToastNotification />
+      <SpatialNavigationProvider>
+        {children}
+        <ToastNotification />
+      </SpatialNavigationProvider>
     </QueryClientProvider>
   );
 }

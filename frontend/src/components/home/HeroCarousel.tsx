@@ -76,6 +76,18 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
   const [isLoadingTrailer, setIsLoadingTrailer] = useState(false);
 
+  // Close trailer on Smart TV Back button
+  useEffect(() => {
+    const handleTvBack = (e: Event) => {
+      if (isTrailerOpen) {
+        setIsTrailerOpen(false);
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("nightcast:tv-back", handleTvBack);
+    return () => window.removeEventListener("nightcast:tv-back", handleTvBack);
+  }, [isTrailerOpen]);
+
   // Sync currentIndex to sessionStorage for scroll/page return restoration
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -385,6 +397,8 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
               <Link
                 href={`/watch/${type}/${activeItem.id}`}
                 aria-label={`Watch ${title} now`}
+                data-tv-initial="true"
+                data-tv-card="true"
                 className="px-6 py-2.5 rounded-full bg-white hover:bg-neutral-100 text-black font-semibold text-xs sm:text-sm tracking-wide flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] shadow-[0_8px_24px_rgba(255,255,255,0.25)] hover:shadow-[0_8px_32px_rgba(255,255,255,0.45)] cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B]"
               >
                 <Play className="w-4 h-4 fill-black text-black ml-0.5 transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:scale-115" />
@@ -396,6 +410,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
                 type="button"
                 onClick={() => handleOpenTrailer(activeItem)}
                 aria-label={`Watch trailer for ${title}`}
+                data-tv-card="true"
                 className="px-6 py-2.5 rounded-full bg-white/[0.08] hover:bg-white/[0.18] text-[#F0F0F0] hover:text-white border border-white/[0.16] hover:border-white/[0.32] text-xs sm:text-sm font-medium tracking-wide flex items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-105 active:scale-95 shadow-[inset_0_1px_1px_rgba(255,255,255,0.18),0_8px_32px_rgba(0,0,0,0.5)] backdrop-blur-2xl backdrop-saturate-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B131B]"
               >
                 Trailer
@@ -420,6 +435,7 @@ function HeroCarousel({ items = [] }: HeroCarouselProps) {
                 key={m.id}
                 onClick={() => setCurrentIndex(idx)}
                 aria-label={`Select slide ${idx + 1}: ${m.title || m.name}`}
+                data-tv-card="true"
                 className={`flex flex-col items-center group cursor-pointer transition-all duration-300 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
                   idx >= 4 ? "hidden md:flex" : "flex"
                 }`}

@@ -19,8 +19,18 @@ export default function ProfileSelectorModal({ isOpen = true, onClose }: Profile
         onClose();
       }
     };
+    const onTvBack = (e: Event) => {
+      if (isOpen) {
+        onClose();
+        e.preventDefault();
+      }
+    };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("nightcast:tv-back", onTvBack);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("nightcast:tv-back", onTvBack);
+    };
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -65,12 +75,13 @@ export default function ProfileSelectorModal({ isOpen = true, onClose }: Profile
           </p>
           {profiles.length > 0 ? (
             <div className="space-y-2">
-              {profiles.map((prof) => {
+              {profiles.map((prof, idx) => {
                 const isActive = activeProfile?.id === prof.id;
                 return (
                   <button
                     key={prof.id}
                     type="button"
+                    data-tv-initial={isActive || idx === 0 ? "true" : undefined}
                     onClick={() => {
                       setActiveProfile(prof);
                       onClose();

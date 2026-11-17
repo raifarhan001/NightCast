@@ -247,6 +247,8 @@ function MovieDetailsPage() {
               {/* Watch Now Button */}
               <Link
                 href={`/watch/movie/${id}`}
+                data-tv-initial="true"
+                data-tv-card="true"
                 className="inline-flex items-center gap-2.5 px-7 sm:px-8 py-3.5 bg-white hover:bg-neutral-200 text-black font-extrabold text-sm rounded-2xl shadow-[0_4px_24px_rgba(255,255,255,0.25)] transition-all cursor-pointer active:scale-95"
               >
                 <Play className="w-5 h-5 fill-black text-black ml-0.5" />
